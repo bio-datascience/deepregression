@@ -23,8 +23,7 @@ plot.deepregression <- function(
 )
 {
   this_ind <- object$init_params$ind_structterms[[which_param]]
-  if(all(this_ind$type!="
-         smooth")) return("No smooth effects. Nothing to plot.")
+  if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
   if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
   plus_number_lin_eff <- sum(this_ind$type=="lin")
 
