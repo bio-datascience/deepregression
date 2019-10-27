@@ -1,6 +1,34 @@
 # deepregression
 Fitting Deep Distributional Regression in R
 
+# Installation
+
+Since the repository is still private, clone the repository to your local machine
+and run the following
+
+```R
+library(devtools)
+load_all("PATH/TO/THE/R-FOLDER/OF/CLONED/REPO")
+```
+
+Also make sure you have installed all the dependencies:
+* Matrix
+* dplyr
+* keras
+* mgcv
+* reticulate
+* tensorflow
+* tfprobability
+
+In the future, the package can be installed as follows:
+
+To install the latest version of deepregression:
+
+```R
+library(devtools)
+install_github("davidruegamer/deepregression")
+```
+
 # Examples
 
 ## Deep Linear Regression
