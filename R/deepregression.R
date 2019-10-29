@@ -11,6 +11,21 @@
 ## 8) DONE? Use callback early stopping to prevent overfitting
 ## -> is not part of the initialization but part of fitting
 ## 10) allow predicition
+## mixture in python:
+#mean,var,pi have the same shape(3,4).
+# mean = tf.convert_to_tensor(np.arange(12.0).reshape(3,4))
+# var = mean
+# dist = tfd.Normal(loc=-1., scale=0.1)
+#
+# pi = tf.transpose(tf.ones_like(mean))
+#
+# mix = tfd.Mixture(cat = tfd.Categorical(probs=[pi/3,
+#                                                pi/3,
+#                                                pi/3]),
+#                   components=[tfd.Normal(loc=mean,scale=var),
+#                               tfd.Normal(loc=mean,scale=var),
+#                               tfd.Normal(loc=mean,scale=var)]
+# )
 
 #'@title Fitting Deep Distributional Regression
 #'
@@ -48,7 +63,7 @@
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
 #' formula <- ~ 1 + d(x1,x2,x3) +
-#' s(x1, sp = 1) + te(xe,xf) + x1 + x2
+#' s(xa, sp = 1) + te(xe,xf) + x1
 #'
 #' deep_model <- function(x) x %>%
 #' layer_dense(units = 128, activation = "relu", use_bias = FALSE) %>%
@@ -65,8 +80,8 @@
 #' data = data, validation_data = list(data, y), y = y,
 #' list_of_deep_models = list(deep_model, NULL))
 #'
-#'mod %>% fit(epochs = 10)
-#'
+#'mod %>% fit(epochs = 100)
+#'mod %>% plot()
 deepregression <- function(
   y,
   list_of_formulae,
@@ -95,7 +110,7 @@ deepregression <- function(
                     function(x) 1e-8 + tf$math$exp(x)),
   learning_rate = 0.01,
   variational = FALSE,
-  # callbacks = list(callback_early_stopping(patience = 0)),
+  callbacks = list(callback_early_stopping(patience = 10)),
   ...
 )
 {
@@ -210,6 +225,7 @@ deepregression <- function(
                   data = data,
                   ind_structterms = ind_structterms,
                   param_names = param_names,
+                  callbacks = callbacks,
                   ellipsis = list(...)
                 ))
 
