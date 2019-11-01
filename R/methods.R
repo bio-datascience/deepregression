@@ -129,7 +129,7 @@ fitted.deepregression <- function(
 )
 {
   return(
-    deepregression.predict(object, apply_fun=apply_fun, ...)
+    predict.deepregression(object, apply_fun=apply_fun, ...)
   )
 }
 

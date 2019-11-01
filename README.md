@@ -1,57 +1,50 @@
-# deepregression
+README
+================
+
+deepregression
+==============
+
 Fitting Deep Distributional Regression in R
 
-# Installation
+Installation
+============
 
-Since the repository is still private, clone the repository to your local machine
-and run the following
+Since the repository is still private, clone the repository to your local machine and run the following
 
-```R
+``` r
 library(devtools)
-load_all("PATH/TO/THE/R-FOLDER/OF/CLONED/REPO")
+load_all("R")
 ```
 
-Also make sure you have installed all the dependencies:
-* Matrix
-* dplyr
-* keras
-* mgcv
-* reticulate
-* tensorflow
-* tfprobability
+    ## Loading deepregression
+
+Also make sure you have installed all the dependencies: \* Matrix \* dplyr \* keras \* mgcv \* reticulate \* tensorflow \* tfprobability
 
 In the future, the package can be installed as follows:
 
 To install the latest version of deepregression:
 
-```R
+``` r
 library(devtools)
 install_github("davidruegamer/deepregression")
 ```
 
-# Examples
+Examples
+========
 
-1. [Deep Linear Regression](#deeplinearregression)
-2. [Deep Logistic Regression](#deeplogisticregression)
-3. [Deep GAM](#deepgam)
-4. [GAMLSS](#gamlss)
-5. [Deep GAMLSS](#deepgamlss)
-6. [Examples for each Distribution](#examplesforeachdistribution)
+1.  [Deep Linear Regression](#deeplinearregression)
+2.  [Deep Logistic Regression](#deeplogisticregression)
+3.  [Deep GAM](#deepgam)
+4.  [GAMLSS](#gamlss)
+5.  [Deep GAMLSS](#deepgamlss)
+6.  [Examples for each Distribution](#examplesforeachdistribution)
 
-## Deep Linear Regression
+Deep Linear Regression
+----------------------
 
-```R
-#####################################################################
-# load the deepregression function
-source("deepregression.R")
-#####################################################################
+We first create a very simple linear regression first where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
 
-# We create a very simple linear regression first 
-# where we try to model the non-linear part of the data generating 
-# process using a complex neural network and an intercept
-# using a structured linear part
-#####################################################################
-# create example data for standard logistic regression
+``` r
 set.seed(24)
 
 # generate the data
@@ -97,27 +90,30 @@ mod <- deepregression(
   data = data,
   # define how parameters should be modeled
   list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
-  list_of_deep_models = list(deep_model, NULL)
+  list_of_deep_models = list(deep_model, NULL),
+  # do not use early stopping (default)
+  callbacks = list()
 )
-# fit model
-mod %>% fit(epochs=1500)
+# fit model (may take a few minutes)
+mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% fitted()
 true_mean <- true_mean_fun(x)
 
 # compare means
-plot(true_mean ~ x)
+plot(true_mean ~ x, ylab="partial effect")
 points(c(as.matrix(mean)) ~ x, col = "red")
+legend("bottomright", col=1:2, pch = 1, legend=c("true mean", "deep prediction"))
 ```
-## Deep Logistic Regression
 
-```R
-# We create a very simple logistic regression first 
-# where we try to model the non-linear part of the data generating 
-# process using a complex neural network and an intercept
-# using a structured linear part
-#####################################################################
-# create example data for standard logistic regression
+![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
+
+Deep Logistic Regression
+------------------------
+
+We create a very simple logistic regression first where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
+
+``` r
 set.seed(24)
 
 # generate the data
@@ -168,23 +164,25 @@ mod <- deepregression(
   family = "bernoulli"
 )
 # fit model
-mod %>% fit(epochs=100)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% predict(newdata = validation_data)
 true_mean <- true_mean_fun(x_test)
 
 # compare means
-plot(true_mean ~ x_test)
+plot(true_mean ~ x_test, ylab="partial effect")
 points(c(as.matrix(mean)) ~ x_test, col = "red")
+legend("bottomright", col=1:2, pch = 1, legend=c("true mean", "deep prediction"))
 ```
-## Deep GAM
 
-```R
-# We now create a very simple logistic additive regression first 
-# where we try to model the non-linear part of the data generating 
-# process using both a complex neural network and a spline
-#####################################################################
-# create example data for standard logistic regression
+![](README_files/figure-markdown_github/unnamed-chunk-4-1.png)
+
+Deep GAM
+--------
+
+We now create a very simple logistic additive regression first where we try to model the non-linear part of the data generating process using both a complex neural network and a spline.
+
+``` r
 set.seed(24)
 
 # generate the data
@@ -236,22 +234,21 @@ mod <- deepregression(
   df = 10 # use no penalization for spline
 )
 # fit model
-mod %>% fit(epochs=100)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # plot model
 par(mfrow=c(1,2))
 plot(true_mean_fun(x) ~ x)
 mod %>% plot()
-
 ```
-## GAMLSS
 
-```R
+![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
-# We not create a standard GAMLSS model with Gaussian distribution
-# by modeling the expectation using additive terms and the sd
-# by a linear term
-#####################################################################
-# create example data for standard logistic regression
+GAMLSS
+------
+
+We not create a standard GAMLSS model with Gaussian distribution by modeling the expectation using additive terms and the standard deviation by a linear term.
+
+``` r
 set.seed(24)
 
 # generate the data
@@ -313,32 +310,76 @@ mod <- deepregression(
   family = "normal"
 )
 # fit model
-mod %>% fit(epochs=500)
+mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
 # summary(mod)
 # coefficients
 mod %>% coef()
+```
+
+    ## $loc
+    ## $loc$structured_nonlinear
+    ##              [,1]
+    ##  [1,]  0.43414235
+    ##  [2,] -0.17874536
+    ##  [3,]  0.14836302
+    ##  [4,] -1.21496761
+    ##  [5,] -0.77079356
+    ##  [6,] -0.24325494
+    ##  [7,] -0.40696844
+    ##  [8,]  0.45350999
+    ##  [9,]  0.08381464
+    ## [10,]  0.40519267
+    ## [11,]  0.22134167
+    ## [12,]  0.17291911
+    ## [13,]  0.22483024
+    ## [14,]  0.19075286
+    ## [15,]  0.11239304
+    ## [16,] -0.36947101
+    ## [17,] -0.14852291
+    ## [18,] -0.36172539
+    ## [19,]  0.05525580
+    ## [20,]  0.13749206
+    ## [21,] -0.20625764
+    ## 
+    ## 
+    ## $scale
+    ## $scale$structured_linear
+    ##          [,1]
+    ## [1,] 1.887566
+
+``` r
 # plot model
 par(mfrow=c(2,2))
 plot(sin(10*x) ~ x)
 plot(z^2 ~ z)
 mod %>% plot()
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+``` r
 # get fitted values
 meanpred <- mod %>% fitted()
 par(mfrow=c(1,1))
 plot(meanpred[,1] ~ x)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-6-2.png)
+
+``` r
 # predict
 predval <- mod %>% predict(newdata = validation_data)
 plot(predval[,1] ~ y_test)
-
 ```
 
-## Deep GAMLSS
+![](README_files/figure-markdown_github/unnamed-chunk-6-3.png)
 
+Deep GAMLSS
+-----------
 
-```R
-# We extend the example 4 by a Deep model part
-#####################################################################
-# create example data for standard logistic regression
+We now extend the example 4 by a Deep model part.
+
+``` r
 set.seed(24)
 
 # generate the data
@@ -400,21 +441,46 @@ mod <- deepregression(
   family = "normal"
 )
 # fit model
-mod %>% fit(epochs=500)
+mod %>% fit(epochs=500, verbose = FALSE, view_metrics = FALSE)
 # plot model
 mod %>% plot()
-# get coefficients
-mod %>% coef()
-
 ```
 
-## Examples for each Distribution
+![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
-```R
-# In this example we just demonstrate all the distributions
-# that can be fitted using the deepregression framework
-#####################################################################
-#
+``` r
+# get coefficients
+mod %>% coef()
+```
+
+    ## $loc
+    ## $loc$structured_nonlinear
+    ##              [,1]
+    ##  [1,] -0.16063024
+    ##  [2,] -0.29396766
+    ##  [3,] -0.15804188
+    ##  [4,] -1.11608863
+    ##  [5,] -0.90353960
+    ##  [6,]  0.06627946
+    ##  [7,]  0.13734628
+    ##  [8,]  0.62351108
+    ##  [9,]  0.45230553
+    ## [10,]  0.64214253
+    ## [11,]  0.81099224
+    ## 
+    ## 
+    ## $scale
+    ## $scale$structured_linear
+    ##           [,1]
+    ## [1,] 0.1982878
+    ## [2,] 1.9692891
+
+Examples for each Distribution
+------------------------------
+
+In this example we just demonstrate all the distributions that can currently be fitted using the deepregression framework. Updates will happen quite frequently.
+
+``` r
 set.seed(24)
 
 # generate the data
@@ -470,13 +536,33 @@ for(dist in dists)
     cat("Failed to fit the model.\n") else
       cat("Success.\n")
 }
-
 ```
 
-
-
-
-
-
-
-
+    ## Fitting normal model... Success.
+    ## Fitting bernoulli model... Success.
+    ## Fitting bernoulli_prob model... Success.
+    ## Fitting beta model... Success.
+    ## Fitting betar model... Success.
+    ## Fitting cauchy model... Success.
+    ## Fitting chi2 model... Success.
+    ## Fitting chi model... Success.
+    ## Fitting exponential model... Success.
+    ## Fitting gamma model... Success.
+    ## Fitting gammar model... Success.
+    ## Fitting gumbel model... Success.
+    ## Fitting half_cauchy model... Success.
+    ## Fitting half_normal model... Success.
+    ## Fitting horseshoe model... Success.
+    ## Fitting inverse_gamma model... Success.
+    ## Fitting inverse_gaussian model... Success.
+    ## Fitting laplace model... Success.
+    ## Fitting log_normal model... Success.
+    ## Fitting logistic model... Success.
+    ## Fitting negbinom model... Success.
+    ## Fitting negbinom model... Success.
+    ## Fitting pareto model... Success.
+    ## Fitting poisson model... Success.
+    ## Fitting poisson_lograte model... Success.
+    ## Fitting student_t model... Success.
+    ## Fitting student_t_ls model... Success.
+    ## Fitting uniform model... Success.
