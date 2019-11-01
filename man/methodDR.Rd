@@ -41,6 +41,9 @@ Corresponds to the distribution parameter for which the effects should be plotte
 \item{apply_fun}{function to apply to distribution, default is \code{tfd_mean}.}
 
 \item{convert_fun}{function which converts the tensor outputted by predict function}
+
+\item{...}{further arguments passed to \code{keras:::fit.keras.engine.training.Model}
+such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )}
 }
 \description{
 Generic functions for deepregression models

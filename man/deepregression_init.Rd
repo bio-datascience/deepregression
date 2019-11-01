@@ -7,14 +7,12 @@
 deepregression_init(n_obs, ncol_structured, ncol_deep, list_structured,
   list_deep, input_pwr = NULL, use_bias_in_structured = TRUE,
   nr_params = 2, lss = TRUE, number_parameters_deep_together = 0,
-  tfd_dist = tfd_normal, variational = TRUE, weights = NULL,
+  family, dist_fun = NULL, variational = TRUE, weights = NULL,
   learning_rate = 0.01, optimizer = optimizer_adam(lr = learning_rate),
   monitor_metric = metric_kullback_leibler_divergence,
   mean_field = posterior_mean_field, prior = prior_trainable,
   orthog_fun = orthog, orthogX = NULL, inject_after_layer = rep(-1,
-  length(list_deep)), residual_projection = FALSE,
-  trafo_list = list(function(x) x, function(x) 1e-08 + tf$math$exp(x)),
-  kl_weight = 1/n_obs)
+  length(list_deep)), residual_projection = FALSE, kl_weight = 1/n_obs)
 }
 \arguments{
 \item{n_obs}{number of observations}

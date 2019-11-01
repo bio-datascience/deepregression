@@ -3,6 +3,14 @@
 #' @param family character vector
 #' 
 #' @details 
+#' To specify a custom distribution, define the a function as follows
+#' \code{
+#' function(x) do.call(your_tfd_dist, lapply(1:ncol(x)[[1]], 
+#'                                     function(i)
+#'                                      your_trafo_list_on_inputs[[i]](
+#'                                        x[,i,drop=FALSE])))
+#' }
+#' and pass it to \code{deepregression} via the \code{dist_fun} argument.
 #' Currently the following distributions are supported 
 #' with parameters (and corresponding inverse link function in brackets):
 #' 
@@ -39,6 +47,8 @@
 #'  \item{"von_mises"}{von Mises with location (identity) and concentration (exp)}
 #'  \item{"zipf"}{Zipf with power (1+exp(x))}
 #' }
+#' 
+#' @rdname dr_families
 make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
 {
   

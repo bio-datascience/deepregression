@@ -5,12 +5,17 @@
 \title{Fitting Deep Distributional Regression}
 \usage{
 deepregression(y, list_of_formulae, list_of_deep_models,
-  family = tfd_normal, train_together = FALSE,
+  family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar",
+  "cauchy", "chi2", "chi", "exponential", "gamma_gamma", "gamma", "gammar",
+  "gumbel", "half_cauchy", "half_normal", "horseshoe", "inverse_gamma",
+  "inverse_gaussian", "laplace", "log_normal", "logistic", "negbinom",
+  "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
+  "truncated_normal", "uniform"), train_together = FALSE,
   mean_regression = FALSE, data, df = NULL, defaultSmoothing = NULL,
   validation_data = NULL,
   validation_split = ifelse(is.null(validation_data), 0.2, 0),
-  trafo_list = list(function(x) x, function(x) 1e-08 + tf$math$exp(x)),
-  learning_rate = 0.01, variational = FALSE, ...)
+  dist_fun = NULL, learning_rate = 0.01, variational = FALSE,
+  callbacks = list(callback_early_stopping(patience = 10)), ...)
 }
 \arguments{
 \item{list_of_formulae}{a named list of right hand side formulae,
@@ -27,12 +32,12 @@ be used for the predictors}
 specifying a keras model for each parameter of interest.
 See the examples for more details.}
 
-\item{family}{a TensorFlow Probability distribution, see \code{\link{}}.}
+\item{family}{a character specifying the distribution. For information on 
+possible distribution and parameters, see \code{\link{make_tfd_dist}}}
 
-\item{trafo_list}{a list of transformations for each paramter of the
-distribution used to transform the linear predictor (e.g., applying the
-\code{exp()} function for the linear predictor of a strict positive
-paramter such as the standard deviation in the normal distribution).}
+\item{dist_fun}{a custom distribution applied to the last layer,
+see \code{\link{make_tfd_dist}} for more details on how to construct
+a custom distribution function.}
 
 \item{variational}{logical value specifying whether or not to use
 variational inference. If \code{TRUE}, details must be passed to
@@ -50,7 +55,7 @@ library(deepregression)
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
 formula <- ~ 1 + d(x1,x2,x3) +
-s(x1, sp = 1) + te(xe,xf) + x1 + x2
+s(xa, sp = 1) + te(xe,xf) + x1
 
 deep_model <- function(x) x \%>\%
 layer_dense(units = 128, activation = "relu", use_bias = FALSE) \%>\%
@@ -67,6 +72,6 @@ mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
 list_of_deep_models = list(deep_model, NULL))
 
-mod \%>\% fit(epochs = 10)
-
+mod \%>\% fit(epochs = 100)
+mod \%>\% plot()
 }
