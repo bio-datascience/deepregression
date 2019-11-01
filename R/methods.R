@@ -70,7 +70,7 @@ plot.deepregression <- function(
       }else{
         warning("Plotting of effects with ", nrcols, " covariate inputs not supported.")
       }
-
+    }
   }
 
   invisible(plotData)
@@ -136,6 +136,8 @@ fitted.deepregression <- function(
 
 
 #' @method fit deepregression
+#' @param ... further arguments passed to \code{keras:::fit.keras.engine.training.Model}
+#' such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )
 #' @export
 #' @rdname methodDR
 #'

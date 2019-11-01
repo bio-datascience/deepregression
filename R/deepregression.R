@@ -42,12 +42,11 @@
 #' @param list_of_deep_models a list of (lists of) functions
 #' specifying a keras model for each parameter of interest.
 #' See the examples for more details.
-#' @param family a TensorFlow Probability distribution, see \code{\link{}}.
-#' @param trafo_list a list of transformations for each paramter of the
-#' distribution used to transform the linear predictor (e.g., applying the
-#' \code{exp()} function for the linear predictor of a strict positive
-#' paramter such as the standard deviation in the normal distribution).
-#'
+#' @param family a character specifying the distribution. For information on 
+#' possible distribution and parameters, see \code{\link{make_tfd_dist}} 
+#' @param dist_fun a custom distribution applied to the last layer,
+#' see \code{\link{make_tfd_dist}} for more details on how to construct
+#' a custom distribution function.
 #' @param variational logical value specifying whether or not to use
 #' variational inference. If \code{TRUE}, details must be passed to
 #' the via the ellipsis to the initialization function
@@ -86,7 +85,14 @@ deepregression <- function(
   y,
   list_of_formulae,
   list_of_deep_models,
-  family = tfd_normal,
+  family = c(
+    "normal", "bernoulli", "bernoulli_prob", "beta", "betar",
+    "cauchy", "chi2", "chi","exponential", "gamma_gamma",
+    "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
+    "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
+    "negbinom", "pareto", "poisson", "poisson_lograte", "student_t",
+    "student_t_ls", "truncated_normal", "uniform"
+  ),
   train_together = FALSE,
   mean_regression = FALSE,
   data,
@@ -106,17 +112,18 @@ deepregression <- function(
   # view_metrics = getOption("keras.view_metrics", default = "auto"),
   # class_weight = NULL,
   # sample_weight = NULL,
-  trafo_list = list(function(x) x,
-                    function(x) 1e-8 + tf$math$exp(x)),
+  dist_fun = NULL,
   learning_rate = 0.01,
   variational = FALSE,
   callbacks = list(callback_early_stopping(patience = 10)),
   ...
 )
 {
-
+  
+  # check family
+  family <- match.arg(family)
   # get column names of data
-  varnames = names(data)
+  varnames <- names(data)
   # number of observations
   n_obs <- nrow(data)
 
@@ -184,9 +191,9 @@ deepregression <- function(
     nr_params = length(list_structured),
     lss = TRUE,
     number_parameters_deep_together = as.numeric(train_together),
-    tfd_dist = family,
+    family = family,
     variational = variational,
-    trafo_list = trafo_list,
+    dist_fun = dist_fun,
     kl_weight = 1 / n_obs,
     orthogX = this_OX,
     ...
@@ -271,7 +278,8 @@ deepregression_init <- function(
   nr_params = 2,
   lss = TRUE,
   number_parameters_deep_together = 0,
-  tfd_dist = tfd_normal,
+  family,
+  dist_fun = NULL,
   variational = TRUE,
   weights = NULL,
   learning_rate = 0.01,
@@ -283,11 +291,19 @@ deepregression_init <- function(
   orthogX = NULL,
   inject_after_layer = rep(-1, length(list_deep)),
   residual_projection = FALSE,
-  trafo_list = list(function(x) x,
-                    function(x) 1e-8 + tf$math$exp(x)),
   kl_weight = 1 / n_obs)
 {
 
+  # check distribution wrt to specified parameters
+  nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE)
+  if(nrparams_dist < nr_params)
+  {
+    warning("More formulae specified than parameters available.",
+            " Will only use ", nrparams_dist, " formula(e).") 
+    nr_params <- nrparams_dist
+    ncol_deep <- ncol_deep[1:nr_params]
+    ncol_structured <- ncol_structured[1:nr_params]
+  }
   # check injection
   if(length(inject_after_layer) > nr_params)
     stop("Can't have more injections than parameters.")
@@ -435,16 +451,16 @@ deepregression_init <- function(
   ############################################################
   ### Define Distribution Layer and Variational Inference ####
 
+   
+  
   # define the distribution function applied in the last layer
 
   if(lss){
 
     # apply the transformation for each parameter
     # and put in the right place of the distribution
-    dist_fun = function(x) do.call(tfd_dist,
-                                   lapply(1:ncol(x)[[1]],
-                                          function(i)
-                                            trafo_list[[i]](x[,i,drop=FALSE])))
+    if(is.null(dist_fun))
+      dist_fun <- make_tfd_dist(family)
 
     # make model variational and output distribution
     if(variational){

@@ -31,6 +31,13 @@ install_github("davidruegamer/deepregression")
 
 # Examples
 
+1. [Deep Linear Regression](#deeplinearregression)
+2. [Deep Logistic Regression](#deeplogisticregression)
+3. [Deep GAM](#deepgam)
+4. [GAMLSS](#gamlss)
+5. [Deep GAMLSS](#deepgamlss)
+6. [Examples for each Distribution](#examplesforeachdistribution)
+
 ## Deep Linear Regression
 
 ```R
@@ -158,7 +165,7 @@ mod <- deepregression(
   list_of_formulae = list(logits = ~ 1 + d(x)),
   list_of_deep_models = list(deep_model),
   # family binomial
-  family = tfd_bernoulli
+  family = "bernoulli"
 )
 # fit model
 mod %>% fit(epochs=100)
@@ -225,7 +232,7 @@ mod <- deepregression(
   list_of_formulae = list(logits = ~ 1 + s(x, bs = "tp") + d(x)),
   list_of_deep_models = list(deep_model),
   # family binomial n=1
-  family = tfd_bernoulli,
+  family = "bernoulli",
   df = 10 # use no penalization for spline
 )
 # fit model
@@ -303,7 +310,7 @@ mod <- deepregression(
                           scale = ~ 0 + x),
   list_of_deep_models = list(NULL, deep_model),
   # family binomial n=1
-  family = tfd_normal
+  family = "normal"
 )
 # fit model
 mod %>% fit(epochs=500)
@@ -389,8 +396,8 @@ mod <- deepregression(
   list_of_formulae = list(loc = ~ 1 + s(x, bs="tp") + d(z),
                           scale = ~ 1 + x),
   list_of_deep_models = list(deep_model, NULL),
-  # family binomial n=1
-  family = tfd_normal
+  # family normal
+  family = "normal"
 )
 # fit model
 mod %>% fit(epochs=500)
@@ -401,7 +408,70 @@ mod %>% coef()
 
 ```
 
+## Examples for each Distribution
 
+```R
+# In this example we just demonstrate all the distributions
+# that can be fitted using the deepregression framework
+#####################################################################
+#
+set.seed(24)
+
+# generate the data
+n <- 1500
+b0 <- 1
+
+# training data; predictor 
+x <- runif(n) %>% as.matrix()
+z <- runif(n) %>% as.matrix()
+y <- runif(n) %>% as.matrix()
+data = data.frame(x = x, z = z)
+
+dists = 
+c(
+"normal", "bernoulli", "bernoulli_prob", 
+"beta", "betar", "cauchy", "chi2", "chi","exponential",
+"gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
+"inverse_gamma", "inverse_gaussian", "laplace", "log_normal",
+"logistic", "negbinom", "negbinom", "pareto", 
+"poisson", "poisson_lograte", "student_t",
+"student_t_ls", "uniform"
+)
+#####################################################################
+
+#####################################################################
+# check out if distributions work
+#####################################################################
+silent = TRUE
+for(dist in dists)
+{
+  cat("Fitting", dist, "model... ")
+  suppressWarnings(
+    mod <- try(deepregression(
+      y = y,
+      data = data,
+      # define how parameters should be modeled
+      list_of_formulae = list(~ 1 + x, ~ 1 + z, ~ 1),
+      list_of_deep_models = NULL,
+      family = dist
+    ), silent=silent)
+  )
+  # test if model can be fitted
+  if(class(mod)=="try-error")
+  {
+    cat("Failed to initialize the model.\n")
+    next
+  }
+  fitting <- try(
+    mod %>% fit(epochs=2, verbose = FALSE, view_metrics = FALSE),
+    silent=silent
+  )
+  if(class(fitting)=="try-error") 
+    cat("Failed to fit the model.\n") else
+      cat("Success.\n")
+}
+
+```
 
 
 
