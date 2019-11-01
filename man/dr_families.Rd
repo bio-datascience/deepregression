@@ -25,36 +25,34 @@ Currently the following distributions are supported
 with parameters (and corresponding inverse link function in brackets):
 
 \itemize{
- \item{"normal"}{normal distribution with location (identity), scale (exp)}
- \item{"bernoulli"}{bernoulli distribution with logits (identity)}
- \item{"bernoulli_prob"}{bernoulli distribution with probabilities (sigmoid)}
- \item{"beta"}{beta with concentration 1 = alpha (exp) and concentration 0 = beta (exp)}
- \item{"betar"}{beta with mean (sigmoid) and scale (sigmoid)}
- \item{"cauchy"}{location (identity), scale (exp)}
- \item{"chi2"}{cauchy with df (exp)}
- \item{"chi"}{cauchy with df (exp)}
- \item{"exponential"}{exponential with lambda (exp)}
- \item{"gamma"}{gamma with concentration (exp) and rate (exp)}
- \item{"gammar"}{gamma with location (exp) and scale (exp)}
- \item{"gumbel"}{gumbel with location (identity), scale (exp)}
- \item{"half_cauchy"}{half cauchy with location (identity), scale (exp)}
- \item{"half_normal"}{half normal with scale (exp)}
- \item{"horseshoe"}{horseshoe with scale (exp)}
- \item{"inverse_gamma"}{inverse gamma with concentation (exp) and rate (exp)}
- \item{"inverse_gaussian"}{inverse Gaussian with location (exp) and concentation (exp)}
- \item{"laplace"}{Laplace with location (identity) and scale (exp)}
- \item{"log_normal"}{Log-normal with location (identity) and scale (exp) of 
+ \item{"normal": }{normal distribution with location (identity), scale (exp)}
+ \item{"bernoulli": }{bernoulli distribution with logits (identity)}
+ \item{"bernoulli_prob": }{bernoulli distribution with probabilities (sigmoid)}
+ \item{"beta": }{beta with concentration 1 = alpha (exp) and concentration 0 = beta (exp)}
+ \item{"betar": }{beta with mean (sigmoid) and scale (sigmoid)}
+ \item{"cauchy": }{location (identity), scale (exp)}
+ \item{"chi2": }{cauchy with df (exp)}
+ \item{"chi": }{cauchy with df (exp)}
+ \item{"exponential": }{exponential with lambda (exp)}
+ \item{"gamma": }{gamma with concentration (exp) and rate (exp)}
+ \item{"gammar": }{gamma with location (exp) and scale (exp)}
+ \item{"gumbel": }{gumbel with location (identity), scale (exp)}
+ \item{"half_cauchy": }{half cauchy with location (identity), scale (exp)}
+ \item{"half_normal": }{half normal with scale (exp)}
+ \item{"horseshoe": }{horseshoe with scale (exp)}
+ \item{"inverse_gamma": }{inverse gamma with concentation (exp) and rate (exp)}
+ \item{"inverse_gaussian": }{inverse Gaussian with location (exp) and concentation (exp)}
+ \item{"laplace": }{Laplace with location (identity) and scale (exp)}
+ \item{"log_normal": }{Log-normal with location (identity) and scale (exp) of 
  underlying normal distribution}
- \item{"logistic"}{logistic with location (identity) and scale (exp)}
- \item{"negbinom"}{neg. binomial with mean (exp) and st.dev.(exp)}
- \item{"pareto"}{Pareto with concentration (exp) (and if modeled scale (exp), 
+ \item{"logistic": }{logistic with location (identity) and scale (exp)}
+ \item{"negbinom": }{neg. binomial with mean (exp) and st.dev.(exp)}
+ \item{"pareto": }{Pareto with concentration (exp) (and if modeled scale (exp), 
  else scale = 1)}
- \item{"poisson"}{poisson with rate (exp)}
- \item{"poisson_lograte"}{poisson with lograte (identity))}
- \item{"student_t"}{Student's t with df (exp)}
- \item{"student_t_ls"}{Student's t with df (exp), location (identity) and scale (exp)}
- \item{"uniform"}{uniform with upper and lower (both identity)}
- \item{"von_mises"}{von Mises with location (identity) and concentration (exp)}
- \item{"zipf"}{Zipf with power (1+exp(x))}
+ \item{"poisson": }{poisson with rate (exp)}
+ \item{"poisson_lograte": }{poisson with lograte (identity))}
+ \item{"student_t": }{Student's t with df (exp)}
+ \item{"student_t_ls": }{Student's t with df (exp), location (identity) and scale (exp)}
+ \item{"uniform": }{uniform with upper and lower (both identity)}
 }
 }
