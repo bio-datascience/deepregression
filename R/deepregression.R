@@ -1,15 +1,6 @@
 ### ToDos:
-## 1) Create callbacks to track weights:
-## https://stackoverflow.com/questions/46473823/
-## how-to-get-weight-matrix-of-one-layer-at-every-epoch-
-## in-lstm-model-based-on-kera
-## 4) make option which parts are orthogonalized and which not
-## 6) use some connections (orthogonalization) only on
-## fitting time (not for prediction)
 ## 7) scale in and outputs (with adjustment of the values afterwords)
 ## for better convergence
-## 8) DONE? Use callback early stopping to prevent overfitting
-## -> is not part of the initialization but part of fitting
 ## 10) allow predicition
 ## mixture in python:
 #mean,var,pi have the same shape(3,4).
@@ -115,7 +106,7 @@ deepregression <- function(
   dist_fun = NULL,
   learning_rate = 0.01,
   variational = FALSE,
-  callbacks = list(callback_early_stopping(patience = 10)),
+  monitor_metric = list(),
   ...
 )
 {
@@ -196,6 +187,7 @@ deepregression <- function(
     dist_fun = dist_fun,
     kl_weight = 1 / n_obs,
     orthogX = this_OX,
+    monitor_metric = monitor_metric,
     ...
     )
 
@@ -232,7 +224,6 @@ deepregression <- function(
                   data = data,
                   ind_structterms = ind_structterms,
                   param_names = param_names,
-                  callbacks = callbacks,
                   ellipsis = list(...)
                 ))
 
@@ -284,7 +275,7 @@ deepregression_init <- function(
   weights = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
-  monitor_metric = metric_kullback_leibler_divergence,
+  monitor_metric = list(),
   mean_field = posterior_mean_field,
   prior = prior_trainable,
   orthog_fun = orthog,

@@ -143,10 +143,32 @@ fitted.deepregression <- function(
 #'
 fit.deepregression <- function(
   object,
+  early_stopping = FALSE,
+  verbose = FALSE, 
+  view_metrics = TRUE,
+  patience = 20,
   ...
 )
 {
 
+  # weighthistory <- WeightHistory$new()
+  
+  this_callbacks <- list()
+  # make callbacks 
+  if(early_stopping)
+    this_callbacks <- append(this_callbacks, 
+                             callback_early_stopping(patience = patience))
+  # if(monitor_weights){
+  #   # object$history <- WeightHistory$new()
+  #   weight_callback <- callback_lambda(
+  #     on_epoch_begin = function(epoch, logs) 
+  #       coef_prior_to_epoch <<- unlist(coef(object)),
+  #     on_epoch_end = function(epoch, logs) 
+  #       print(sum(abs(coef_prior_to_epoch-unlist(coef(object)))))
+  #     )
+  #   this_callbacks <- append(this_callbacks, weight_callback)
+  # }
+  
   args <- list(...)
   args <- append(args,
                  list(object = object$model,
@@ -156,12 +178,17 @@ fit.deepregression <- function(
                       y = object$init_params$y,
                       validation_split = object$init_params$validation_split,
                       validation_data = object$init_params$validation_data,
-                      callbacks = object$init_params$callbacks)
+                      callbacks = this_callbacks,
+                      verbose = verbose,
+                      view_metrics = view_metrics
                  )
+  )
   args <- append(args, object$init_params$ellipsis)
 
-  do.call(keras:::fit.keras.engine.training.Model,
-          args)
+  ret <- do.call(fit_fun,
+                 args)
+  # ret$weighthistory <- weighthistory$weights_last_layer
+  invisible(ret)
 }
 
 #' @method coef deepregression

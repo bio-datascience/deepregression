@@ -218,3 +218,13 @@ prepare_newdata <- function(pfc, data, pred = TRUE)
   return(newdata_processed)
 }
 
+coefkeras <- function(model)
+{
+  
+  layer_names <- sapply(model$layers, "[[", "name")
+  layers_names_structured <- layer_names[
+    grep("structured_", layer_names)
+  ]
+  unlist(sapply(layers_names_structured, 
+                function(name) model$get_layer(name)$get_weights()[[1]]))
+}
