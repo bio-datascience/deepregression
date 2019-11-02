@@ -24,8 +24,7 @@ fit_fun <- function(object, x = NULL, y = NULL, batch_size = NULL, epochs = 10,
                                          object$metrics)
   args <- list(batch_size = as_nullable_integer(batch_size), 
                epochs = as.integer(epochs), verbose = as.integer(verbose), 
-               callbacks = normalize_callbacks_with_metrics_custom(view_metrics, 
-                                                            callbacks), 
+               callbacks = normalize_callbacks_with_metrics_custom(view_metrics, callbacks), 
                validation_split = validation_split, 
                shuffle = shuffle, class_weight = as_class_weight(class_weight), 
                sample_weight = keras_array(sample_weight), initial_epoch = as.integer(initial_epoch))

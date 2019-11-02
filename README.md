@@ -238,7 +238,8 @@ mod <- deepregression(
   df = 10 # use no penalization for spline
 )
 # fit model
-mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
+history <- mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE,
+                       save_weights = TRUE)
 # plot model
 par(mfrow=c(1,2))
 plot(true_mean_fun(x) ~ x)
@@ -246,6 +247,24 @@ mod %>% plot()
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
+
+``` r
+# plot history of spline
+BX <- mod$init_params$parsed_formulae_contents[[1]][[2]]$x$X
+coef_history <- history$weighthistory[-1,]
+f_history <- sapply(1:ncol(coef_history), function(j) BX%*%coef_history[,j])
+library(ggplot2)
+library(reshape2)
+df <- melt(cbind(x=x, as.data.frame(f_history)), id.vars="x")
+df$variable = as.numeric(df$variable)
+ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))) + 
+  geom_line() + 
+  scale_colour_gradient(name = "epoch", 
+                        low = "blue", high = "red") + 
+  ylab("partial effect s(x)") + theme_bw()
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-5-2.png)
 
 GAMLSS
 ------
@@ -322,34 +341,34 @@ mod %>% coef()
 
     ## $loc
     ## $loc$structured_nonlinear
-    ##             [,1]
-    ##  [1,]  0.4160898
-    ##  [2,]  0.2497826
-    ##  [3,] -0.3707316
-    ##  [4,] -2.4760108
-    ##  [5,] -0.8680781
-    ##  [6,] -0.1231995
-    ##  [7,]  0.4829883
-    ##  [8,]  1.2826728
-    ##  [9,] -0.7483706
-    ## [10,]  0.6104912
-    ## [11,]  2.5033853
-    ## [12,]  0.6700827
-    ## [13,] -0.4506202
-    ## [14,]  0.1098706
-    ## [15,] -0.1718094
-    ## [16,] -0.3002699
-    ## [17,]  0.1161409
-    ## [18,] -0.3087884
-    ## [19,] -0.5354298
-    ## [20,]  0.5545416
-    ## [21,]  1.5457950
+    ##              [,1]
+    ##  [1,]  0.69970286
+    ##  [2,]  0.64283693
+    ##  [3,] -0.29696718
+    ##  [4,] -2.54977822
+    ##  [5,] -0.82622010
+    ##  [6,] -0.11046425
+    ##  [7,]  0.44725543
+    ##  [8,]  1.26909161
+    ##  [9,] -0.71604812
+    ## [10,]  0.40857410
+    ## [11,]  2.31083965
+    ## [12,]  0.61065251
+    ## [13,] -0.48482469
+    ## [14,]  0.08922095
+    ## [15,] -0.18667486
+    ## [16,] -0.31188715
+    ## [17,]  0.15640770
+    ## [18,] -0.29940379
+    ## [19,] -0.55775505
+    ## [20,]  0.61894798
+    ## [21,]  1.47842216
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
     ##          [,1]
-    ## [1,] 2.036417
+    ## [1,] 2.037757
 
 ``` r
 # plot model
@@ -459,25 +478,25 @@ mod %>% coef()
 
     ## $loc
     ## $loc$structured_nonlinear
-    ##             [,1]
-    ##  [1,]  0.4877967
-    ##  [2,]  0.3977217
-    ##  [3,] -0.1169101
-    ##  [4,] -2.4036171
-    ##  [5,] -0.8514287
-    ##  [6,] -0.2191759
-    ##  [7,]  0.4018484
-    ##  [8,]  1.1934898
-    ##  [9,] -0.4583162
-    ## [10,]  1.0344293
-    ## [11,]  1.8098911
+    ##              [,1]
+    ##  [1,]  0.26221001
+    ##  [2,]  0.68124455
+    ##  [3,] -0.07978177
+    ##  [4,] -2.49434137
+    ##  [5,] -0.82964391
+    ##  [6,] -0.14092377
+    ##  [7,]  0.39799944
+    ##  [8,]  1.22501850
+    ##  [9,] -0.48301479
+    ## [10,]  0.79562682
+    ## [11,]  1.79852343
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
-    ##           [,1]
-    ## [1,] 0.3844172
-    ## [2,] 2.0406637
+    ##          [,1]
+    ## [1,] 0.104100
+    ## [2,] 2.036957
 
 Examples for each Distribution
 ------------------------------

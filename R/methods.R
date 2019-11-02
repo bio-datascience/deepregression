@@ -147,14 +147,18 @@ fit.deepregression <- function(
   verbose = FALSE, 
   view_metrics = TRUE,
   patience = 20,
+  save_weights = FALSE,
   ...
 )
 {
 
-  # weighthistory <- WeightHistory$new()
-  
   this_callbacks <- list()
+  
   # make callbacks 
+  if(save_weights){
+    weighthistory <- WeightHistory$new()
+    this_callbacks <- append(this_callbacks, weighthistory)
+  }
   if(early_stopping)
     this_callbacks <- append(this_callbacks, 
                              callback_early_stopping(patience = patience))
@@ -187,7 +191,7 @@ fit.deepregression <- function(
 
   ret <- do.call(fit_fun,
                  args)
-  # ret$weighthistory <- weighthistory$weights_last_layer
+  if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
   invisible(ret)
 }
 
