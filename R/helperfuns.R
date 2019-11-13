@@ -94,6 +94,7 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE, default
     if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
+        # TODO: Extend for TPs (S[[1]] is only the first matrix)
         st$sp = DRO(st$X, df = df, dmat = st$S[[1]])["lambda"]
         return(st)
       }

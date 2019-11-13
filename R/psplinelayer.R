@@ -241,19 +241,19 @@ get_layers_from_s <- function(this_param, nr=NULL)
   if(!is.null(this_param$smoothterms)){
     these_lambdas = unlist(sapply(this_param$smoothterms, "[[", "sp"))
     lambdas = c(lambdas, these_lambdas)
-    these_Ps = sapply(this_param$smoothterms, "[[", "S")
+    these_Ps = lapply(this_param$smoothterms, "[[", "S")
     is_TP <- sapply(these_Ps, length) > 1
     if(any(is_TP))
       these_Ps[which(is_TP)] <- lapply(these_Ps[which(is_TP)],
                                        function(x){
 
                                          return(
-                                           # isotropic smoothing
-                                           # TODO: Check if correct
+                                          # isotropic smoothing
+                                          # TODO: Allow f anisotropic smoothing
                                            x[[1]] + x[[2]]
-                                           # kronecker(x[[1]],
-                                           #           diag(ncol(x[[2]]))) +
-                                           #   kronecker(diag(ncol(x[[1]])), x[[2]])
+                                          # kronecker(x[[1]],
+                                          #           diag(ncol(x[[2]]))) +
+                                          #   kronecker(diag(ncol(x[[1]])), x[[2]])
                                          )
                                        })
     s_as_list <- sapply(these_Ps, class)=="list"

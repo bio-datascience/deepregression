@@ -1,3 +1,12 @@
+# helper funs tf
+tfe <- function(x) tf$math$exp(x)
+tfsig <- function(x) tf$math$sigmoid(x)
+tfsqrt <- function(x) tf$math$sqrt(x)
+tfsq <- function(x) tf$math$square(x)
+tfdiv <- function(x,y) tf$math$divide(x,y)
+tfrec <- function(x) tf$math$reciprocal(x)
+tfmult <- function(x,y) tf$math$multiply(x,y)
+
 #' Families for deepregression
 #' 
 #' @param family character vector
@@ -68,7 +77,7 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      exponential = tfd_exponential,
                      gamma_gamma = tfd_gamma_gamma,
                      gamma = tfd_gamma,
-                     # gammar = tfd_gamma # treated specially
+                     gammar = tfd_gamma,
                      geometric = tfd_geometric,
                      gumbel = tfd_gumbel,
                      half_cauchy = tfd_half_cauchy,
@@ -81,6 +90,9 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      log_normal = tfd_log_normal,
                      logistic = tfd_logistic,
                      multinomial = tfd_multinomial,
+                     negbinom = function(fail, probs) 
+                       tfd_negative_binomial(total_count = fail, probs = probs,
+                                             validate_args = TRUE),
                      pareto = tfd_pareto,
                      poisson = tfd_poisson,
                      poisson_lograte = function(log_rate) 
@@ -119,11 +131,6 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
     stop("Family binomial not implemented yet. If you are trying to model independent",
          " draws from a bernoulli distribution, use family='bernoulli'.")
   
-  tfe <- function(x) tf$math$exp(x)
-  tfsig <- function(x) tf$math$sigmoid(x)
-  tfsqrt <- function(x) tf$math$sqrt(x)
-  tfsq <- function(x) tf$math$square(x)
-  
   trafo_list <- switch(family, 
                        normal = list(function(x) x,
                                      function(x) add_const + tfe(x)),
@@ -131,7 +138,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                        bernoulli_prob = list(function(x) tfsig(x)),
                        beta = list(function(x) add_const + tfe(x),
                                    function(x) add_const + tfe(x)),
-                       # betar = list()
+                       betar = list(function(x) x,
+                                    function(x) x),
                        binomial = list(), # tbd
                        categorial = list(), #tbd
                        cauchy = list(function(x) x,
@@ -145,7 +153,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                        gamma = list(function(x) add_const + tfe(x),
                                     function(x) add_const + tfe(x)),
                        geometric = list(function(x) x),
-                       # gammar = list()
+                       gammar = list(function(x) x, 
+                                     function(x) x),
                        gumbel = list(function(x) x,
                                      function(x) add_const + tfe(x)),
                        half_cauchy = list(function(x) x,
@@ -163,6 +172,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                                          function(x) add_const + tfe(x)),
                        logistic = list(function(x) x,
                                        function(x) add_const + tfe(x)),
+                       negbinom = list(function(x) x,
+                                       function(x) x),
                        multinomial = list(), # tbd
                        pareto = list(function(x) add_const + tfe(x),
                                      function(x) add_const + tfe(x)),
@@ -181,65 +192,67 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
   )
   
   
-  # specially treated distributions
-  if(family=="gammar"){
     
-    ret_fun <- function(x){ 
-      
-      # rate = 1/((sigma^2)*mu)
-      # con = (1/sigma^2)
-      mu = add_const + tfe(x[,1,drop=FALSE])
-      sig = add_const + tfe(x[,2,drop=FALSE])
-      con = 1/tfsq(sig)
-      rate = 1/(tfsq(sig)*mu)
-      
-      do.call(tfd_gamma, list(con, rate))
-    }
-    
-    if(return_nrparams) return(2)
-    
-  }else if(family=="betar"){
-    
-    ret_fun <- function(x){
-      
-      # mu=a/(a+b) 
-      # sig=(1/(a+b+1))^0.5
-      mu = tfsig(x[,1,drop=FALSE])
-      sigsq = tfsq(tfsig(x[,1,drop=FALSE]))
-      a = mu * (1/sigsq - 1)
-      b = (1/mu - 1) * a
-      
-      do.call(tfd_beta, list(a, b))
-    }
-    
-    if(return_nrparams) return(2)
-    
-  }else if(family=="negbinom"){
-    
-    ret_fun <- function(x){ 
-      
-      mu <- tfe(x[,1,drop=FALSE])
-      sig2 <- tfsq(tfe(x[,1,drop=FALSE]))
-      p = (sig2-mu) / sig2
-      f = tfsq(mu) / (sig2 - mu)
-      
-      do.call(tfd_negative_binomial, list(f, probs = p))
-    }
-    
-    if(return_nrparams) return(2)
-    
-  }else{
-    
-    ret_fun <- function(x) do.call(tfd_dist,
-                                   lapply(1:ncol(x)[[1]],
-                                          function(i)
-                                            trafo_list[[i]](x[,i,drop=FALSE])))
-    
-  }
+  ret_fun <- function(x) do.call(tfd_dist,
+                                 lapply(1:ncol(x)[[1]],
+                                        function(i)
+                                          trafo_list[[i]](x[,i,drop=FALSE])))
+  
   
   # return number of parameters if specified
   if(return_nrparams) return(length(trafo_list))
   
   return(ret_fun)    
   
+}
+
+family_trafo_funs <- function(family, add_const = 1e-8)
+{
+  
+  # specially treated distributions
+  trafo_fun <- switch(family,
+    gammar = function(x){ 
+      
+      # rate = 1/((sigma^2)*mu)
+      # con = (1/sigma^2)
+      
+      mu = add_const + tfe(x[,1,drop=FALSE])
+      sig = add_const + tfe(x[,2,drop=FALSE])
+      con = tfrec(tfsq(sig))
+      rate = tfrec(tfmult(tfsq(sig),mu))
+      
+      return(list(con,rate))
+    },
+    betar = function(x){
+      
+      # mu=a/(a+b) 
+      # sig=(1/(a+b+1))^0.5
+      mu = tfsig(x[,1,drop=FALSE])
+      sigsq = tfsq(tfsig(x[,2,drop=FALSE]))
+      a = tfmult(mu, (tfrec(sigsq) - 1))
+      b = tfmult((tfrec(mu) - 1), a)
+      
+      return(list(a,b))
+    },
+    negbinom = function(x){
+      
+      # see, e.g., https://www.johndcook.com/negative_binomial.pdf
+      
+      mu <- tfe(x[,1,drop=FALSE])
+      sig2 <- tfsq(tfe(x[,2,drop=FALSE]))
+      f = tf$compat$v2$clip_by_value(
+        tfdiv(tfsq(mu),sig2-mu), 
+        add_const, Inf
+        )
+      p = tf$compat$v2$clip_by_value(
+        tfdiv(f, f+mu), 
+        0, 1
+        )
+      
+      return(list(f,p))
+    }
+  )
+      
+    return(trafo_fun)
+    
 }

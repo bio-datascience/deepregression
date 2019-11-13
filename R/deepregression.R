@@ -448,6 +448,15 @@ deepregression_init <- function(
 
   if(lss){
 
+    # special families needing transformations
+    if(family %in% c("betar", "gammar", "negbinom")){
+      
+      trafo_fun <- family_trafo_funs(family)
+      predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
+      preds <- layer_concatenate(predsTrafo)
+      
+    }
+    
     # apply the transformation for each parameter
     # and put in the right place of the distribution
     if(is.null(dist_fun))
