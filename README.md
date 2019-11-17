@@ -266,6 +266,76 @@ ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))
 
 ![](README_files/figure-markdown_github/unnamed-chunk-5-2.png)
 
+We can check which of the function the cross-validation would have chosen by doing the following:
+
+``` r
+mod <- deepregression(
+  # supply data (response and data.frame for covariates)
+  y = y,
+  data = data,
+  # define how parameters should be modeled
+  list_of_formulae = list(logits = ~ 1 + s(x, bs = "tp") + d(x)),
+  list_of_deep_models = list(deep_model),
+  # family binomial n=1
+  family = "bernoulli",
+  df = 10 # use no penalization for spline
+)
+
+cvres <- mod %>% cv(epochs=100)
+```
+
+    ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
+
+    ## Fitting Fold  1  ... 
+    ## Done.
+    ## Fitting Fold  2  ... 
+    ## Done.
+    ## Fitting Fold  3  ... 
+    ## Done.
+    ## Fitting Fold  4  ... 
+    ## Done.
+    ## Fitting Fold  5  ... 
+    ## Done.
+    ## Fitting Fold  6  ... 
+    ## Done.
+    ## Fitting Fold  7  ... 
+    ## Done.
+    ## Fitting Fold  8  ... 
+    ## Done.
+    ## Fitting Fold  9  ... 
+    ## Done.
+    ## Fitting Fold  10  ... 
+    ## Done.
+
+![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+Get the optimal stopping iteration and train the whole model again:
+
+``` r
+bestiter <- stop_iter_cv_result(cvres)
+mod <- deepregression(
+  # supply data (response and data.frame for covariates)
+  y = y,
+  data = data,
+  # define how parameters should be modeled
+  list_of_formulae = list(logits = ~ 1 + s(x, bs = "tp") + d(x)),
+  list_of_deep_models = list(deep_model),
+  # family binomial n=1
+  family = "bernoulli",
+  validation_split = NULL,
+  df = 10 # use no penalization for spline
+)
+# fit model
+history <- mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE,
+                       save_weights = TRUE)
+# plot model
+par(mfrow=c(1,2))
+plot(true_mean_fun(x) ~ x)
+mod %>% plot()
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
+
 GAMLSS
 ------
 
@@ -341,34 +411,34 @@ mod %>% coef()
 
     ## $loc
     ## $loc$structured_nonlinear
-    ##              [,1]
-    ##  [1,]  0.69970286
-    ##  [2,]  0.64283693
-    ##  [3,] -0.29696718
-    ##  [4,] -2.54977822
-    ##  [5,] -0.82622010
-    ##  [6,] -0.11046425
-    ##  [7,]  0.44725543
-    ##  [8,]  1.26909161
-    ##  [9,] -0.71604812
-    ## [10,]  0.40857410
-    ## [11,]  2.31083965
-    ## [12,]  0.61065251
-    ## [13,] -0.48482469
-    ## [14,]  0.08922095
-    ## [15,] -0.18667486
-    ## [16,] -0.31188715
-    ## [17,]  0.15640770
-    ## [18,] -0.29940379
-    ## [19,] -0.55775505
-    ## [20,]  0.61894798
-    ## [21,]  1.47842216
+    ##             [,1]
+    ##  [1,]  0.1138101
+    ##  [2,]  0.3630292
+    ##  [3,] -0.3258072
+    ##  [4,] -2.4985819
+    ##  [5,] -0.8742989
+    ##  [6,] -0.1247991
+    ##  [7,]  0.4934088
+    ##  [8,]  1.2771574
+    ##  [9,] -0.7480861
+    ## [10,]  0.6138318
+    ## [11,]  2.3805492
+    ## [12,]  0.9562155
+    ## [13,] -0.4752308
+    ## [14,]  0.1606225
+    ## [15,] -0.1660998
+    ## [16,] -0.2885971
+    ## [17,]  0.1197857
+    ## [18,] -0.3260005
+    ## [19,] -0.5656883
+    ## [20,]  0.7403078
+    ## [21,]  1.6250267
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
     ##          [,1]
-    ## [1,] 2.037757
+    ## [1,] 2.017193
 
 ``` r
 # plot model
@@ -378,7 +448,7 @@ plot(z^2 ~ z)
 mod %>% plot()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-8-1.png)
 
 ``` r
 # get fitted values
@@ -387,7 +457,7 @@ par(mfrow=c(1,1))
 plot(meanpred[,1] ~ x)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-6-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-8-2.png)
 
 ``` r
 # predict
@@ -395,7 +465,7 @@ predval <- mod %>% predict(newdata = validation_data)
 plot(predval[,1] ~ y_test)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-6-3.png)
+![](README_files/figure-markdown_github/unnamed-chunk-8-3.png)
 
 Deep GAMLSS
 -----------
@@ -469,7 +539,7 @@ mod %>% fit(epochs=500, verbose = FALSE, view_metrics = FALSE)
 mod %>% plot()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-9-1.png)
 
 ``` r
 # get coefficients
@@ -479,24 +549,24 @@ mod %>% coef()
     ## $loc
     ## $loc$structured_nonlinear
     ##              [,1]
-    ##  [1,]  0.26221001
-    ##  [2,]  0.68124455
-    ##  [3,] -0.07978177
-    ##  [4,] -2.49434137
-    ##  [5,] -0.82964391
-    ##  [6,] -0.14092377
-    ##  [7,]  0.39799944
-    ##  [8,]  1.22501850
-    ##  [9,] -0.48301479
-    ## [10,]  0.79562682
-    ## [11,]  1.79852343
+    ##  [1,]  0.53341657
+    ##  [2,]  0.06368355
+    ##  [3,] -0.22148590
+    ##  [4,] -2.34322286
+    ##  [5,] -0.90492940
+    ##  [6,] -0.22494067
+    ##  [7,]  0.44192263
+    ##  [8,]  1.18803310
+    ##  [9,] -0.53019941
+    ## [10,]  0.60471821
+    ## [11,]  2.05293274
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
-    ##          [,1]
-    ## [1,] 0.104100
-    ## [2,] 2.036957
+    ##           [,1]
+    ## [1,] 0.6880151
+    ## [2,] 2.0306637
 
 Examples for each Distribution
 ------------------------------
@@ -552,12 +622,19 @@ for(dist in dists)
     next
   }
   fitting <- try(
-    mod %>% fit(epochs=2, verbose = FALSE, view_metrics = FALSE),
+    res <- mod %>% fit(epochs=2, verbose = FALSE, view_metrics = FALSE),
     silent=silent
   )
-  if(class(fitting)=="try-error") 
-    cat("Failed to fit the model.\n") else
-      cat("Success.\n")
+  if(class(fitting)=="try-error"){ 
+    cat("Failed to fit the model.\n")
+  }else if(sum(is.nan(unlist(res$metrics))) > 0){
+    cat("NaNs in loss or validation loss.\n")
+  }else if(any(unlist(res$metrics)==Inf)){
+    cat("Infinite values in loss or validation loss.\n")
+  }else{
+    # print(res$metrics)
+    cat("Success.\n")
+  }
 }
 ```
 
@@ -573,7 +650,7 @@ for(dist in dists)
     ## Fitting gamma model... Success.
     ## Fitting gammar model... Success.
     ## Fitting gumbel model... Success.
-    ## Fitting half_cauchy model... Success.
+    ## Fitting half_cauchy model... Infinite values in loss or validation loss.
     ## Fitting half_normal model... Success.
     ## Fitting horseshoe model... Success.
     ## Fitting inverse_gamma model... Success.
@@ -583,9 +660,9 @@ for(dist in dists)
     ## Fitting logistic model... Success.
     ## Fitting negbinom model... Success.
     ## Fitting negbinom model... Success.
-    ## Fitting pareto model... Success.
+    ## Fitting pareto model... Infinite values in loss or validation loss.
     ## Fitting poisson model... Success.
     ## Fitting poisson_lograte model... Success.
     ## Fitting student_t model... Success.
     ## Fitting student_t_ls model... Success.
-    ## Fitting uniform model... Success.
+    ## Fitting uniform model... Infinite values in loss or validation loss.

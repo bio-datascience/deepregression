@@ -207,14 +207,17 @@ get_indices <- function(x)
     )
 }
 
-prepare_newdata <- function(pfc, data, pred = TRUE)
+prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
 {
   n_obs <- nrow(data)
   input_cov_new <- make_cov(pfc, data)
   ox <- lapply(pfc, make_orthog)
+  if(!is.null(index)){
+    ox <- lapply(ox, function(xox) xox[index,,drop=FALSE])
+  }
   newdata_processed <- append(
     c(unname(input_cov_new),
-      list(rep(1-pred, n_obs))),
+      list(c(1-pred,rep(0,n_obs-1)))),
     unname(ox[!sapply(ox, is.null)]))
   return(newdata_processed)
 }
@@ -228,4 +231,67 @@ coefkeras <- function(model)
   ]
   unlist(sapply(layers_names_structured, 
                 function(name) model$get_layer(name)$get_weights()[[1]]))
+}
+
+make_cv_list_simple <- function(data_size, folds, seed = 42, shuffle = TRUE)
+{
+  
+  set.seed(seed)
+  suppressWarnings(
+    mysplit <- split(sample(1:data_size), f = rep(1:folds, each = data_size/folds))
+  )
+  lapply(mysplit, function(test_ind) list(train_ind = setdiff(1:data_size, test_ind),
+                                          test_ind = test_ind))
+  
+}
+
+extract_cv_result <- function(res){
+  
+  losses <- sapply(res, "[[", "metrics")
+  trainloss <- data.frame(losses[1,])
+  validloss <- data.frame(losses[2,])
+  weightshist <- lapply(res, "[[", "weighthistory")
+  
+  return(list(trainloss=trainloss,validloss=validloss,weight=weightshist))
+  
+}
+
+plot_cv_result <- function(res, what=c("loss","weight"), ...){
+  
+  
+  cres <- extract_cv_result(res)
+  
+  what <- match.arg(what)
+  
+  if(what=="loss"){
+    
+    loss <- cres$trainloss[-1,]
+    mean_loss <- apply(loss, 1, mean)
+    vloss <- cres$validloss[-1,]
+    mean_vloss <- apply(vloss, 1, mean)
+    
+    par(mfrow=c(1,2))
+    matplot(loss, type="l", ..., ylab="loss", xlab="epoch")
+    points(2:(nrow(loss)+1), mean_loss, type="l", col="red", lwd=2)
+    abline(v=which.min(mean_loss)+1, lty=2)
+    matplot(vloss, type="l", ..., ylab="validation loss", xlab="epoch")
+    points(2:(nrow(vloss)+1), mean_vloss, type="l", col="red", lwd=2)
+    abline(v=which.min(mean_vloss)+1, lty=2)
+    
+  }else{
+    
+      
+    
+  }
+
+}
+
+
+stop_iter_cv_result <- function(res, FUN = mean, 
+                                loss = "validloss",
+                                whichFUN = which.min)
+{
+  
+  whichFUN(apply(extract_cv_result(res)[[loss]], 1, FUN))
+  
 }

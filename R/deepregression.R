@@ -35,6 +35,9 @@
 #' See the examples for more details.
 #' @param family a character specifying the distribution. For information on 
 #' possible distribution and parameters, see \code{\link{make_tfd_dist}} 
+#' @param cv_folds a list of lists, each list element has two elements, one for
+#' training indices and one for testing indices; if a single integer number is given, 
+#' a simple k-fold cross-validation is defined, where k is the supplied number.
 #' @param dist_fun a custom distribution applied to the last layer,
 #' see \code{\link{make_tfd_dist}} for more details on how to construct
 #' a custom distribution function.
@@ -96,8 +99,9 @@ deepregression <- function(
   #   return(smoothTerm)
   # },
   defaultSmoothing = NULL,
+  cv_folds = NULL,
   validation_data = NULL,
-  validation_split = ifelse(is.null(validation_data), 0.2, 0),
+  validation_split = ifelse(is.null(validation_data) & is.null(cv_folds), 0.2, 0),
   # verbose = getOption("keras.fit_verbose", default = 1),
   # shuffle = TRUE,
   # view_metrics = getOption("keras.view_metrics", default = "auto"),
@@ -107,6 +111,7 @@ deepregression <- function(
   learning_rate = 0.01,
   variational = FALSE,
   monitor_metric = list(),
+  seed = 1991-5-4,
   ...
 )
 {
@@ -198,9 +203,6 @@ deepregression <- function(
   # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
   #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
   input_cov <- make_cov(parsed_formulae_contents)
-  # apply to validation data -> ?
-  this_val_data <- validation_data
-  this_val_split <- validation_split
 
   param_names <- names(parsed_formulae_contents)
   l_names_effets <- lapply(parsed_formulae_contents, get_names)
@@ -210,6 +212,21 @@ deepregression <- function(
     validation_data[[1]] <- prepare_newdata(parsed_formulae_contents,
                                             validation_data[[1]],
                                             pred = TRUE)
+  
+  if(!is.null(cv_folds))
+  {
+    
+    validation_split <- NULL
+    validation_data <- NULL
+    if(!is.list(cv_folds) & is.numeric(cv_folds)){
+      
+      if(cv_folds <= 0) stop("cv_folds must be a positive integer, but is ", 
+                             cv_folds, ".")
+      cv_folds <- make_cv_list_simple(data_size=nrow(data), round(cv_folds), seed)
+      
+    }
+  }
+    
 
   ret <- list(model = model,
               init_params =
@@ -219,6 +236,7 @@ deepregression <- function(
                   y = y,
                   validation_split = validation_split,
                   validation_data = validation_data,
+                  cv_folds = cv_folds,
                   l_names_effets = l_names_effets,
                   parsed_formulae_contents = parsed_formulae_contents,
                   data = data,

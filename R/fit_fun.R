@@ -27,7 +27,8 @@ fit_fun <- function(object, x = NULL, y = NULL, batch_size = NULL, epochs = 10,
                callbacks = normalize_callbacks_with_metrics_custom(view_metrics, callbacks), 
                validation_split = validation_split, 
                shuffle = shuffle, class_weight = as_class_weight(class_weight), 
-               sample_weight = keras_array(sample_weight), initial_epoch = as.integer(initial_epoch))
+               sample_weight = keras_array(sample_weight), 
+               initial_epoch = as.integer(initial_epoch))
   if (!is.null(validation_data)) {
     dataset <- resolve_tensorflow_dataset(validation_data)
     if (!is.null(dataset)) 

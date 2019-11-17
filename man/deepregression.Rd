@@ -12,10 +12,11 @@ deepregression(y, list_of_formulae, list_of_deep_models,
   "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
   "truncated_normal", "uniform"), train_together = FALSE,
   mean_regression = FALSE, data, df = NULL, defaultSmoothing = NULL,
-  validation_data = NULL,
-  validation_split = ifelse(is.null(validation_data), 0.2, 0),
-  dist_fun = NULL, learning_rate = 0.01, variational = FALSE,
-  callbacks = list(callback_early_stopping(patience = 10)), ...)
+  cv_folds = NULL, validation_data = NULL,
+  validation_split = ifelse(is.null(validation_data) & is.null(cv_folds),
+  0.2, 0), dist_fun = NULL, learning_rate = 0.01,
+  variational = FALSE, monitor_metric = list(), seed = 1991 - 5 - 4,
+  ...)
 }
 \arguments{
 \item{list_of_formulae}{a named list of right hand side formulae,
@@ -34,6 +35,10 @@ See the examples for more details.}
 
 \item{family}{a character specifying the distribution. For information on 
 possible distribution and parameters, see \code{\link{make_tfd_dist}}}
+
+\item{cv_folds}{a list of lists, each list element has two elements, one for
+training indices and one for testing indices; if a single integer number is given, 
+a simple k-fold cross-validation is defined, where k is the supplied number.}
 
 \item{dist_fun}{a custom distribution applied to the last layer,
 see \code{\link{make_tfd_dist}} for more details on how to construct

@@ -237,3 +237,96 @@ print.deepregression <- function(
 {
   print(object$model)
 }
+
+#' @title Cross-validation for deepgression objects
+#' @param ... further arguments passed to \code{keras:::fit.keras.engine.training.Model}
+#' @param object deepregression object
+#' @param verbose whether to print training in each fold
+#' @param patience number of patience for early stopping
+#' @param plot whether to plot the resulting losses in each fold
+#' @param printfolds whether to print the current fold
+#' @param mylapply lapply function to be used; defaults to \code{lapply}
+#' @export
+#' @rdname methodDR
+#'
+#' 
+cv <- function(
+  object,
+  verbose = FALSE, 
+  patience = 20,
+  plot = TRUE,
+  print_folds = TRUE,
+  cv_folds = NULL,
+  mylapply = lapply,
+  ...
+)
+{
+  
+  cv_folds <- object$init_params$cv_folds
+  if(is.null(cv_folds)){
+    warning("No folds for CV given, using k = 10.\n")
+    cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 10)
+  }
+  nrfolds <- length(cv_folds)
+  old_weights <- object$model$get_weights()
+  
+  if(print_folds) folds_iter <- 1
+  
+  res <- mylapply(cv_folds, function(this_fold){
+  
+    cat("Fitting Fold ", folds_iter, " ... ")
+    
+    # does not work?
+    # this_mod <- clone_model(object$model)
+    this_mod <- object$model
+    
+    train_ind <- this_fold[[1]]
+    test_ind <- this_fold[[2]]
+    
+    # make callbacks 
+    this_callbacks <- list()
+    weighthistory <- WeightHistory$new()
+    this_callbacks <- append(this_callbacks, weighthistory)
+    
+    args <- list(...)
+    args <- append(args,
+                   list(object = this_mod,
+                        x = prepare_newdata(object$init_params$parsed_formulae_contents,
+                                            object$init_params$data[train_ind,,drop=FALSE],
+                                            pred = FALSE,
+                                            index = train_ind),
+                        y = object$init_params$y[train_ind],
+                        validation_split = NULL,
+                        validation_data = list(
+                          prepare_newdata(object$init_params$parsed_formulae_contents,
+                                          object$init_params$data[test_ind,,drop=FALSE],
+                                          pred = TRUE,
+                                          index = test_ind),
+                          object$init_params$y[test_ind]
+                        ),
+                        callbacks = this_callbacks,
+                        verbose = verbose,
+                        view_metrics = FALSE
+                   )
+    )
+    args <- append(args, object$init_params$ellipsis)
+    
+    ret <- do.call(fit_fun, args)
+    ret$weighthistory <- weighthistory$weights_last_layer
+  
+    if(print_folds) folds_iter <<- folds_iter + 1
+    
+    this_mod$set_weights(old_weights)
+    cat("\nDone.\n")
+    
+    return(ret)
+    
+  })
+  
+  if(plot) plot_cv_result(res)
+  
+  object$model$set_weights(old_weights)
+  
+  return(res)
+  
+}

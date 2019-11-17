@@ -91,8 +91,9 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      logistic = tfd_logistic,
                      multinomial = tfd_multinomial,
                      negbinom = function(fail, probs) 
-                       tfd_negative_binomial(total_count = fail, probs = probs,
-                                             validate_args = TRUE),
+                       tfd_negative_binomial(total_count = fail, probs = probs#,
+                                             # validate_args = TRUE
+                       ),
                      pareto = tfd_pareto,
                      poisson = tfd_poisson,
                      poisson_lograte = function(log_rate) 

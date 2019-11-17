@@ -58,10 +58,31 @@ centerxk <- function(X,K) tcrossprod(X, K) %*% solve(tcrossprod(K))
 
 orthog <- function(Y,X,pwr=NULL)
 {
-  if(!is.null(pwr)) X <- tf$pow(tf$cast(X,dtype="float32"),pwr)
-  Y - tf$linalg$matmul(tf$linalg$matmul(X, tf$linalg$inv(
-    tf$linalg$matmul(tf$linalg$matrix_transpose(X),X)
-  )), tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y))
+  
+  tfcrossprodx <- function(x) tf$linalg$matmul(tf$linalg$matrix_transpose(x),x)
+  
+  if(!is.null(pwr)){ 
+    # X must be same size but something invertible in the case of
+    # prediction, for prediction pwr = 0
+    # pwr <- tf$reshape(
+    pwr <- tf$squeeze(tfcrossprodx(pwr), 0)
+    #                   list(tf$constant(1)))
+    neg_pwr <- 1-pwr
+    pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(pwr, ncol(X)))
+    neg_pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(neg_pwr, ncol(X)))
+    pwr_ncolY <- tf$linalg$tensor_diag(
+      tf$tile(pwr, ncol(Y))
+    )
+    XtX <- tf$linalg$matmul(tfcrossprodx(X), pwr_ncolX) + neg_pwr_ncolX
+    XtXinv <- tf$linalg$inv(XtX)
+    XXtXinv <- tf$linalg$matmul(X,XtXinv)
+    XtY <- tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y)
+    Y - tf$linalg$matmul(tf$linalg$matmul(XXtXinv, XtY), pwr_ncolY)
+  }else{
+    Y - tf$linalg$matmul(tf$linalg$matmul(X, tf$linalg$inv(
+      tf$linalg$matmul(tf$linalg$matrix_transpose(X),X)
+    )), tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y))
+  }
 }
 
 orthog_nt <- function(Y,X) Y <- X%*%solve(crossprod(X))%*%crossprod(X,Y)

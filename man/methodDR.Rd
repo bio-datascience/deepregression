@@ -8,6 +8,7 @@
 \alias{fit.deepregression}
 \alias{coef.deepregression}
 \alias{print.deepregression}
+\alias{cv}
 \title{Generic functions for deepregression models}
 \usage{
 \method{plot}{deepregression}(object, which = NULL, which_param = 1,
@@ -20,11 +21,16 @@ prepare_data(object, data)
 
 \method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
 
-\method{fit}{deepregression}(object, ...)
+\method{fit}{deepregression}(object, early_stopping = FALSE,
+  verbose = FALSE, view_metrics = TRUE, patience = 20,
+  save_weights = FALSE, ...)
 
 \method{coef}{deepregression}(object)
 
 \method{print}{deepregression}(object)
+
+cv(object, verbose = FALSE, patience = 20, plot = TRUE,
+  print_folds = TRUE, cv_folds = NULL, mylapply = lapply, ...)
 }
 \arguments{
 \item{object}{deepregression object}
@@ -34,6 +40,8 @@ prepare_data(object, data)
 \item{which_param}{integer of length 1.
 Corresponds to the distribution parameter for which the effects should be plotted.}
 
+\item{plot}{whether to plot the resulting losses in each fold}
+
 \item{...}{further arguments, passed to fit, plot or predict function}
 
 \item{newdata}{new data for prediction, defaults to \code{NULL}}
@@ -42,9 +50,23 @@ Corresponds to the distribution parameter for which the effects should be plotte
 
 \item{convert_fun}{function which converts the tensor outputted by predict function}
 
+\item{verbose}{whether to print training in each fold}
+
+\item{patience}{number of patience for early stopping}
+
+\item{mylapply}{lapply function to be used; defaults to \code{lapply}}
+
 \item{...}{further arguments passed to \code{keras:::fit.keras.engine.training.Model}
 such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )}
+
+\item{...}{further arguments passed to \code{keras:::fit.keras.engine.training.Model}}
+
+\item{object}{deepregression object}
+
+\item{printfolds}{whether to print the current fold}
 }
 \description{
 Generic functions for deepregression models
+
+Cross-validation for deepgression objects
 }
