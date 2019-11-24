@@ -257,3 +257,37 @@ family_trafo_funs <- function(family, add_const = 1e-8)
     return(trafo_fun)
     
 }
+
+#' generate mixture distribution of same family
+#' 
+#' @param dist tfp distribution
+#' @param nr_comps number of mixture components
+#' @param trafo_list list of transformaiton applied before plugging
+#' the linear predictor into probabilities and parameters of the distribution.
+#' Should be of length #parameters of \code{dist} + 1 (for probabilities)
+mix_dist_maker <- function(
+  dist = tfd_normal, 
+  nr_comps = 3, 
+  trafo_list = list(function(x) tf$math$exp(x),
+                    function(x) tf$stack(list(tf$math$sigmoid(x),
+                                              1-tf$math$sigmoid(x)),
+                                         axis=2L))
+  ){
+  
+  mixdist = function(probs, params)
+    return(
+      tfd_mixture_same_family(
+        mixture_distribution=tfd_categorical(probs=probs),
+        components=do.call(dist, params)
+      )
+    )
+  
+  return(
+    function(x) do.call(mixdist, lapply(1:ncol(x)[[1]], 
+                                        function(i) 
+                                          trafo_list[[i]](
+                                            x[,i,drop=FALSE])))
+  )
+                                           
+}
+

@@ -65,6 +65,10 @@ such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )}
 
 \item{printfolds}{whether to print the current fold}
 }
+\value{
+Returns an object \code{drCV}, a list, one list element for each fold
+containing the model fit and the \code{weighthistory}.
+}
 \description{
 Generic functions for deepregression models
 

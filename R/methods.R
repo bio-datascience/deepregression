@@ -174,20 +174,25 @@ fit.deepregression <- function(
   # }
   
   args <- list(...)
-  args <- append(args,
-                 list(object = object$model,
-                      x = prepare_newdata(object$init_params$parsed_formulae_contents,
-                                          object$init_params$data,
-                                          pred = FALSE),
-                      y = object$init_params$y,
-                      validation_split = object$init_params$validation_split,
-                      validation_data = object$init_params$validation_data,
-                      callbacks = this_callbacks,
-                      verbose = verbose,
-                      view_metrics = view_metrics
-                 )
-  )
-  args <- append(args, object$init_params$ellipsis)
+  input_list_model <- 
+    list(object = object$model,
+         x = prepare_newdata(object$init_params$parsed_formulae_contents,
+                             object$init_params$data,
+                             pred = FALSE),
+         y = object$init_params$y,
+         validation_split = object$init_params$validation_split,
+         validation_data = object$init_params$validation_data,
+         callbacks = this_callbacks,
+         verbose = verbose,
+         view_metrics = view_metrics
+    )
+  args <- append(args, 
+                 input_list_model[!names(input_list_model) %in% 
+                                    names(args)])
+  if(length(object$init_params$ellipsis)>0)
+    args <- append(args, 
+                   object$init_params$ellipsis[
+                     !names(object$init_params$ellipsis) %in% names(args)])
 
   ret <- do.call(fit_fun,
                  args)
@@ -209,13 +214,19 @@ coef.deepregression <- function(
   names(lret) <- object$init_params$param_names
   for(i in 1:nrparams){
     sl <- paste0("structured_linear_",i)
+    slas <- paste0("structured_lasso_",i)
     snl <- paste0("structured_nonlinear_",i)
     lret[[i]] <- list(structured_linear = NULL,
+                      structured_lasso = NULL,
                       structured_nonlinear = NULL)
 
     lret[[i]]$structured_linear <-
       if(sl %in% layer_names)
         object$model$get_layer(sl)$get_weights()[[1]] else
+          NULL
+    lret[[i]]$structured_lasso <-
+      if(slas %in% layer_names)
+        object$model$get_layer(slas)$get_weights()[[1]] else
           NULL
     lret[[i]]$structured_nonlinear <-
       if(snl %in% layer_names)
@@ -246,8 +257,14 @@ print.deepregression <- function(
 #' @param plot whether to plot the resulting losses in each fold
 #' @param printfolds whether to print the current fold
 #' @param mylapply lapply function to be used; defaults to \code{lapply}
+#' @param cv_folds see \code{deepregression}
+#' @param stop_if_nan logical; whether to stop CV if NaN values occur
 #' @export
 #' @rdname methodDR
+#' 
+#' @return Returns an object \code{drCV}, a list, one list element for each fold
+#' containing the model fit and the \code{weighthistory}.
+#' 
 #'
 #' 
 cv <- function(
@@ -257,6 +274,7 @@ cv <- function(
   plot = TRUE,
   print_folds = TRUE,
   cv_folds = NULL,
+  stop_if_nan = TRUE,
   mylapply = lapply,
   ...
 )
@@ -274,7 +292,8 @@ cv <- function(
   
   res <- mylapply(cv_folds, function(this_fold){
   
-    cat("Fitting Fold ", folds_iter, " ... ")
+    if(print_folds) cat("Fitting Fold ", folds_iter, " ... ")
+    st1 <- Sys.time()
     
     # does not work?
     # this_mod <- clone_model(object$model)
@@ -313,20 +332,75 @@ cv <- function(
     
     ret <- do.call(fit_fun, args)
     ret$weighthistory <- weighthistory$weights_last_layer
+    
+    if(stop_if_nan && any(is.nan(ret$metrics$validloss)))
+      stop("Fold ", folds_iter, " with NaN's in ")
   
     if(print_folds) folds_iter <<- folds_iter + 1
     
     this_mod$set_weights(old_weights)
-    cat("\nDone.\n")
+    td <- Sys.time()-st1
+    cat("\nDone in", as.numeric(td), "", attr(td,"units"), "\n")
     
     return(ret)
     
   })
   
-  if(plot) plot_cv_result(res)
+  class(res) <- c("drCV","list")
+  
+  if(plot) plot(res)
   
   object$model$set_weights(old_weights)
   
-  return(res)
+  invisible(return(res))
   
+}
+
+#' mean of model fit
+#' 
+#' @method mean deepregression
+#' @export
+#' @rdname methodDR
+#'
+mean.deepregression <- function(
+  object,
+  data,
+  ...
+)
+{
+  predict.deepregression(object, newdata = data, apply_fun = tfd_mean, ...)
+}
+
+#' standard deviation of model fit
+#' 
+#' @method sd deepregression
+#' @export
+#' @rdname methodDR
+#'
+sd.deepregression <- function(
+  object,
+  data,
+  ...
+)
+{
+  predict.deepregression(object, newdata = data, apply_fun = tfd_stddev, ...)
+}
+
+#' quantile of fitted values
+#' 
+#' @method quantile deepregression
+#' @export
+#' @rdname methodDR
+#'
+quantile.deepregression <- function(
+  object,
+  data,
+  value,
+  ...
+)
+{
+  predict.deepregression(object, 
+                         newdata = data, 
+                         apply_fun = function(x) tfd_quantile(x, value=value),
+                         ...)
 }

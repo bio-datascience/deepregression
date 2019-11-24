@@ -34,7 +34,8 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE, default
   tf <- terms.formula(lf, specials=specials)
   if(length(attr(tf, "term.labels"))==0){
     if(intercept & attr(tf,"intercept")){
-      linterms <- cbind("(Intercept)" = rep(1,nrow(data)), data)
+      linterms <- data.frame(a=rep(1,nrow(data)))
+      names(linterms) <- "(Intercept)"
       attr(linterms, "names") <- names(linterms)
       return(
         list(linterms = linterms,
@@ -164,7 +165,9 @@ make_cov <- function(pcf, newdata=NULL,
                  }))
 
   # just use the ones with are actually modeled
-  input_cov <- input_cov[!sapply(input_cov, is.null)]
+  input_cov <- input_cov[!sapply(input_cov, function(x) is.null(x) | 
+                                   (length(x)==1 && is.null(x[[1]])) | 
+                                   NCOL(x)==0)]
   input_cov_isdf <- sapply(input_cov, is.data.frame)
   input_cov[which(input_cov_isdf)] <- lapply(input_cov[which(input_cov_isdf)],
                                              as.matrix)
@@ -187,8 +190,9 @@ get_names <- function(x)
 
 get_indices <- function(x)
 {
-  if(!is.null(x$linterms)) ncollin <- ncol(x$linterms) else
-    ncollin <- 0
+  if(!is.null(x$linterms) & 
+     !(length(x$linterms)==1 & is.null(x$linterms[[1]]))) 
+    ncollin <- ncol(x$linterms) else ncollin <- 0
   if(!is.null(x$smoothterms))
     bsdims <- sapply(x$smoothterms, function(y){
       if(is.null(y$margin)) return(y$bs.dim) else
@@ -256,27 +260,36 @@ extract_cv_result <- function(res){
   
 }
 
-plot_cv_result <- function(res, what=c("loss","weight"), ...){
+#' Plot CV results from deepregression
+#'
+#' @method plot drCV
+#' @param x \code{drCV} object returned by \code{cv.deepregression}
+#' @param what character indicating what to plot (currently supported 'loss'
+#' or 'weights')
+#' 
+#' @export
+#' 
+plot.drCV <- function(x, what=c("loss","weight"), ...){
   
   
-  cres <- extract_cv_result(res)
+  cres <- extract_cv_result(x)
   
   what <- match.arg(what)
   
   if(what=="loss"){
     
-    loss <- cres$trainloss[-1,]
+    loss <- cres$trainloss
     mean_loss <- apply(loss, 1, mean)
-    vloss <- cres$validloss[-1,]
+    vloss <- cres$validloss
     mean_vloss <- apply(vloss, 1, mean)
     
     par(mfrow=c(1,2))
-    matplot(loss, type="l", ..., ylab="loss", xlab="epoch")
-    points(2:(nrow(loss)+1), mean_loss, type="l", col="red", lwd=2)
-    abline(v=which.min(mean_loss)+1, lty=2)
-    matplot(vloss, type="l", ..., ylab="validation loss", xlab="epoch")
-    points(2:(nrow(vloss)+1), mean_vloss, type="l", col="red", lwd=2)
-    abline(v=which.min(mean_vloss)+1, lty=2)
+    matplot(loss, type="l", col="black", ..., ylab="loss", xlab="epoch")
+    points(1:(nrow(loss)), mean_loss, type="l", col="red", lwd=2)
+    abline(v=which.min(mean_loss), lty=2)
+    matplot(vloss, type="l", col="black", ..., ylab="validation loss", xlab="epoch")
+    points(1:(nrow(vloss)), mean_vloss, type="l", col="red", lwd=2)
+    abline(v=which.min(mean_vloss), lty=2)
     
   }else{
     
@@ -293,5 +306,26 @@ stop_iter_cv_result <- function(res, FUN = mean,
 {
   
   whichFUN(apply(extract_cv_result(res)[[loss]], 1, FUN))
+  
+}
+
+#' Generate folds for CV out of one hot encoded matrix
+#' 
+#' @param mat matrix with columns corresponding to folds
+#' and entries corresponding to a one hot encoding
+#' @param val_train the value corresponding to train, per default 0
+#' @param val_test the value corresponding to test, per default 1
+#' 
+#' @details 
+#' \code{val_train} and \code{val_test} can both be a set of value
+#' 
+#' @export
+make_folds <- function(mat, val_train=0, val_test=1)
+{
+  
+  apply(mat, 2, function(x){
+    list(train = which(x %in% val_train),
+         test = which(x %in% val_test))
+  })
   
 }

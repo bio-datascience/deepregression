@@ -20,7 +20,7 @@
 
 #'@title Fitting Deep Distributional Regression
 #'
-#'
+#' @param y response variable
 #' @param list_of_formulae a named list of right hand side formulae,
 #' one for each parameter of the distribution specified in \code{family};
 #' set to \code{~ 1} if the parameter should be treated as constant.
@@ -35,16 +35,27 @@
 #' See the examples for more details.
 #' @param family a character specifying the distribution. For information on 
 #' possible distribution and parameters, see \code{\link{make_tfd_dist}} 
+#' @param train_together logical; whether or not to train all parameters in 
+#' one deep network.
+#' @param df degrees of freedom for all non-linear structural terms
+#' @param lambda_lasso smoothing parameter for lasso regression
+#' @param defaultSmoothing function applied to all s-terms, per default (NULL)
+#' the minimum df of all possible terms is used.
 #' @param cv_folds a list of lists, each list element has two elements, one for
 #' training indices and one for testing indices; if a single integer number is given, 
 #' a simple k-fold cross-validation is defined, where k is the supplied number.
+#' @param validation_data data for validation during training.
+#' @param validation_spit percentage of training data used for validation. Per default 0.2.
 #' @param dist_fun a custom distribution applied to the last layer,
 #' see \code{\link{make_tfd_dist}} for more details on how to construct
 #' a custom distribution function.
+#' @param learning_rate learning rate for optimizer
+#' @param optimizer optimzer used. Per default ADAM.
 #' @param variational logical value specifying whether or not to use
 #' variational inference. If \code{TRUE}, details must be passed to
 #' the via the ellipsis to the initialization function
 #' (see \code{\link{deepregression_init}})
+#' @param monitor_metric Further metrics to monitor
 #' @param ... further arguments passed to the \code{deepRegression_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -93,6 +104,7 @@ deepregression <- function(
   # batch_size = NULL,
   # epochs = 10L,
   df = NULL,
+  lambda_lasso = NULL,
   # defaultSp = 1,
   # defaultSmoothing = function(smoothTerm){
   #   smoothTerm$sp = defaultSp
@@ -109,6 +121,7 @@ deepregression <- function(
   # sample_weight = NULL,
   dist_fun = NULL,
   learning_rate = 0.01,
+  optimizer = optimizer_adam(lr = learning_rate),
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991-5-4,
@@ -145,12 +158,20 @@ deepregression <- function(
   #                                         deepterms = NULL)
 
   # are parameters trained together?
-  if(train_together)
+  if(train_together & !all(sapply(list_of_deep_models, is.null)))
   {
 
-      # check if d-terms and corresponding covariates are in all
-      # parameter
-
+    # check if d-terms and corresponding covariates are in all
+    # parameter
+    nr_params <- length(parsed_formulae_contents)
+    if(length(list_of_deep_models) > 1)
+      stop("If train_together=TRUE, a list with", 
+           " only one deep learning model should be provided.")
+    units_last_layer <- as.list(body(list_of_deep_models[[1]])[[3]])$units
+    if(units_last_layer != nr_params)
+      stop("The number of units in the last layer of the network ",
+           "must be equal to the number of parameters.")
+    
   }
 
   # extract constraints
@@ -175,7 +196,16 @@ deepregression <- function(
 
   pwr_input = NULL
   if(sum(ncol_deep)>0) pwr_input <- 1
+  
+  nr_params <- length(list_of_formulae)
+  
+  if(train_together){
+    ncol_deep <- ncol_deep[[1]]
+    for(i in 2:nr_params)
+      parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
+  }
 
+    
   # initialize the model
   model <- deepregression_init(
     n_obs = n_obs,
@@ -184,15 +214,17 @@ deepregression <- function(
     list_structured = list_structured,
     list_deep = list_of_deep_models,
     input_pwr = pwr_input,
-    nr_params = length(list_structured),
+    nr_params = nr_params,
     lss = TRUE,
-    number_parameters_deep_together = as.numeric(train_together),
+    train_together = train_together,
     family = family,
     variational = variational,
     dist_fun = dist_fun,
     kl_weight = 1 / n_obs,
     orthogX = this_OX,
+    lambda_lasso = lambda_lasso,
     monitor_metric = monitor_metric,
+    optimizer = optimizer,
     ...
     )
 
@@ -202,6 +234,10 @@ deepregression <- function(
   # must be a list of the following form:
   # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
   #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
+  for(i in 1:nr_params){
+    if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
+      parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
+  }
   input_cov <- make_cov(parsed_formulae_contents)
 
   param_names <- names(parsed_formulae_contents)
@@ -218,7 +254,7 @@ deepregression <- function(
     
     validation_split <- NULL
     validation_data <- NULL
-    if(!is.list(cv_folds) & is.numeric(cv_folds)){
+    if(!is.list(cv_folds) & is.numeric(cv_folds) & is.null(dim(cv_folds))){
       
       if(cv_folds <= 0) stop("cv_folds must be a positive integer, but is ", 
                              cv_folds, ".")
@@ -286,7 +322,8 @@ deepregression_init <- function(
   use_bias_in_structured = TRUE,
   nr_params = 2,
   lss = TRUE,
-  number_parameters_deep_together = 0,
+  train_together = FALSE,
+  lambda_lasso=NULL,
   family,
   dist_fun = NULL,
   variational = TRUE,
@@ -318,7 +355,7 @@ deepregression_init <- function(
     stop("Can't have more injections than parameters.")
   if(any(sapply(inject_after_layer, function(x) x%%1!=0)))
     stop("inject_after_layer must be a positive / negative integer")
-
+  
   # define the input layers
   inputs_deep <- lapply(ncol_deep, function(nc){
     if(nc==0) return(NULL) else
@@ -352,11 +389,21 @@ deepregression_init <- function(
                                }else{
                                  if(is.null(list_structured[[i]]))
                                  {
-                                   return(inputs_struct[[i]] %>%
-                                            layer_dense(units = 1, activation = "linear",
-                                                        use_bias = use_bias_in_structured,
-                                                        name = paste0("structured_linear_",i))
-                                   )
+                                   if(!is.null(lambda_lasso)){
+                                     l1 = tf$keras$regularizers$l1(l=lambda_lasso)
+                                     return(inputs_struct[[i]] %>%
+                                              layer_dense(units = 1, activation = "linear",
+                                                          use_bias = use_bias_in_structured,
+                                                          kernel_regularizer = l1,
+                                                          name = paste0("structured_lasso_",i))
+                                     )
+                                   }else{
+                                     return(inputs_struct[[i]] %>%
+                                              layer_dense(units = 1, activation = "linear",
+                                                          use_bias = use_bias_in_structured,
+                                                          name = paste0("structured_linear_",i))
+                                     )
+                                   }
                                  }else{
                                    this_layer <- list_structured[[i]]
                                    return(inputs_struct[[i]] %>% this_layer)
@@ -370,8 +417,10 @@ deepregression_init <- function(
   # and the second is put back on top of the first
   # after orthogonalization
 
-  if(number_parameters_deep_together == 0 &
-     length(inputs_deep) != length(list_deep) & any(!sapply(inputs_deep, is.null)))
+  if(!train_together & 
+     (length(inputs_deep[!sapply(inputs_deep,is.null)]) != 
+      length(list_deep[!sapply(list_deep,is.null)])) & 
+     any(!sapply(inputs_deep, is.null)))
     stop(paste0("If paramters of distribution are not trained together, ",
          "a deep model must be provided for each parameter."))
   deep_split <- lapply(1:length(inputs_deep),
@@ -388,68 +437,64 @@ deepregression_init <- function(
     if(is.null(inputs_deep[[i]])) return(NULL) else
       list_deep[[i]](inputs_deep[[i]]))
 
-  # split deep parts if trained together
-  if(number_parameters_deep_together){
-
-    stop("Training together must be rewritten for new version.")
-
-    if(length(deep_parts) > 1){
-
-      stop("Training deep parts together for more than one deep model not supported yet.")
-
-    }
-
-    # function for split deep model parts
-    split_fun <- function(x)
-      tf$split(x, num_or_size_splits =
-                 as.integer(number_parameters_deep_together),
-               axis = as.integer(1))
-
-    deep_parts <- layer_lambda(object = deep_parts[[1]],
-                               f = split_fun)
-
-  }
-
   ############################################################
   ################# Apply Orthogonalization ##################
-
+  
   # create final linear predictor per distribution parameter
   # -> depending on the presence of a deep or structured part
   # the corresponding part is returned. If both are present
   # the deep part is projected into the orthogonal space of the
   # structured part
-  list_pred_param <- lapply(1:nr_params,
-                            function(i){
-                              if(is.null(deep_parts[[i]])){
-                                return(structured_parts[[i]])
-                              }else if(is.null(structured_parts[[i]])){
-                                return(deep_parts[[i]] %>%
-                                         list_deep_ontop[[i]])
-                              }else{
+  
+  # Check if only one shared deep network is present
+  if(train_together & !is.null(deep_parts[[1]])){
 
-                                if(is.null(ox[[i]])){
-                                  return(layer_add(
-                                    list(
-                                      list_deep_ontop[[i]](deep_parts[[i]]),
-                                         structured_parts[[i]]
-                                    )))
-                                }else{
-                                  return(
-                                    layer_add(
-                                      list(
-                                        list_deep_ontop[[i]](
-                                          orthog_fun(deep_parts[[i]],
-                                                     ox[[i]],
-                                                     pwr)
-                                        ),
-                                        structured_parts[[i]]
-                                        )
-                                    )
-                                  )
-                                }
-                              }
-                            })
+    if(length(deep_parts) > 1)
+      stop("Training deep parts together for more than one deep model not supported yet.")
+    
+    if(!all(sapply(ox, is.null))){
+      warning("Orthogonalization currently only works with separate deep models.")
+      ox <- ox[1] 
+    }
+    
+    # apply orthogonalization
+    if(!is.null(ox[[1]]))
+      deep_parts[[1]] <- orthog_fun(deep_parts[[1]],
+                                    ox[[1]],
+                                    pwr)
+    
+    # function for split deep model parts
+    split_fun <- function(x)
+      tf$split(x, num_or_size_splits = nr_params, axis = 1L)
 
+    # apply splitting
+    deep_parts <- layer_lambda(list_deep_ontop[[1]](deep_parts[[1]]), 
+                               f = split_fun)
+    
+    list_deep_ontop <- lapply(1:nr_params, function(i) function(obj) obj)
+
+  }
+  
+  list_pred_param <- lapply(1:nr_params, function(i){
+    
+    if(length(deep_parts) < i) this_deep <- NULL else 
+      this_deep <- deep_parts[[i]]
+    if(length(list_deep_ontop) < i) this_ontop <- NULL else 
+      this_ontop <- list_deep_ontop[[i]]
+    if(length(structured_parts) < i) this_struct <- NULL else 
+      this_struct <- structured_parts[[i]]
+    if(length(ox) < i | train_together) this_ox <- NULL else
+      this_ox <- ox[[i]]
+    
+    combine_model_parts(deep = this_deep,
+                        deep_top = this_ontop,
+                        struct = this_struct,
+                        ox = this_ox,
+                        orthog_fun = orthog_fun,
+                        pwr = pwr)
+  }
+  )
+  
 
   # concatenate predictors
   # -> just to split them later again?

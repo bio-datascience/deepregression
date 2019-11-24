@@ -11,14 +11,16 @@ deepregression(y, list_of_formulae, list_of_deep_models,
   "inverse_gaussian", "laplace", "log_normal", "logistic", "negbinom",
   "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
   "truncated_normal", "uniform"), train_together = FALSE,
-  mean_regression = FALSE, data, df = NULL, defaultSmoothing = NULL,
-  cv_folds = NULL, validation_data = NULL,
+  mean_regression = FALSE, data, df = NULL, lambda_lasso = NULL,
+  defaultSmoothing = NULL, cv_folds = NULL, validation_data = NULL,
   validation_split = ifelse(is.null(validation_data) & is.null(cv_folds),
   0.2, 0), dist_fun = NULL, learning_rate = 0.01,
-  variational = FALSE, monitor_metric = list(), seed = 1991 - 5 - 4,
-  ...)
+  optimizer = optimizer_adam(lr = learning_rate), variational = FALSE,
+  monitor_metric = list(), seed = 1991 - 5 - 4, ...)
 }
 \arguments{
+\item{y}{response variable}
+
 \item{list_of_formulae}{a named list of right hand side formulae,
 one for each parameter of the distribution specified in \code{family};
 set to \code{~ 1} if the parameter should be treated as constant.
@@ -36,20 +38,40 @@ See the examples for more details.}
 \item{family}{a character specifying the distribution. For information on 
 possible distribution and parameters, see \code{\link{make_tfd_dist}}}
 
+\item{train_together}{logical; whether or not to train all parameters in 
+one deep network.}
+
+\item{df}{degrees of freedom for all non-linear structural terms}
+
+\item{lambda_lasso}{smoothing parameter for lasso regression}
+
+\item{defaultSmoothing}{function applied to all s-terms, per default (NULL)
+the minimum df of all possible terms is used.}
+
 \item{cv_folds}{a list of lists, each list element has two elements, one for
 training indices and one for testing indices; if a single integer number is given, 
 a simple k-fold cross-validation is defined, where k is the supplied number.}
 
+\item{validation_data}{data for validation during training.}
+
 \item{dist_fun}{a custom distribution applied to the last layer,
 see \code{\link{make_tfd_dist}} for more details on how to construct
 a custom distribution function.}
+
+\item{learning_rate}{learning rate for optimizer}
+
+\item{optimizer}{optimzer used. Per default ADAM.}
 
 \item{variational}{logical value specifying whether or not to use
 variational inference. If \code{TRUE}, details must be passed to
 the via the ellipsis to the initialization function
 (see \code{\link{deepregression_init}})}
 
+\item{monitor_metric}{Further metrics to monitor}
+
 \item{...}{further arguments passed to the \code{deepRegression_init} function}
+
+\item{validation_spit}{percentage of training data used for validation. Per default 0.2.}
 }
 \description{
 Fitting Deep Distributional Regression

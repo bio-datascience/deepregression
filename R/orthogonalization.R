@@ -147,3 +147,33 @@ if(FALSE){
 
 
 }
+
+combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, pwr)
+{
+  
+  if(is.null(deep)){
+    
+    return(struct)
+  
+  }else if(is.null(struct)){
+    
+    return(deep_top(deep))
+    
+  }else{
+    
+    if(is.null(ox)){
+      
+      return(
+        layer_add( list(deep_top(deep), struct) )
+        )
+      
+    }else{
+      
+      return(
+        layer_add( list(deep_top(orthog_fun(deep,
+                                            ox,
+                                            pwr)), struct) )
+      )
+    }
+  }
+}
