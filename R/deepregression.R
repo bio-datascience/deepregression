@@ -86,6 +86,7 @@
 #'
 #'mod %>% fit(epochs = 100)
 #'mod %>% plot()
+#'
 deepregression <- function(
   y,
   list_of_formulae,
@@ -99,7 +100,6 @@ deepregression <- function(
     "student_t_ls", "truncated_normal", "uniform"
   ),
   train_together = FALSE,
-  mean_regression = FALSE,
   data,
   # batch_size = NULL,
   # epochs = 10L,

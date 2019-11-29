@@ -45,6 +45,9 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE, default
     }else{ return(NULL) }
   }
   trmstrings <- attr(tf, "term.labels")
+  # check for weird line break behaviour produced by terms.formula
+  trmstrings <- unname(sapply(trmstrings, function(x) 
+    gsub("\\\n\\s+", "", x, fixed=F)))
   # check for missing covariates in data
   for(j in trmstrings)
   {
@@ -60,6 +63,20 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE, default
     vars <- extract_from_special(j)
     # drop terms that specify a s-term specification
     vars <- vars[!grepl("=", vars, fixed=T)]
+    # replace . in formula
+    if(length(vars)==1 && vars==".")
+    {
+      ff <- as.character(lf)[[2]]
+      if(grepl("d\\(",j))
+        ff <- gsub("\\.", paste(variable_names, collapse=","), ff) else
+          ff <- gsub(".", paste(variable_names, collapse="+"), ff)
+      return(get_contents(lf = as.formula(paste0("~ ", ff)), 
+                          data = data, 
+                          df = df, 
+                          variable_names = variable_names, 
+                          intercept = intercept, 
+                          defaultSmoothing = defaultSmoothing))
+    }
     whatsleft <- setdiff(vars, variable_names)
     if(length(whatsleft) > 0){
       stop(paste0("data for ", paste(whatsleft, collapse = ","), " in ",
