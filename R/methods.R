@@ -280,7 +280,7 @@ cv <- function(
 )
 {
   
-  cv_folds <- object$init_params$cv_folds
+  if(is.null(cv_folds)) cv_folds <- object$init_params$cv_folds
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
     cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 10)
@@ -289,6 +289,11 @@ cv <- function(
   old_weights <- object$model$get_weights()
   
   if(print_folds) folds_iter <- 1
+  
+  # subset fun
+  if(NCOL(object$init_params$y)==1)
+    subset_fun <- function(y,ind) y[ind] else
+      subset_fun <- function(y,ind) y[ind,,drop=FALSE]
   
   res <- mylapply(cv_folds, function(this_fold){
   
@@ -307,6 +312,7 @@ cv <- function(
     weighthistory <- WeightHistory$new()
     this_callbacks <- append(this_callbacks, weighthistory)
     
+    
     args <- list(...)
     args <- append(args,
                    list(object = this_mod,
@@ -314,14 +320,14 @@ cv <- function(
                                             object$init_params$data[train_ind,,drop=FALSE],
                                             pred = FALSE,
                                             index = train_ind),
-                        y = object$init_params$y[train_ind],
+                        y = subset_fun(object$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
                           prepare_newdata(object$init_params$parsed_formulae_contents,
                                           object$init_params$data[test_ind,,drop=FALSE],
                                           pred = TRUE,
                                           index = test_ind),
-                          object$init_params$y[test_ind]
+                          subset_fun(object$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,
                         verbose = verbose,

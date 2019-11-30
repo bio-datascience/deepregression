@@ -96,7 +96,7 @@ deepregression <- function(
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "negbinom", "pareto", "poisson", "poisson_lograte", "student_t",
+    "multinomial", "negbinom", "pareto", "poisson", "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform"
   ),
   train_together = FALSE,
@@ -135,6 +135,8 @@ deepregression <- function(
   varnames <- names(data)
   # number of observations
   n_obs <- nrow(data)
+  # number of output dim
+  output_dim <- NCOL(y)
 
 
   # parse formulae
@@ -225,6 +227,7 @@ deepregression <- function(
     lambda_lasso = lambda_lasso,
     monitor_metric = monitor_metric,
     optimizer = optimizer,
+    output_dim = output_dim,
     ...
     )
 
@@ -337,7 +340,9 @@ deepregression_init <- function(
   orthogX = NULL,
   inject_after_layer = rep(-1, length(list_deep)),
   residual_projection = FALSE,
-  kl_weight = 1 / n_obs)
+  kl_weight = 1 / n_obs,
+  output_dim = 1
+  )
 {
 
   # check distribution wrt to specified parameters
@@ -392,14 +397,16 @@ deepregression_init <- function(
                                    if(!is.null(lambda_lasso)){
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(units = 1, activation = "linear",
+                                              layer_dense(units = output_dim, 
+                                                          activation = "linear",
                                                           use_bias = use_bias_in_structured,
                                                           kernel_regularizer = l1,
                                                           name = paste0("structured_lasso_",i))
                                      )
                                    }else{
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(units = 1, activation = "linear",
+                                              layer_dense(units = output_dim, 
+                                                          activation = "linear",
                                                           use_bias = use_bias_in_structured,
                                                           name = paste0("structured_linear_",i))
                                      )

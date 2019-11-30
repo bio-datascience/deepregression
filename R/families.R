@@ -1,6 +1,7 @@
 # helper funs tf
 tfe <- function(x) tf$math$exp(x)
 tfsig <- function(x) tf$math$sigmoid(x)
+tfsoft <- function(x) tf$math$softmax(x)
 tfsqrt <- function(x) tf$math$sqrt(x)
 tfsq <- function(x) tf$math$square(x)
 tfdiv <- function(x,y) tf$math$divide(x,y)
@@ -89,7 +90,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      laplace = tfd_laplace,
                      log_normal = tfd_log_normal,
                      logistic = tfd_logistic,
-                     multinomial = tfd_multinomial,
+                     multinomial = function(logits) tfd_multinomial(total_count = 1L,
+                                                                    logits = logits),
                      negbinom = function(fail, probs) 
                        tfd_negative_binomial(total_count = fail, probs = probs#,
                                              # validate_args = TRUE
@@ -119,7 +121,6 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                  "gamma_gamma",
                  "geometric",
                  "kumaraswamy",
-                 "multinomial",
                  "truncated_normal",
                  "von_mises",
                  "von_mises_fisher",
@@ -175,7 +176,7 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                                        function(x) add_const + tfe(x)),
                        negbinom = list(function(x) x,
                                        function(x) x),
-                       multinomial = list(), # tbd
+                       multinomial = list(function(x) tfsoft(x)), 
                        pareto = list(function(x) add_const + tfe(x),
                                      function(x) add_const + tfe(x)),
                        poisson = list(function(x) add_const + tfe(x)),
@@ -192,12 +193,17 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                        zipf = list(function(x) 1 + tfe(x))
   )
   
-  
     
   ret_fun <- function(x) do.call(tfd_dist,
                                  lapply(1:ncol(x)[[1]],
                                         function(i)
                                           trafo_list[[i]](x[,i,drop=FALSE])))
+  
+  if(family=="multinomial"){
+    
+    ret_fun <- function(x) tfd_dist(trafo_list[[1]](x))
+    
+  }
   
   
   # return number of parameters if specified
