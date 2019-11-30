@@ -221,25 +221,25 @@ cvres <- mod %>% cv(epochs=100)
     ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
 
     ## Fitting Fold  1  ... 
-    ## Done in 21.97714  secs 
+    ## Done in 22.09402  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 22.51995  secs 
+    ## Done in 20.83552  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 27.58315  secs 
+    ## Done in 20.80279  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 23.31558  secs 
+    ## Done in 21.71101  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 23.461  secs 
+    ## Done in 24.49135  secs 
     ## Fitting Fold  6  ... 
-    ## Done in 23.62165  secs 
+    ## Done in 21.26566  secs 
     ## Fitting Fold  7  ... 
-    ## Done in 22.12731  secs 
+    ## Done in 23.94886  secs 
     ## Fitting Fold  8  ... 
-    ## Done in 23.82287  secs 
+    ## Done in 24.52409  secs 
     ## Fitting Fold  9  ... 
-    ## Done in 25.40915  secs 
+    ## Done in 24.35747  secs 
     ## Fitting Fold  10  ... 
-    ## Done in 22.94119  secs
+    ## Done in 23.6644  secs
 
 ![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
 
@@ -347,33 +347,33 @@ mod %>% coef()
     ## $loc
     ## $loc$structured_nonlinear
     ##              [,1]
-    ##  [1,]  0.67900956
-    ##  [2,]  0.56492770
-    ##  [3,] -0.40518686
-    ##  [4,] -2.59120464
-    ##  [5,] -0.85351551
-    ##  [6,] -0.05693278
-    ##  [7,]  0.49672955
-    ##  [8,]  1.25111115
-    ##  [9,] -0.84274215
-    ## [10,]  0.15886177
-    ## [11,]  2.52708530
-    ## [12,]  1.04166746
-    ## [13,] -0.63558298
-    ## [14,]  0.17375962
-    ## [15,] -0.24027291
-    ## [16,] -0.28326494
-    ## [17,]  0.21383536
-    ## [18,] -0.34133691
-    ## [19,] -0.67327487
-    ## [20,]  0.79042685
-    ## [21,]  1.92835712
+    ##  [1,]  0.13732553
+    ##  [2,]  1.05068362
+    ##  [3,] -0.35663056
+    ##  [4,] -2.71700454
+    ##  [5,] -0.83350438
+    ##  [6,] -0.01713021
+    ##  [7,]  0.43711060
+    ##  [8,]  1.22317624
+    ##  [9,] -0.79938602
+    ## [10,]  0.77136862
+    ## [11,]  2.38366628
+    ## [12,]  1.09855545
+    ## [13,] -0.61130136
+    ## [14,]  0.16264610
+    ## [15,] -0.21370493
+    ## [16,] -0.29609966
+    ## [17,]  0.19710314
+    ## [18,] -0.33784550
+    ## [19,] -0.65737909
+    ## [20,]  0.95157951
+    ## [21,]  1.94830942
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
     ##          [,1]
-    ## [1,] 2.028934
+    ## [1,] 2.040742
 
 ``` r
 # plot model
@@ -476,24 +476,24 @@ mod %>% coef()
     ## $loc
     ## $loc$structured_nonlinear
     ##              [,1]
-    ##  [1,] -0.03366097
-    ##  [2,]  0.17637527
-    ##  [3,] -0.12078981
-    ##  [4,] -2.22807026
-    ##  [5,] -0.97890896
-    ##  [6,] -0.28311768
-    ##  [7,]  0.35701439
-    ##  [8,]  1.04281616
-    ##  [9,] -0.26316944
-    ## [10,]  0.70006949
-    ## [11,]  1.73463261
+    ##  [1,]  0.69396508
+    ##  [2,] -0.18849275
+    ##  [3,] -0.09618219
+    ##  [4,] -2.24367547
+    ##  [5,] -0.87267220
+    ##  [6,] -0.27696791
+    ##  [7,]  0.41991803
+    ##  [8,]  1.27324545
+    ##  [9,] -0.42565411
+    ## [10,]  0.06840106
+    ## [11,]  1.89568913
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
-    ##            [,1]
-    ## [1,] -0.2116487
-    ## [2,]  2.0475173
+    ##          [,1]
+    ## [1,] 0.103509
+    ## [2,] 2.059198
 
 Examples for each Distribution
 ------------------------------
@@ -638,9 +638,9 @@ cvres <- mod %>% cv(epochs = 200)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 45.10362  secs 
+    ## Done in 51.20007  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 1.024438  mins
+    ## Done in 1.036325  mins
 
 ![](README_files/figure-markdown_github/unnamed-chunk-10-1.png)
 
@@ -651,7 +651,7 @@ pred <- mod %>% predict(test)
 mean((pred-test$LWAGE)^2)
 ```
 
-    ## [1] 0.03571962
+    ## [1] 0.0573948
 
 ### Deep Quantile Regression on Motorcycle Data
 
@@ -661,18 +661,8 @@ mean((pred-test$LWAGE)^2)
 #### and use distributional regression to compare
 #### with quantile regression
 library(MASS)
-```
-
-    ## 
-    ## Attaching package: 'MASS'
-
-    ## The following object is masked from 'package:deepregression':
-    ## 
-    ##     select
-
-``` r
 data("mcycle")
-set.seed(42)
+set.seed(48)
 
 res = data.frame(RMSE = NA, time = NA)
 
@@ -716,9 +706,9 @@ for(sim_iteration in 1:nrsims){
 apply(res, 2, function(x) c(mean(x, na.rm=T), sd(x, na.rm=T)))
 ```
 
-    ##          RMSE    time
-    ## [1,] 41.14596 1.48144
-    ## [2,] 17.72381 0.10744
+    ##          RMSE       time
+    ## [1,] 42.69921 1.38177993
+    ## [2,] 19.36599 0.08203576
 
 ``` r
 #### plot mean and quantiles
@@ -747,16 +737,6 @@ fitdf %>%
   geom_line(aes(x=times, y=q10), col="red", linetype = 3) + 
   geom_line(aes(x=times, y=q90), col="red", linetype = 4)
 ```
-
-    ## Warning: Removed 133 rows containing missing values (geom_path).
-
-    ## Warning: Removed 133 rows containing missing values (geom_path).
-
-    ## Warning: Removed 133 rows containing missing values (geom_path).
-
-    ## Warning: Removed 133 rows containing missing values (geom_path).
-
-    ## Warning: Removed 133 rows containing missing values (geom_path).
 
 ![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)
 
@@ -794,33 +774,33 @@ cvres <- mod %>% cv(epochs = 100)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 8.319818  secs 
+    ## Done in 8.382484  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 7.854326  secs 
+    ## Done in 7.223637  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 8.242195  secs 
+    ## Done in 7.546076  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 8.042455  secs 
+    ## Done in 7.9415  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 8.003876  secs 
+    ## Done in 7.334122  secs 
     ## Fitting Fold  6  ... 
-    ## Done in 7.602569  secs 
+    ## Done in 7.737437  secs 
     ## Fitting Fold  7  ... 
-    ## Done in 7.818915  secs 
+    ## Done in 7.466359  secs 
     ## Fitting Fold  8  ... 
-    ## Done in 7.549387  secs 
+    ## Done in 7.750818  secs 
     ## Fitting Fold  9  ... 
-    ## Done in 7.905226  secs 
+    ## Done in 7.288137  secs 
     ## Fitting Fold  10  ... 
-    ## Done in 8.627528  secs 
+    ## Done in 7.544744  secs 
     ## Fitting Fold  11  ... 
-    ## Done in 7.620163  secs 
+    ## Done in 7.268436  secs 
     ## Fitting Fold  12  ... 
-    ## Done in 7.682428  secs 
+    ## Done in 7.654012  secs 
     ## Fitting Fold  13  ... 
-    ## Done in 7.996781  secs 
+    ## Done in 7.350421  secs 
     ## Fitting Fold  14  ... 
-    ## Done in 7.506555  secs
+    ## Done in 7.387538  secs
 
 ![](README_files/figure-markdown_github/unnamed-chunk-12-1.png)
 
@@ -832,12 +812,12 @@ summary(coef[[1]][[1]])
 ```
 
     ##        V1            
-    ##  Min.   :-0.7870299  
-    ##  1st Qu.:-0.0058896  
-    ##  Median :-0.0003484  
-    ##  Mean   :-0.0005080  
-    ##  3rd Qu.: 0.0053644  
-    ##  Max.   : 0.0304320
+    ##  Min.   :-0.5453303  
+    ##  1st Qu.:-0.0056927  
+    ##  Median :-0.0002700  
+    ##  Mean   :-0.0004081  
+    ##  3rd Qu.: 0.0047719  
+    ##  Max.   : 0.0276726
 
 ``` r
 pred <- mod %>% predict(newdata = test[,-1])
@@ -863,33 +843,33 @@ cvres <- mod %>% cv(epochs = 100)
 ![](README_files/figure-markdown_github/unnamed-chunk-12-2.png)
 
     ## Fitting Fold  1  ... 
-    ## Done in 5.887945  secs 
+    ## Done in 5.165127  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 4.9724  secs 
+    ## Done in 4.582513  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 5.508932  secs 
+    ## Done in 4.69524  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 5.17446  secs 
+    ## Done in 4.659523  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 5.256541  secs 
+    ## Done in 4.846127  secs 
     ## Fitting Fold  6  ... 
-    ## Done in 4.685565  secs 
+    ## Done in 4.89717  secs 
     ## Fitting Fold  7  ... 
-    ## Done in 4.850859  secs 
+    ## Done in 4.670654  secs 
     ## Fitting Fold  8  ... 
-    ## Done in 4.584762  secs 
+    ## Done in 4.61822  secs 
     ## Fitting Fold  9  ... 
-    ## Done in 5.08473  secs 
+    ## Done in 4.713288  secs 
     ## Fitting Fold  10  ... 
-    ## Done in 5.284264  secs 
+    ## Done in 4.621037  secs 
     ## Fitting Fold  11  ... 
-    ## Done in 5.290449  secs 
+    ## Done in 4.773211  secs 
     ## Fitting Fold  12  ... 
-    ## Done in 4.679508  secs 
+    ## Done in 4.621058  secs 
     ## Fitting Fold  13  ... 
-    ## Done in 5.300982  secs 
+    ## Done in 4.859197  secs 
     ## Fitting Fold  14  ... 
-    ## Done in 5.585114  secs
+    ## Done in 4.605291  secs
 
 ![](README_files/figure-markdown_github/unnamed-chunk-12-3.png)
 
@@ -995,12 +975,8 @@ mod <- deepregression(y = y_train,
 
 # model does not need to have many epochs as 
 # the 0 is easily detected using some specific pixels
-cvres <- mod %>% fit(epochs = 50, validation_split = NULL, steps_per_epoch=1)
-```
-
-    ## starting httpd help server ... done
-
-``` r
+cvres <- mod %>% fit(epochs = 50, validation_split = NULL, steps_per_epoch=1,
+                     view_metrics = FALSE)
 # currenty has some issues when using actual batch training,
 # see also: https://github.com/keras-team/keras/issues/11749
 pred <- mod %>% predict(x_test)
@@ -1012,15 +988,16 @@ table(data.frame(pred=apply(pred,1,which.max)-1,
 
     ##     truth
     ## pred    0    1    2    3    4    5    6    7    8    9
-    ##    0  968    0   11    1    1    4   11    0    4   15
-    ##    1    0 1119    0    0    0    1    3   10    3    8
-    ##    2    1    6  985   11    4    0    0   18    6    1
-    ##    3    1    2    6  964    0   18    0    1   14   21
-    ##    4    0    0    5    0  962    4    4    3    6  577
-    ##    5    2    1    0    5    0  842    9    1    8   20
-    ##    6    5    3    6    0    9   11  926    0    7    1
-    ##    7    1    0    8   14    3    1    1  995   11  327
-    ##    8    2    4   11   15    3   11    4    0  915   39
+    ##    0  967    0    9    2    0    6   11    1    6    7
+    ##    1    0 1120    1    1    1    1    3    7    2    6
+    ##    2    0    4  966   13    3    0    2   21    6    1
+    ##    3    1    2   11  959    0   22    0    1   13   15
+    ##    4    0    0    7    0  945    5    5    4    8   22
+    ##    5    3    1    2    6    0  826   11    0    4    6
+    ##    6    5    3    6    0   10   11  922    0    8    1
+    ##    7    2    0   10   12    2    3    0  980    9   11
+    ##    8    2    5   18   14    3   14    4    1  913    4
+    ##    9    0    0    2    3   18    4    0   13    5  936
 
 Text as Input
 -------------
