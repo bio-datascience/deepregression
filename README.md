@@ -48,6 +48,7 @@ Examples
     1.  [Deep Mixed Model for Wage Panel Data](#deep-mixed-model-for-wage-panel-data)
     2.  [Deep Quantile Regression on Motorcycle Data](#deep-quantile-regression-on-motorcycle-data)
     3.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer Data](#high-dimensional-ridge-and-lasso-regression)
+    4.  [Mixture Distribution for Acidity Modeling](#mixture-of-normals)
 8.  [Unstructured Data Examples](#unstructured-data-examples)
     1.  [MNIST Pictures with Binarized Response](#mnist-zeros)
     2.  [MNIST Pictures with Multinomial Response](#mnist-multinomial)
@@ -668,6 +669,8 @@ res = data.frame(RMSE = NA, time = NA)
 
 nrsims <- 20
 
+best_rmse <- Inf
+
 for(sim_iteration in 1:nrsims){
   
   train_ind <- sample(1:nrow(mcycle), 90)
@@ -698,6 +701,27 @@ for(sim_iteration in 1:nrsims){
   
   rmse <- sqrt(mean((pred-test$accel)^2))
   
+  if(!is.nan(rmse) && best_rmse > rmse){
+    
+    #### get mean and quantiles
+    mean <- mod_deep %>% mean(data = mcycle)
+    q40 <- mod_deep %>% quantile(data = mcycle, value = 0.4)
+    q60 <- mod_deep %>% quantile(data = mcycle, value = 0.6)
+    q10 <- mod_deep %>% quantile(data = mcycle, value = 0.1)
+    q90 <- mod_deep %>% quantile(data = mcycle, value = 0.9)
+    
+    #### for plotting
+    fitdf <- cbind(mcycle, data.frame(mean = mean,
+                                      q40 = q40,
+                                      q60 = q60,
+                                      q10 = q10,
+                                      q90 = q90)
+    )
+    
+    best_rmse <- rmse
+    
+  }
+  
   res[sim_iteration, ] <- c(rmse, as.numeric(difftime(et,st,units="mins")))
   
 }
@@ -707,24 +731,10 @@ apply(res, 2, function(x) c(mean(x, na.rm=T), sd(x, na.rm=T)))
 ```
 
     ##          RMSE       time
-    ## [1,] 42.69921 1.38177993
-    ## [2,] 19.36599 0.08203576
+    ## [1,] 38.04549 1.34436015
+    ## [2,] 16.74510 0.03677722
 
 ``` r
-#### plot mean and quantiles
-mean <- mod_deep %>% mean(data = mcycle)
-q40 <- mod_deep %>% quantile(data = mcycle, value = 0.4)
-q60 <- mod_deep %>% quantile(data = mcycle, value = 0.6)
-q10 <- mod_deep %>% quantile(data = mcycle, value = 0.1)
-q90 <- mod_deep %>% quantile(data = mcycle, value = 0.9)
-
-fitdf <- cbind(mcycle, data.frame(mean = mean,
-                                  q40 = q40,
-                                  q60 = q60,
-                                  q10 = q10,
-                                  q90 = q90)
-)
-
 library(reshape2)
 library(ggplot2)
 
@@ -885,6 +895,101 @@ plot(coef[[1]][[1]])
 
 ![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)
 
+Mixture of Normals
+------------------
+
+We here estiamte the mixture of three normal distributions to fit the model to the acidity data, a data set showing the acidity index for 155 lakes in the Northeastern United States.
+
+``` r
+# load data
+library("gamlss.data")
+```
+
+    ## 
+    ## Attaching package: 'gamlss.data'
+
+    ## The following object is masked from 'package:datasets':
+    ## 
+    ##     sleep
+
+``` r
+data(acidity)
+
+# softmax function
+logsumexp <- function (x) {
+  y = max(x)
+  y + log(sum(exp(x - y)))
+}
+softmax <- function (x) {
+  exp(x - logsumexp(x))
+}
+
+
+
+mod <- deepregression(acidity$y-mean(acidity$y), 
+                      list_of_formulae = list(~ 1, #mixtures
+                                              ~1, ~1, ~1, # means
+                                              ~1, ~1, ~1 # sds
+                      ),
+                      data = acidity,
+                      list_of_deep_models = NULL, 
+                      mixture_dist = 3,
+                      dist_fun = mix_dist_maker())
+
+
+cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
+```
+
+    ## Fitting Fold  1  ... 
+    ## Done in 35.36168  secs 
+    ## Fitting Fold  2  ... 
+    ## Done in 34.21259  secs 
+    ## Fitting Fold  3  ... 
+    ## Done in 33.63657  secs 
+    ## Fitting Fold  4  ... 
+    ## Done in 33.85886  secs 
+    ## Fitting Fold  5  ... 
+    ## Done in 33.94692  secs
+
+![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
+
+``` r
+mod %>% fit(epochs = stop_iter_cv_result(cvres), 
+            validation_split = NULL, view_metrics = FALSE)
+coefinput <- unlist(mod$model$get_weights())
+(means <- coefinput[c(2:4)])
+```
+
+    ## [1] -0.2290305  1.3202169 -0.8790442
+
+``` r
+(stds <- exp(coefinput[c(5:7)]))
+```
+
+    ## [1] 0.6950519 0.4000296 0.2292812
+
+``` r
+(pis <- softmax(coefinput[8:10]*coefinput[1]))
+```
+
+    ## [1] 0.2913544 0.3130229 0.3956226
+
+``` r
+library(distr)
+```
+
+``` r
+mixDist <- UnivarMixingDistribution(Norm(means[1],stds[1]),
+                                    Norm(means[2],stds[2]),
+                                    Norm(means[3],stds[3]),
+                                    mixCoeff=pis)
+
+plot(mixDist, to.draw.arg="d", ylim=c(0,1.4)) 
+with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-13-2.png)
+
 Unstructured Data Examples
 ==========================
 
@@ -932,7 +1037,7 @@ pred <- mod %>% predict(x_test)
 boxplot(pred ~ y_test, ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-14-1.png)
 
 MNIST Multinomial
 -----------------
@@ -988,16 +1093,16 @@ table(data.frame(pred=apply(pred,1,which.max)-1,
 
     ##     truth
     ## pred    0    1    2    3    4    5    6    7    8    9
-    ##    0  967    0    9    2    0    6   11    1    6    7
-    ##    1    0 1120    1    1    1    1    3    7    2    6
-    ##    2    0    4  966   13    3    0    2   21    6    1
-    ##    3    1    2   11  959    0   22    0    1   13   15
-    ##    4    0    0    7    0  945    5    5    4    8   22
-    ##    5    3    1    2    6    0  826   11    0    4    6
-    ##    6    5    3    6    0   10   11  922    0    8    1
-    ##    7    2    0   10   12    2    3    0  980    9   11
-    ##    8    2    5   18   14    3   14    4    1  913    4
-    ##    9    0    0    2    3   18    4    0   13    5  936
+    ##    0  968    0   11    1    1    6    9    0    3    8
+    ##    1    0 1121    1    0    1    1    3    7    3    6
+    ##    2    0    4  978   11    5    0    0   19    5    1
+    ##    3    1    2    7  959    0   19    1    3   14   15
+    ##    4    0    1    8    0  938    3    6    2    7   23
+    ##    5    3    1    0    8    0  840    7    1   10    5
+    ##    6    5    4    6    0   13    9  926    0    8    1
+    ##    7    2    0    9   13    1    0    0  984    7    7
+    ##    8    1    2   11   13    3    9    6    0  913    7
+    ##    9    0    0    1    5   20    5    0   12    4  936
 
 Text as Input
 -------------
@@ -1074,4 +1179,4 @@ pred <- mod %>% predict(as.data.frame(x_test))
 boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-16-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-17-1.png)

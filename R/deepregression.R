@@ -45,7 +45,8 @@
 #' training indices and one for testing indices; if a single integer number is given, 
 #' a simple k-fold cross-validation is defined, where k is the supplied number.
 #' @param validation_data data for validation during training.
-#' @param validation_spit percentage of training data used for validation. Per default 0.2.
+#' @param validation_spit percentage of training data used for validation. 
+#' Per default 0.2.
 #' @param dist_fun a custom distribution applied to the last layer,
 #' see \code{\link{make_tfd_dist}} for more details on how to construct
 #' a custom distribution function.
@@ -125,6 +126,7 @@ deepregression <- function(
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991-5-4,
+  mixture_dist = 0,
   ...
 )
 {
@@ -148,16 +150,6 @@ deepregression <- function(
                                      defaultSmoothing = defaultSmoothing)
 
   this_OX <- lapply(parsed_formulae_contents, make_orthog, retcol = TRUE)
-
-  # add intercept for parameters which are estimated as constant
-  # replace_items = which(
-  #   sapply(parsed_formulae_contents, is.null) &
-  #     sapply(list_of_formulae, function(x) attr(terms.formula(x), "intercept")==1)
-  # )
-  # for(i in replace_items)
-  #   parsed_formulae_contents[[i]] <- list(linterms = data.frame("(Intercept)"=rep(1, n_obs)),
-  #                                         smoothterms = NULL,
-  #                                         deepterms = NULL)
 
   # are parameters trained together?
   if(train_together & !all(sapply(list_of_deep_models, is.null)))
@@ -228,6 +220,7 @@ deepregression <- function(
     monitor_metric = monitor_metric,
     optimizer = optimizer,
     output_dim = output_dim,
+    mixture_dist = mixture_dist,
     ...
     )
 
@@ -322,7 +315,7 @@ deepregression_init <- function(
   list_structured,
   list_deep,
   input_pwr=NULL,
-  use_bias_in_structured = TRUE,
+  use_bias_in_structured = FALSE,
   nr_params = 2,
   lss = TRUE,
   train_together = FALSE,
@@ -341,12 +334,16 @@ deepregression_init <- function(
   inject_after_layer = rep(-1, length(list_deep)),
   residual_projection = FALSE,
   kl_weight = 1 / n_obs,
-  output_dim = 1
+  output_dim = 1,
+  mixture_dist = FALSE
   )
 {
 
   # check distribution wrt to specified parameters
-  nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE)
+  # (not when distfun is given)
+  if(is.null(dist_fun)) 
+    nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
+      nrparams_dist <- nr_params
   if(nrparams_dist < nr_params)
   {
     warning("More formulae specified than parameters available.",
@@ -397,18 +394,20 @@ deepregression_init <- function(
                                    if(!is.null(lambda_lasso)){
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(units = output_dim, 
-                                                          activation = "linear",
-                                                          use_bias = use_bias_in_structured,
-                                                          kernel_regularizer = l1,
-                                                          name = paste0("structured_lasso_",i))
+                                              layer_dense(
+                                                units = output_dim, 
+                                                activation = "linear",
+                                                use_bias = use_bias_in_structured,
+                                                kernel_regularizer = l1,
+                                                name = paste0("structured_lasso_",i))
                                      )
                                    }else{
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(units = output_dim, 
-                                                          activation = "linear",
-                                                          use_bias = use_bias_in_structured,
-                                                          name = paste0("structured_linear_",i))
+                                              layer_dense(
+                                                units = output_dim, 
+                                                activation = "linear",
+                                                use_bias = use_bias_in_structured,
+                                                name = paste0("structured_linear_",i))
                                      )
                                    }
                                  }else{
@@ -457,7 +456,8 @@ deepregression_init <- function(
   if(train_together & !is.null(deep_parts[[1]])){
 
     if(length(deep_parts) > 1)
-      stop("Training deep parts together for more than one deep model not supported yet.")
+      stop("Training deep parts together for more than one deep model",
+           " not supported yet.")
     
     if(!all(sapply(ox, is.null))){
       warning("Orthogonalization currently only works with separate deep models.")
@@ -508,6 +508,21 @@ deepregression_init <- function(
   if(length(list_pred_param) > 1)
     preds <- layer_concatenate(list_pred_param) else
       preds <- list_pred_param[[1]]
+  
+  if(mixture_dist){
+    list_pred <- layer_lambda(preds, 
+                              f = function(x)
+                                {
+                                tf$split(x, num_or_size_splits = 
+                                           c(1L, as.integer(nr_params-1)),
+                                         axis = 1L)
+                                })
+    list_pred[[1]] <- list_pred[[1]] %>% 
+      layer_dense(units = mixture_dist, 
+                  activation = "softmax", 
+                  use_bias = FALSE)
+    preds <- layer_concatenate(list_pred)
+  }
 
   ############################################################
   ### Define Distribution Layer and Variational Inference ####

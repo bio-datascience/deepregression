@@ -28,7 +28,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"normal": }{normal distribution with location (identity), scale (exp)}
 #'  \item{"bernoulli": }{bernoulli distribution with logits (identity)}
 #'  \item{"bernoulli_prob": }{bernoulli distribution with probabilities (sigmoid)}
-#'  \item{"beta": }{beta with concentration 1 = alpha (exp) and concentration 0 = beta (exp)}
+#'  \item{"beta": }{beta with concentration 1 = alpha (exp) and concentration 
+#'  0 = beta (exp)}
 #'  \item{"betar": }{beta with mean (sigmoid) and scale (sigmoid)}
 #'  \item{"cauchy": }{location (identity), scale (exp)}
 #'  \item{"chi2": }{cauchy with df (exp)}
@@ -41,7 +42,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"half_normal": }{half normal with scale (exp)}
 #'  \item{"horseshoe": }{horseshoe with scale (exp)}
 #'  \item{"inverse_gamma": }{inverse gamma with concentation (exp) and rate (exp)}
-#'  \item{"inverse_gaussian": }{inverse Gaussian with location (exp) and concentation (exp)}
+#'  \item{"inverse_gaussian": }{inverse Gaussian with location (exp) and concentation 
+#'  (exp)}
 #'  \item{"laplace": }{Laplace with location (identity) and scale (exp)}
 #'  \item{"log_normal": }{Log-normal with location (identity) and scale (exp) of 
 #'  underlying normal distribution}
@@ -52,7 +54,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"poisson": }{poisson with rate (exp)}
 #'  \item{"poisson_lograte": }{poisson with lograte (identity))}
 #'  \item{"student_t": }{Student's t with df (exp)}
-#'  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and scale (exp)}
+#'  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and 
+#'  scale (exp)}
 #'  \item{"uniform": }{uniform with upper and lower (both identity)}
 #' }
 #' 
@@ -90,8 +93,9 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      laplace = tfd_laplace,
                      log_normal = tfd_log_normal,
                      logistic = tfd_logistic,
-                     multinomial = function(logits) tfd_multinomial(total_count = 1L,
-                                                                    logits = logits),
+                     multinomial = function(logits) 
+                       tfd_multinomial(total_count = 1L,
+                                       logits = logits),
                      negbinom = function(fail, probs) 
                        tfd_negative_binomial(total_count = fail, probs = probs#,
                                              # validate_args = TRUE
@@ -130,7 +134,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
   stop("Family ", family, " not implemented yet.")
   
   if(family=="binomial")
-    stop("Family binomial not implemented yet. If you are trying to model independent",
+    stop("Family binomial not implemented yet.",
+         " If you are trying to model independent",
          " draws from a bernoulli distribution, use family='bernoulli'.")
   
   trafo_list <- switch(family, 
@@ -166,7 +171,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                        inverse_gamma = list(function(x) add_const + tfe(x),
                                             function(x) add_const + tfe(x)),
                        inverse_gaussian = list(function(x) add_const + tfe(x),
-                                               function(x) add_const + tfe(x)),
+                                               function(x) 
+                                                 add_const + tfe(x)),
                        kumaraswamy = list(), #tbd
                        laplace = list(function(x) x,
                                       function(x) add_const + tfe(x)),
@@ -268,32 +274,56 @@ family_trafo_funs <- function(family, add_const = 1e-8)
 #' 
 #' @param dist tfp distribution
 #' @param nr_comps number of mixture components
-#' @param trafo_list list of transformaiton applied before plugging
-#' the linear predictor into probabilities and parameters of the distribution.
-#' Should be of length #parameters of \code{dist} + 1 (for probabilities)
+#' @param trafos_each_param list of transformaiton applied before plugging
+#' the linear predictor into the parameters of the distributions.
+#' Should be of length #parameters of \code{dist}
 mix_dist_maker <- function(
   dist = tfd_normal, 
-  nr_comps = 3, 
-  trafo_list = list(function(x) tf$math$exp(x),
-                    function(x) tf$stack(list(tf$math$sigmoid(x),
-                                              1-tf$math$sigmoid(x)),
-                                         axis=2L))
+  nr_comps = 3,
+  trafos_each_param = list(function(x) x, function(x) 1e-8 + tfe(x))
   ){
   
+  stack <- function(x,ind=1:nr_comps) tf$stack(
+    lapply(ind, function(j)
+      x[,j,drop=FALSE]), 2L)
+  
   mixdist = function(probs, params)
-    return(
-      tfd_mixture_same_family(
-        mixture_distribution=tfd_categorical(probs=probs),
-        components=do.call(dist, params)
+  {
+    
+    mix = tfd_categorical(probs = probs)
+    comps = do.call(dist, params)
+    
+    res_dist <- tfd_mixture_same_family(
+      mixture_distribution=mix,
+      components=comps
+    )
+    
+    return(res_dist)
+  }
+  
+  trafo_fun <- function(x){
+
+    c(probs = list(stack(x,1:nr_comps)),
+      params = list(
+        lapply(1:length(trafos_each_param), 
+               function(i) 
+                 stack(trafos_each_param[[i]](
+                   x[, nr_comps + 
+                       # first x for pis
+                       (i-1)*nr_comps + 
+                       # then for each parameter
+                       (1:nr_comps),drop=FALSE]
+                 )
+                 )
+        )
       )
     )
+    
+  }
   
   return(
-    function(x) do.call(mixdist, lapply(1:ncol(x)[[1]], 
-                                        function(i) 
-                                          trafo_list[[i]](
-                                            x[,i,drop=FALSE])))
+    function(x) do.call(mixdist, trafo_fun(x))
   )
-                                           
+  
 }
 

@@ -280,7 +280,14 @@ cv <- function(
 )
 {
   
-  if(is.null(cv_folds)) cv_folds <- object$init_params$cv_folds
+  if(is.null(cv_folds)){ 
+    cv_folds <- object$init_params$cv_folds
+  }else if(!is.list(cv_folds) & is.numeric(cv_folds)){
+    cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 
+                                    cv_folds)
+  }else{
+    stop("Wrong format for cv_folds.")
+  }
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
     cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 10)
