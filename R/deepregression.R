@@ -127,6 +127,7 @@ deepregression <- function(
   monitor_metric = list(),
   seed = 1991-5-4,
   mixture_dist = 0,
+  split_fun = split_model,
   ...
 )
 {
@@ -221,6 +222,7 @@ deepregression <- function(
     optimizer = optimizer,
     output_dim = output_dim,
     mixture_dist = mixture_dist,
+    split_fun = split_fun,
     ...
     )
 
@@ -335,7 +337,8 @@ deepregression_init <- function(
   residual_projection = FALSE,
   kl_weight = 1 / n_obs,
   output_dim = 1,
-  mixture_dist = FALSE
+  mixture_dist = FALSE,
+  split_fun = split_model
   )
 {
 
@@ -432,7 +435,7 @@ deepregression_init <- function(
   deep_split <- lapply(1:length(inputs_deep),
                        function(i)
                          if(is.null(inputs_deep[[i]])) return(NULL) else
-                           split_model(list_deep[[i]], inject_after_layer[i])
+                           split_fun(list_deep[[i]], inject_after_layer[i])
   )
 
   list_deep <- lapply(deep_split, "[[", 1)
