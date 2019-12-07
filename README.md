@@ -54,8 +54,6 @@ Examples
     2.  [MNIST Pictures with Multinomial Response](#mnist-multinomial)
     3.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
 
-MNIST zeros\]
--------------
 
 Deep Linear Regression
 ----------------------
