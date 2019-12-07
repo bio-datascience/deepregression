@@ -46,7 +46,11 @@ make_orthog <- function(
     # P = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
 
     # this_Px <- tcrossprod(tcrossprod(X,solve(crossprod(X))),X)
-    if(retcol) return(NCOL(X)) else return(X)
+    qrX <- qr(X)
+    Q <- qr.Q(qrX)
+    # coefmat <- tcrossprod(Q)
+    if(retcol) return(NCOL(Q)) else 
+      return(Q)
   }else{
     return(NULL)
   }
@@ -56,33 +60,42 @@ make_orthog <- function(
 # Section 2.3. of Fahrmeir et al. (2004, Stat Sinica)
 centerxk <- function(X,K) tcrossprod(X, K) %*% solve(tcrossprod(K))
 
-orthog <- function(Y,X,pwr=NULL)
+orthog <- function(Y, Q)
 {
   
-  tfcrossprodx <- function(x) tf$linalg$matmul(tf$linalg$matrix_transpose(x),x)
+  # print(Y)
+  # print(XtXinvXt)
+  XtXinvXt <- tf$linalg$matmul(Q,tf$linalg$matrix_transpose(Q))
+  Yorth <- Y - tf$linalg$matmul(XtXinvXt, Y)
+  # print(Yorth)
+  return(Yorth)
   
-  if(!is.null(pwr)){ 
-    # X must be same size but something invertible in the case of
-    # prediction, for prediction pwr = 0
-    # pwr <- tf$reshape(
-    pwr <- tf$squeeze(tfcrossprodx(pwr), 0)
-    #                   list(tf$constant(1)))
-    neg_pwr <- 1-pwr
-    pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(pwr, ncol(X)))
-    neg_pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(neg_pwr, ncol(X)))
-    pwr_ncolY <- tf$linalg$tensor_diag(
-      tf$tile(pwr, ncol(Y))
-    )
-    XtX <- tf$linalg$matmul(tfcrossprodx(X), pwr_ncolX) + neg_pwr_ncolX
-    XtXinv <- tf$linalg$inv(XtX)
-    XXtXinv <- tf$linalg$matmul(X,XtXinv)
-    XtY <- tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y)
-    Y - tf$linalg$matmul(tf$linalg$matmul(XXtXinv, XtY), pwr_ncolY)
-  }else{
-    Y - tf$linalg$matmul(tf$linalg$matmul(X, tf$linalg$inv(
-      tf$linalg$matmul(tf$linalg$matrix_transpose(X),X)
-    )), tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y))
-  }
+  # tfcrossprodx <- function(x) tf$linalg$matmul(tf$linalg$matrix_transpose(x),x)
+  # 
+  # if(is.null(XtXinv))
+  # 
+  # if(!is.null(pwr)){ 
+  #   # X must be same size but something invertible in the case of
+  #   # prediction, for prediction pwr = 0
+  #   # pwr <- tf$reshape(
+  #   pwr <- tf$squeeze(tfcrossprodx(pwr), 0)
+  #   #                   list(tf$constant(1)))
+  #   neg_pwr <- 1-pwr
+  #   pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(pwr, ncol(X)))
+  #   neg_pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(neg_pwr, ncol(X)))
+  #   pwr_ncolY <- tf$linalg$tensor_diag(
+  #     tf$tile(pwr, ncol(Y))
+  #   )
+  #   XtX <- tf$linalg$matmul(tfcrossprodx(X), pwr_ncolX) + neg_pwr_ncolX
+  #   XtXinv <- tf$linalg$inv(XtX + tf$linalg$tensor_diag(rep(1e-8,ncol(X))))
+  #   XXtXinv <- tf$linalg$matmul(X,XtXinv)
+  #   XtY <- tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y)
+  #   Y - tf$linalg$matmul(tf$linalg$matmul(XXtXinv, XtY), pwr_ncolY)
+  # }else{
+  #   Y - tf$linalg$matmul(tf$linalg$matmul(X, tf$linalg$inv(
+  #     tf$linalg$matmul(tf$linalg$matrix_transpose(X),X)
+  #   )), tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y))
+  # }
 }
 
 orthog_nt <- function(Y,X) Y <- X%*%solve(crossprod(X))%*%crossprod(X,Y)
@@ -148,7 +161,7 @@ if(FALSE){
 
 }
 
-combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, pwr)
+combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
 {
   
   if(is.null(deep)){
@@ -171,8 +184,7 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, pwr)
       
       return(
         layer_add( list(deep_top(orthog_fun(deep,
-                                            ox,
-                                            pwr)), struct) )
+                                            ox)), struct) )
       )
     }
   }

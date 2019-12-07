@@ -28,7 +28,8 @@ plot.deepregression <- function(
   plus_number_lin_eff <- sum(this_ind$type=="lin")
 
   plotData <- vector("list", length(which))
-  org_feature_names <- names(object$init_params$l_names_effets[[which_param]][["smoothterms"]])
+  org_feature_names <- 
+    names(object$init_params$l_names_effets[[which_param]][["smoothterms"]])
   phi <- object$model$get_layer(paste0("structured_nonlinear_",
                                        which_param))$get_weights()[[1]]
 
@@ -38,7 +39,8 @@ plot.deepregression <- function(
     this_ind_this_w <- do.call("Map",
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
                                                        c("start","end")])))[[1]]
-    BX <- object$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[nam]]$X
+    BX <- 
+      object$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[nam]]$X
     plotData[[w]] <-
       list(org_feature_name = nam,
            value = object$init_params$data[,strsplit(nam,",")[[1]]],
@@ -56,7 +58,8 @@ plot.deepregression <- function(
              ylab = "partial effect",
              ...)
       }else if(nrcols==2){
-        # this_data = cbind(plotData[[w]]$value,partial_effect=plotData[[w]]$partial_effect)
+        # this_data = cbind(plotData[[w]]$value,partial_effect=plotData[[w]]
+        # $partial_effect)
         # image(plotData[[w]]$value[,1],
         #               plotData[[w]]$value[,2],
         #               plotData[[w]]$partial_effect,
@@ -66,9 +69,11 @@ plot.deepregression <- function(
         #               zlab = "partial effect",
         #               main = paste0("te(", nam, ")")
         # )
-        warning("Plotting of effects with ", nrcols, " covariate inputs not supported yet.")
+        warning("Plotting of effects with ", nrcols, " 
+                covariate inputs not supported yet.")
       }else{
-        warning("Plotting of effects with ", nrcols, " covariate inputs not supported.")
+        warning("Plotting of effects with ", nrcols, 
+                " covariate inputs not supported.")
       }
     }
   }
@@ -105,8 +110,7 @@ predict.deepregression <- function(
 {
 
   if(is.null(newdata)){
-    yhat <- object$model(c(unname(object$init_params$input_cov),
-                           list(rep(0, object$init_params$n_obs))))
+    yhat <- object$model(unname(object$init_params$input_cov))
   }else{
     # preprocess data
     newdata_processed <- prepare_data(object, newdata)
@@ -324,7 +328,8 @@ cv <- function(
     args <- append(args,
                    list(object = this_mod,
                         x = prepare_newdata(object$init_params$parsed_formulae_contents,
-                                            object$init_params$data[train_ind,,drop=FALSE],
+                                            object$init_params$data[train_ind,,
+                                                                    drop=FALSE],
                                             pred = FALSE,
                                             index = train_ind),
                         y = subset_fun(object$init_params$y,train_ind),

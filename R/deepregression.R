@@ -188,9 +188,6 @@ deepregression <- function(
   # create structured layers
   list_structured <- lapply(1:length(parsed_formulae_contents), function(i)
                             get_layers_from_s(parsed_formulae_contents[[i]], i))
-
-  pwr_input = NULL
-  if(sum(ncol_deep)>0) pwr_input <- 1
   
   nr_params <- length(list_of_formulae)
   
@@ -208,7 +205,6 @@ deepregression <- function(
     ncol_deep = ncol_deep,
     list_structured = list_structured,
     list_deep = list_of_deep_models,
-    input_pwr = pwr_input,
     nr_params = nr_params,
     lss = TRUE,
     train_together = train_together,
@@ -237,6 +233,11 @@ deepregression <- function(
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
   input_cov <- make_cov(parsed_formulae_contents)
+  ox <- lapply(parsed_formulae_contents, make_orthog)
+  input_cov <- c(input_cov, 
+                 unname(lapply(ox[!sapply(ox,is.null)],
+                               function(x) tf$constant(x, dtype="float32")))
+  )
 
   param_names <- names(parsed_formulae_contents)
   l_names_effets <- lapply(parsed_formulae_contents, get_names)
@@ -316,7 +317,6 @@ deepregression_init <- function(
   ncol_deep,
   list_structured,
   list_deep,
-  input_pwr=NULL,
   use_bias_in_structured = FALSE,
   nr_params = 2,
   lss = TRUE,
@@ -374,11 +374,6 @@ deepregression_init <- function(
         layer_input(shape = list(1,nc)) else
           layer_input(shape = list(nc))
   })
-  if(!is.null(input_pwr)){
-    pwr = layer_input(shape = 1)
-  }else{
-    pwr = NULL
-  }
 
   if(!is.null(orthogX)){
     ox <- lapply(orthogX, function(x) if(is.null(x)) return(NULL) else
@@ -470,8 +465,7 @@ deepregression_init <- function(
     # apply orthogonalization
     if(!is.null(ox[[1]]))
       deep_parts[[1]] <- orthog_fun(deep_parts[[1]],
-                                    ox[[1]],
-                                    pwr)
+                                    ox[[1]])
     
     # function for split deep model parts
     split_fun <- function(x)
@@ -500,8 +494,7 @@ deepregression_init <- function(
                         deep_top = this_ontop,
                         struct = this_struct,
                         ox = this_ox,
-                        orthog_fun = orthog_fun,
-                        pwr = pwr)
+                        orthog_fun = orthog_fun)
   }
   )
   
@@ -587,7 +580,6 @@ deepregression_init <- function(
   inputList <- unname(c(
     inputs_deep[!sapply(inputs_deep, is.null)],
     inputs_struct[!sapply(inputs_struct, is.null)],
-    pwr,
     ox[!sapply(ox, is.null)])
   )
   # the final model is defined by its inputs

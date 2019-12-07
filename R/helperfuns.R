@@ -27,7 +27,8 @@ NCOL0 <- function(x)
 }
 
 # get contents from formula
-get_contents <- function(lf, data, df, variable_names, intercept = TRUE, defaultSmoothing){
+get_contents <- function(lf, data, df, variable_names, intercept = TRUE, 
+                         defaultSmoothing){
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", "d")
@@ -108,7 +109,8 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE, default
   {
     smoothterms <- sapply(sTerms,
                           function(t) smoothCon(eval(t), data=data, knots=NULL))
-    # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr', warn.t = FALSE))
+    # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
+    # warn.t = FALSE))
     if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
@@ -233,12 +235,15 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   n_obs <- nrow(data)
   input_cov_new <- make_cov(pfc, data)
   ox <- lapply(pfc, make_orthog)
+  if(pred){
+    ox <- lapply(ox, function(x) tf$constant(x*0, dtype="float32"))
+  }
   if(!is.null(index)){
-    ox <- lapply(ox, function(xox) xox[index,,drop=FALSE])
+    ox <- lapply(ox, function(xox)  tf$constant(xox[index,,drop=FALSE], 
+                                                dtype="float32"))
   }
   newdata_processed <- append(
-    c(unname(input_cov_new),
-      list(c(1-pred,rep(0,n_obs-1)))),
+    c(unname(input_cov_new)),
     unname(ox[!sapply(ox, is.null)]))
   return(newdata_processed)
 }
