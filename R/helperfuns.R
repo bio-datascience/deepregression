@@ -35,7 +35,8 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE,
   tf <- terms.formula(lf, specials=specials)
   if(length(attr(tf, "term.labels"))==0){
     if(intercept & attr(tf,"intercept")){
-      linterms <- data.frame(a=rep(1,nrow(data)))
+      if(is.data.frame(data)) linterms <- data.frame(a=rep(1,nrow(data))) else
+        linterms <- data.frame(a=rep(1,dim(data[[1]])[1]))
       names(linterms) <- "(Intercept)"
       attr(linterms, "names") <- names(linterms)
       return(
@@ -91,24 +92,36 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE,
   # frmlenv <- environment(formula)
   # get linear terms
   desel <- unlist(attr(tf, "specials"))
-  if(!is.null(desel))
-    linterms <- data[,attr(tf, "term.labels")[-1*desel], drop=FALSE] else
-                       linterms <- data[,attr(tf, "term.labels"), drop=FALSE]
+  if(is.data.frame(data)){
+    if(!is.null(desel)) linterms <- data[,attr(tf, "term.labels")[-1*desel], drop=FALSE] else
+        linterms <- data[,attr(tf, "term.labels"), drop=FALSE]
+  }else{
+    if(!is.null(desel)) linterms <- data[attr(tf, "term.labels")[-1*desel]] else
+      stop("When using only structured terms, data must be a data.frame")
+    if(length(linterms)==0) linterms <- data.frame(dummy=1:dim(data[[1]])[1])[character(0)]
+  }
   if(intercept & attr(tf,"intercept"))
     linterms <- cbind("(Intercept)" = rep(1,nrow(linterms)), linterms)
   attr(linterms, "names") <- names(linterms)
   # get deep terms
   dterms <- trmstrings[grepl("d\\(.*\\)", trmstrings)]
-  if(length(dterms)==0) deepterms <- NULL else
-    deepterms <- data[,extract_from_special(dterms),drop=FALSE]
+  if(length(dterms)==0) deepterms <- NULL else{
+    if(is.data.frame(data)){
+      deepterms <- data[,extract_from_special(dterms),drop=FALSE]
+    }else{
+      deepterms <- data[extract_from_special(dterms)]
+    }
+  }
   attr(deepterms, "names") <- names(deepterms)
   # get gam terms
   spec <- attr(tf, "specials")
   sTerms <- terms[unlist(spec[names(spec)!="d"])]
   if(length(sTerms)>0)
   {
+    terms_w_s <- extract_from_special(sTerms)
     smoothterms <- sapply(sTerms,
-                          function(t) smoothCon(eval(t), data=data, knots=NULL))
+                          function(t) smoothCon(eval(t), 
+                                                data=data[terms_w_s], knots=NULL))
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
@@ -150,13 +163,16 @@ make_cov <- function(pcf, newdata=NULL,
 
   if(is.null(newdata))
     input_cov <- lapply(pcf, function(x){
-      if(is.null(x$deepterms)) return(NULL) else
-        return(as.matrix(x$deepterms))
+      if(is.null(x$deepterms)) return(NULL) else{
+        if(is.data.frame(x)) return(as.matrix(x$deepterms)) else
+          return(x$deepterms[[1]])
+      }
       }) else
       input_cov <- lapply(pcf, function(x){
-        if(length(intersect(names(x$deepterms),names(newdata)))>0)
-          return(newdata[,names(x$deepterms),drop=FALSE]) else
-            return(NULL)
+        if(length(intersect(names(x$deepterms),names(newdata)))>0){
+          if(is.data.frame(newdata)) return(newdata[,names(x$deepterms),drop=FALSE]) else
+            return(newdata[names(x$deepterms)])
+          }else{ return(NULL) }
       })
   input_cov <- c(input_cov,
                  lapply(pcf, function(x){
@@ -165,14 +181,14 @@ make_cov <- function(pcf, newdata=NULL,
                      if(is.null(newdata))
                        ret <- x$linterms else{
                          if("(Intercept)" %in% names(x$linterms))
-                           newdata[,"(Intercept)"] <- rep(1,nrow(newdata))
-                         ret <- newdata[,names(x$linterms),drop=FALSE]
+                           newdata$`(Intercept)` <- rep(1,NROW(newdata[[1]]))
+                         ret <- newdata[names(x$linterms)]
                        }
                        if(!is.null(x$smoothterms))
                        {
                          if(!is.null(newdata)){
                            Xp <- lapply(x$smoothterms, function(sm)
-                             PredictMat(sm,newdata))
+                             PredictMat(sm,newdata[names(sm)]))
                          }else{
                            Xp <- lapply(x$smoothterms, "[[", "X")
                          }
@@ -190,6 +206,9 @@ make_cov <- function(pcf, newdata=NULL,
   input_cov_isdf <- sapply(input_cov, is.data.frame)
   input_cov[which(input_cov_isdf)] <- lapply(input_cov[which(input_cov_isdf)],
                                              as.matrix)
+  input_cov_islist <- sapply(input_cov, is.list)
+  input_cov[which(input_cov_islist)] <- sapply(input_cov[which(input_cov_islist)],
+                                               function(x) as.array(x[[1]]))
   input_cov <- lapply(input_cov, convertfun)
   return(input_cov)
 
@@ -232,7 +251,7 @@ get_indices <- function(x)
 
 prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
 {
-  n_obs <- nrow(data)
+  n_obs <- NROW(data[[1]])
   input_cov_new <- make_cov(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){

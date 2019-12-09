@@ -137,10 +137,9 @@ deepregression <- function(
   # get column names of data
   varnames <- names(data)
   # number of observations
-  n_obs <- nrow(data)
+  n_obs <- NROW(y)
   # number of output dim
   output_dim <- NCOL(y)
-
 
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
@@ -173,8 +172,11 @@ deepregression <- function(
   # TODO
 
   # get columns per term
-  ncol_deep <- unlist(sapply(lapply(
-    parsed_formulae_contents, "[[", "deepterms"), NCOL0))
+  ncol_deep <- lapply(lapply(
+    parsed_formulae_contents, "[[", "deepterms"), function(x){
+      if(is.null(x) || is.data.frame(x)) NCOL0(x) else 
+        dim(x[[1]])[-1]
+      })
   ncol_structured <- sapply(
     parsed_formulae_contents[!sapply(parsed_formulae_contents,is.null)],
     function(x){
@@ -193,7 +195,7 @@ deepregression <- function(
   
   if(train_together){
     ncol_deep <- ncol_deep[[1]]
-    for(i in 2:nr_params)
+    for(i in 2:nr_psarams)
       parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
   }
 
@@ -363,8 +365,8 @@ deepregression_init <- function(
   
   # define the input layers
   inputs_deep <- lapply(ncol_deep, function(nc){
-    if(nc==0) return(NULL) else
-      layer_input(shape = list(nc))
+    if(nc[1]==0) return(NULL) else
+      layer_input(shape = as.list(nc))
     })
   inputs_struct <- lapply(1:length(ncol_structured), function(i){
     nc = ncol_structured[i]
