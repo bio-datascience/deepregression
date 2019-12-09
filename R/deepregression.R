@@ -97,7 +97,8 @@ deepregression <- function(
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "multinomial", "negbinom", "pareto", "poisson", "poisson_lograte", "student_t",
+    "multinomial", "multinoulli", "negbinom", "pareto", "poisson", 
+    "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform"
   ),
   train_together = FALSE,
@@ -586,6 +587,7 @@ deepregression_init <- function(
   )
   # the final model is defined by its inputs
   # and outputs
+
   model <- keras_model(inputs = inputList,
                        outputs = out)
 
@@ -602,11 +604,6 @@ deepregression_init <- function(
   model %>% compile(optimizer = optimizer,
                     loss = negloglik,
                     metrics = monitor_metric)
-
-  # model$set("public", "get_linear_weights", function() {
-  #   warning("get_linear_weights is only working in special cases.")
-  #   return(self$)
-  # })
 
   return(model)
 

@@ -140,7 +140,8 @@ fitted.deepregression <- function(
 
 
 #' @method fit deepregression
-#' @param ... further arguments passed to \code{keras:::fit.keras.engine.training.Model}
+#' @param ... further arguments passed to 
+#' \code{keras:::fit.keras.engine.training.Model}
 #' such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )
 #' @export
 #' @rdname methodDR
@@ -254,7 +255,8 @@ print.deepregression <- function(
 }
 
 #' @title Cross-validation for deepgression objects
-#' @param ... further arguments passed to \code{keras:::fit.keras.engine.training.Model}
+#' @param ... further arguments passed to 
+#' \code{keras:::fit.keras.engine.training.Model}
 #' @param object deepregression object
 #' @param verbose whether to print training in each fold
 #' @param patience number of patience for early stopping
@@ -294,7 +296,8 @@ cv <- function(
   }
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
-    cv_folds <- make_cv_list_simple(data_size=NROW(object$init_params$data[[1]]), 10)
+    cv_folds <- make_cv_list_simple(data_size=
+                                      NROW(object$init_params$data[[1]]), 10)
   }
   nrfolds <- length(cv_folds)
   old_weights <- object$model$get_weights()
@@ -304,7 +307,7 @@ cv <- function(
   # subset fun
   if(NCOL(object$init_params$y)==1)
     subset_fun <- function(y,ind) y[ind] else
-      subset_fun <- function(y,ind) y[ind,,drop=FALSE]
+      subset_fun <- function(y,ind) subset_array(y,ind)
   
   res <- mylapply(cv_folds, function(this_fold){
   
@@ -337,17 +340,19 @@ cv <- function(
     args <- list(...)
     args <- append(args,
                    list(object = this_mod,
-                        x = prepare_newdata(object$init_params$parsed_formulae_contents,
-                                            train_data,
-                                            pred = FALSE,
-                                            index = train_ind),
+                        x = prepare_newdata(
+                          object$init_params$parsed_formulae_contents,
+                          train_data,
+                          pred = FALSE,
+                          index = train_ind),
                         y = subset_fun(object$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
-                          prepare_newdata(object$init_params$parsed_formulae_contents,
-                                          test_data,
-                                          pred = TRUE,
-                                          index = test_ind),
+                          prepare_newdata(
+                            object$init_params$parsed_formulae_contents,
+                            test_data,
+                            pred = TRUE,
+                            index = test_ind),
                           subset_fun(object$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,

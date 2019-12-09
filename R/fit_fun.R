@@ -10,7 +10,8 @@ keras_version <- keras:::keras_version
 
 # copy of keras:::fit.keras.engine.training.Model
 fit_fun <- function(object, x = NULL, y = NULL, batch_size = NULL, epochs = 10, 
-                    verbose = getOption("keras.fit_verbose", default = 1), callbacks = NULL, 
+                    verbose = getOption("keras.fit_verbose", default = 1), 
+                    callbacks = NULL, 
                     view_metrics = getOption("keras.view_metrics", default = "auto"), 
                     validation_split = 0, validation_data = NULL, shuffle = TRUE, 
                     class_weight = NULL, sample_weight = NULL, initial_epoch = 0, 
@@ -24,7 +25,8 @@ fit_fun <- function(object, x = NULL, y = NULL, batch_size = NULL, epochs = 10,
                                          object$metrics)
   args <- list(batch_size = as_nullable_integer(batch_size), 
                epochs = as.integer(epochs), verbose = as.integer(verbose), 
-               callbacks = normalize_callbacks_with_metrics_custom(view_metrics, callbacks), 
+               callbacks = normalize_callbacks_with_metrics_custom(view_metrics, 
+                                                                   callbacks), 
                validation_split = validation_split, 
                shuffle = shuffle, class_weight = as_class_weight(class_weight), 
                sample_weight = keras_array(sample_weight), 
