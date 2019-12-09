@@ -1,7 +1,8 @@
 # function that extracts variables from special symbols in formulae
 extract_from_special <- function(x)
   trimws(
-    strsplit(regmatches(x, gregexpr("(?<=\\().*?(?=\\))", x, perl=T))[[1]],
+    strsplit(regmatches(x, 
+                        gregexpr("(?<=\\().*?(?=\\))", x, perl=T))[[1]],
              split = ",")[[1]]
   )
 # convert sparse matrix to sparse tensor
@@ -93,12 +94,14 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE,
   # get linear terms
   desel <- unlist(attr(tf, "specials"))
   if(is.data.frame(data)){
-    if(!is.null(desel)) linterms <- data[,attr(tf, "term.labels")[-1*desel], drop=FALSE] else
+    if(!is.null(desel)) linterms <- 
+        data[,attr(tf, "term.labels")[-1*desel], drop=FALSE] else
         linterms <- data[,attr(tf, "term.labels"), drop=FALSE]
   }else{
     if(!is.null(desel)) linterms <- data[attr(tf, "term.labels")[-1*desel]] else
       stop("When using only structured terms, data must be a data.frame")
-    if(length(linterms)==0) linterms <- data.frame(dummy=1:dim(data[[1]])[1])[character(0)]
+    if(length(linterms)==0) linterms <- 
+        data.frame(dummy=1:dim(data[[1]])[1])[character(0)]
   }
   if(intercept & attr(tf,"intercept"))
     linterms <- cbind("(Intercept)" = rep(1,nrow(linterms)), linterms)
@@ -118,10 +121,12 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE,
   sTerms <- terms[unlist(spec[names(spec)!="d"])]
   if(length(sTerms)>0)
   {
-    terms_w_s <- extract_from_special(sTerms)
+    terms_w_s <- lapply(names(sTerms), extract_from_special)
+    terms_w_s <- lapply(terms_w_s, function(x) x[!grepl("=", x, fixed=T)])
     smoothterms <- sapply(sTerms,
                           function(t) smoothCon(eval(t), 
-                                                data=data[terms_w_s], knots=NULL))
+                                                data=data[unlist(terms_w_s)], 
+                                                knots=NULL))
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
@@ -132,7 +137,8 @@ get_contents <- function(lf, data, df, variable_names, intercept = TRUE,
         return(st)
       }
     smoothterms[sapply(smoothterms,function(x) is.null(x$sp))] <-
-      lapply(smoothterms[sapply(smoothterms,function(x) is.null(x$sp))], defaultSmoothing)
+      lapply(smoothterms[sapply(smoothterms,function(x) is.null(x$sp))], 
+             defaultSmoothing)
     attr(smoothterms, "names") <- sapply(names(smoothterms),
                                          function(x){
                                            vars <- extract_from_special(x)
@@ -164,7 +170,7 @@ make_cov <- function(pcf, newdata=NULL,
   if(is.null(newdata))
     input_cov <- lapply(pcf, function(x){
       if(is.null(x$deepterms)) return(NULL) else{
-        if(is.data.frame(x)) return(as.matrix(x$deepterms)) else
+        if(is.data.frame(x$deepterms)) return(as.matrix(x$deepterms)) else
           return(x$deepterms[[1]])
       }
       }) else
@@ -188,7 +194,7 @@ make_cov <- function(pcf, newdata=NULL,
                        {
                          if(!is.null(newdata)){
                            Xp <- lapply(x$smoothterms, function(sm)
-                             PredictMat(sm,newdata[names(sm)]))
+                             PredictMat(sm,newdata[names(x$smoothterms)]))
                          }else{
                            Xp <- lapply(x$smoothterms, "[[", "X")
                          }
@@ -255,11 +261,12 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   input_cov_new <- make_cov(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){
-    ox <- lapply(ox, function(x) tf$constant(x*0, dtype="float32"))
+    ox <- lapply(ox, function(x)  if(is.null(x)) return(NULL) else 
+      tf$constant(x*0, dtype="float32"))
   }
   if(!is.null(index)){
-    ox <- lapply(ox, function(xox)  tf$constant(xox[index,,drop=FALSE], 
-                                                dtype="float32"))
+    ox <- lapply(ox, function(xox) if(is.null(xox)) return(NULL) else 
+      tf$constant(as.matrix(xox)[index,,drop=FALSE], dtype="float32"))
   }
   newdata_processed <- append(
     c(unname(input_cov_new)),
@@ -368,5 +375,15 @@ make_folds <- function(mat, val_train=0, val_test=1)
     list(train = which(x %in% val_train),
          test = which(x %in% val_test))
   })
+  
+}
+
+subset_array <- function(x, index)
+{
+  
+  dimx <- dim(x)
+  eval(parse(text=paste0("x[index", 
+                         paste(rep(",", length(dimx)-1),collapse=""), 
+                         ",drop=FALSE]")))
   
 }

@@ -287,14 +287,14 @@ cv <- function(
   if(is.null(cv_folds)){ 
     cv_folds <- object$init_params$cv_folds
   }else if(!is.list(cv_folds) & is.numeric(cv_folds)){
-    cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 
+    cv_folds <- make_cv_list_simple(data_size=NROW(object$init_params$data[[1]]), 
                                     cv_folds)
   }else{
     stop("Wrong format for cv_folds.")
   }
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
-    cv_folds <- make_cv_list_simple(data_size=nrow(object$init_params$data), 10)
+    cv_folds <- make_cv_list_simple(data_size=NROW(object$init_params$data[[1]]), 10)
   }
   nrfolds <- length(cv_folds)
   old_weights <- object$model$get_weights()
@@ -318,25 +318,34 @@ cv <- function(
     train_ind <- this_fold[[1]]
     test_ind <- this_fold[[2]]
     
+    # data
+    if(is.data.frame(object$init_params$data)){
+      train_data <- object$init_params$data[train_ind,, drop=FALSE] 
+      test_data <- object$init_params$data[test_ind,,drop=FALSE]
+    }else{
+      train_data <- lapply(object$init_params$data, function(x) 
+        subset_array(x, train_ind))
+      test_data <- lapply(object$init_params$data, function(x) 
+        subset_array(x, test_ind))
+    }
+    
     # make callbacks 
     this_callbacks <- list()
     weighthistory <- WeightHistory$new()
     this_callbacks <- append(this_callbacks, weighthistory)
     
-    
     args <- list(...)
     args <- append(args,
                    list(object = this_mod,
                         x = prepare_newdata(object$init_params$parsed_formulae_contents,
-                                            object$init_params$data[train_ind,,
-                                                                    drop=FALSE],
+                                            train_data,
                                             pred = FALSE,
                                             index = train_ind),
                         y = subset_fun(object$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
                           prepare_newdata(object$init_params$parsed_formulae_contents,
-                                          object$init_params$data[test_ind,,drop=FALSE],
+                                          test_data,
                                           pred = TRUE,
                                           index = test_ind),
                           subset_fun(object$init_params$y,test_ind)
