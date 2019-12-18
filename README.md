@@ -38,7 +38,7 @@ install_github("davidruegamer/deepregression")
 Examples
 ========
 
-1.  [Deep Linear Regression](#deep-linear-regression)
+1.  [Deep Additive Regression](#deep-linear-regression)
 2.  [Deep Logistic Regression](#deep-logistic-regression)
 3.  [Deep GAM](#deep-gam)
 4.  [GAMLSS](#gamlss)
@@ -48,17 +48,16 @@ Examples
     1.  [Deep Mixed Model for Wage Panel Data](#deep-mixed-model-for-wage-panel-data)
     2.  [Deep Quantile Regression on Motorcycle Data](#deep-quantile-regression-on-motorcycle-data)
     3.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer Data](#high-dimensional-ridge-and-lasso-regression)
-    4.  [Mixture Distribution for Acidity Modeling](#mixture-of-normals)
+    4.  [Mixture distribution for Acidity Modeling](#mixture-of-normals)
 8.  [Unstructured Data Examples](#unstructured-data-examples)
     1.  [MNIST Pictures with Binarized Response](#mnist-zeros)
     2.  [MNIST Pictures with Multinomial Response](#mnist-multinomial)
     3.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
 
+Deep Additive Regression
+------------------------
 
-Deep Linear Regression
-----------------------
-
-We first create a very simple linear regression first where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
+We first create a very simple regression where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
 
 ``` r
 set.seed(24)
@@ -259,8 +258,7 @@ mod <- deepregression(
   df = 10 # use no penalization for spline
 )
 # fit model
-history <- mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE,
-                       save_weights = TRUE)
+mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
 # plot model
 par(mfrow=c(1,2))
 plot(true_mean_fun(x) ~ x)
@@ -893,24 +891,14 @@ plot(coef[[1]][[1]])
 
 ![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)
 
-Mixture of Normals
+Mixture of normals
 ------------------
 
-We here estiamte the mixture of three normal distributions to fit the model to the acidity data, a data set showing the acidity index for 155 lakes in the Northeastern United States.
+We here estimate a mixture of three normal distributions for the acidity data, a data set showing the acidity index for 155 lakes in the Northeastern United States.
 
 ``` r
 # load data
 library("gamlss.data")
-```
-
-    ## 
-    ## Attaching package: 'gamlss.data'
-
-    ## The following object is masked from 'package:datasets':
-    ## 
-    ##     sleep
-
-``` r
 data(acidity)
 
 # softmax function
@@ -939,15 +927,15 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 35.36168  secs 
+    ## Done in 35.70982  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 34.21259  secs 
+    ## Done in 38.83584  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 33.63657  secs 
+    ## Done in 41.88017  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 33.85886  secs 
+    ## Done in 51.84174  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 33.94692  secs
+    ## Done in 49.26305  secs
 
 ![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
 
@@ -958,25 +946,23 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1] -0.2290305  1.3202169 -0.8790442
+    ## [1]  1.1307266  0.3487663 -0.7707656
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.6950519 0.4000296 0.2292812
+    ## [1] 0.5324980 2.3916503 0.3343867
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.2913544 0.3130229 0.3956226
+    ## [1] 0.40977218 0.01705999 0.57316783
 
 ``` r
 library(distr)
-```
 
-``` r
 mixDist <- UnivarMixingDistribution(Norm(means[1],stds[1]),
                                     Norm(means[2],stds[2]),
                                     Norm(means[3],stds[3]),

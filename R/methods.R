@@ -3,11 +3,13 @@
 #' @param object deepregression object
 #' @param which which effect to plot, default selects all.
 #' @param which_param integer of length 1.
-#' Corresponds to the distribution parameter for which the effects should be plotted.
+#' Corresponds to the distribution parameter for 
+#' which the effects should be plotted.
 #' @param ... further arguments, passed to fit, plot or predict function
 #' @param apply_fun function to apply to distribution, default is \code{tfd_mean}.
 #' @param newdata new data for prediction, defaults to \code{NULL}
-#' @param convert_fun function which converts the tensor outputted by predict function
+#' @param convert_fun function which converts the tensor 
+#' outputted by predict function
 #'
 #' @method plot deepregression
 #' @export
@@ -40,7 +42,8 @@ plot.deepregression <- function(
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
                                                        c("start","end")])))[[1]]
     BX <- 
-      object$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[nam]]$X
+      object$init_params$parsed_formulae_contents[[
+        which_param]]$smoothterms[[nam]]$X
     plotData[[w]] <-
       list(org_feature_name = nam,
            value = object$init_params$data[,strsplit(nam,",")[[1]]],
@@ -90,8 +93,9 @@ prepare_data <- function(
   data
 )
 {
-  newdata_processed <- prepare_newdata(object$init_params$parsed_formulae_contents,
-                                       data)
+  newdata_processed <- prepare_newdata(
+    object$init_params$parsed_formulae_contents,
+    data)
   return(newdata_processed)
 }
 
@@ -289,15 +293,16 @@ cv <- function(
   if(is.null(cv_folds)){ 
     cv_folds <- object$init_params$cv_folds
   }else if(!is.list(cv_folds) & is.numeric(cv_folds)){
-    cv_folds <- make_cv_list_simple(data_size=NROW(object$init_params$data[[1]]), 
-                                    cv_folds)
+    cv_folds <- make_cv_list_simple(
+      data_size = NROW(object$init_params$data[[1]]), 
+      cv_folds)
   }else{
     stop("Wrong format for cv_folds.")
   }
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
-    cv_folds <- make_cv_list_simple(data_size=
-                                      NROW(object$init_params$data[[1]]), 10)
+    cv_folds <- make_cv_list_simple(
+      data_size = NROW(object$init_params$data[[1]]), 10)
   }
   nrfolds <- length(cv_folds)
   old_weights <- object$model$get_weights()
@@ -325,7 +330,7 @@ cv <- function(
     if(is.data.frame(object$init_params$data)){
       train_data <- object$init_params$data[train_ind,, drop=FALSE] 
       test_data <- object$init_params$data[test_ind,,drop=FALSE]
-    }else{
+    }else if(class(object$init_params$data)=="list"){
       train_data <- lapply(object$init_params$data, function(x) 
         subset_array(x, train_ind))
       test_data <- lapply(object$init_params$data, function(x) 
