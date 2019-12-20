@@ -117,6 +117,7 @@ predict.deepregression <- function(
     yhat <- object$model(unname(object$init_params$input_cov))
   }else{
     # preprocess data
+    if(is.data.frame(newdata)) newdata <- as.list(newdata)
     newdata_processed <- prepare_data(object, newdata)
     yhat <- object$model(newdata_processed)
   }
@@ -377,7 +378,7 @@ cv <- function(
     
     this_mod$set_weights(old_weights)
     td <- Sys.time()-st1
-    cat("\nDone in", as.numeric(td), "", attr(td,"units"), "\n")
+    if(print_folds) cat("\nDone in", as.numeric(td), "", attr(td,"units"), "\n")
     
     return(ret)
     

@@ -5,52 +5,56 @@ make_orthog <- function(
 {
 
   if(is.null(pcf$deepterms)) return(NULL)
-  n_obs <- NROW(pcf$deepterms)
-  nms <- lapply(pcf, function(x)attr(x,"names"))
+  n_obs <- nROW(pcf)
+  nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))
+  nmsd <- lapply(pcf$deepterms, function(x) attr(x,"names"))
   if(!is.null(nms$smoothterms))
     struct_nms <- c(nms$linterms, unlist(strsplit(nms$smoothterms,","))) else
       struct_nms <- nms$linterms
-  if(length(intersect(nms$deepterms, struct_nms)) > 0){
+  if(length(intersect(unlist(nmsd), struct_nms)) > 0){
 
-    X <- matrix(nrow = n_obs, ncol=0)
-    # Ps <- list()
-    # lambdas <- c()
-
-    for(nm in nms$deepterms){
-
-      if(nm %in% nms$linterms){
-
-        X <- cbind(X,pcf$linterms[,nm])
-        # Ps <- append(Ps, list(0))
-        # lambdas <- c(lambdas, 0)
-
-      }
-      wh <- grepl(nm,nms$smoothterms)
-      if(any(wh)){
-
-        for(w in which(wh)){
-
-          # Ps <- append(Ps, pcf$smoothterms[[w]]$S)
-          # lambdas <- c(lambdas, pcf$smoothterms[[w]]$sp)
-          # if(nm %in% nms$linterms){
-          #   X <- cbind(X, pcf$smoothterms[[w]]$X,
-          #                          do.call("+",pcf$smoothterms[[w]]$S)
-          # }else{
+    qList <- lapply(nmsd, function(nn){
+      
+      X <- matrix(nrow = n_obs, ncol=0)
+      # Ps <- list()
+      # lambdas <- c()
+      
+      for(nm in nn){
+        
+        if(nm %in% nms$linterms){
+          
+          X <- cbind(X,pcf$linterms[,nm])
+          # Ps <- append(Ps, list(0))
+          # lambdas <- c(lambdas, 0)
+          
+        }
+        wh <- grepl(nm,nms$smoothterms)
+        if(any(wh)){
+          
+          for(w in which(wh)){
+            
+            # Ps <- append(Ps, pcf$smoothterms[[w]]$S)
+            # lambdas <- c(lambdas, pcf$smoothterms[[w]]$sp)
+            # if(nm %in% nms$linterms){
+            #   X <- cbind(X, pcf$smoothterms[[w]]$X,
+            #                          do.call("+",pcf$smoothterms[[w]]$S)
+            # }else{
             X <- cbind(X, pcf$smoothterms[[w]]$X)
-          # }
-
+            # }
+            
+          }
         }
       }
-    }
-
-    # P = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
-
-    # this_Px <- tcrossprod(tcrossprod(X,solve(crossprod(X))),X)
-    qrX <- qr(X)
-    Q <- qr.Q(qrX)
-    # coefmat <- tcrossprod(Q)
-    if(retcol) return(NCOL(Q)) else 
-      return(Q)
+      
+      # P = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
+      
+      # this_Px <- tcrossprod(tcrossprod(X,solve(crossprod(X))),X)
+      qrX <- qr(X)
+      Q <- qr.Q(qrX)
+      # coefmat <- tcrossprod(Q)
+      if(retcol) return(NCOL(Q)) else 
+        return(Q)
+    })
   }else{
     return(NULL)
   }
@@ -170,21 +174,28 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
   
   }else if(is.null(struct)){
     
-    return(deep_top(deep))
+    return(layer_add(lapply(1:length(deep), 
+                            function(j) deep_top[[j]](deep[[j]]))))
     
   }else{
     
     if(is.null(ox)){
       
       return(
-        layer_add( list(deep_top(deep), struct) )
+        layer_add( append(lapply(1:length(deep), 
+                                           function(j) deep_top[[j]](deep[[j]])),
+                          list(struct))
+        )
         )
       
     }else{
       
+      if(length(deep) > 1) 
+        stop("Orthogonalization not yet possible for more than ",
+                "one deep model in each predictor.")
+      
       return(
-        layer_add( list(deep_top(orthog_fun(deep,
-                                            ox)), struct) )
+        layer_add( list(deep_top[[1]](orthog_fun[[1]](deep[[1]], ox[[1]])), struct) )
       )
     }
   }
