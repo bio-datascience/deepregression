@@ -110,19 +110,16 @@ get_contents <- function(lf, data, df,
   #     stop("When using only structured terms, data must be a data.frame")
     if(length(attr(tf,"term.labels"))>0)
       linterms <- as.data.frame(data[attr(tf, "term.labels")]) else
-    linterms <- data.frame(dummy=1:NROW(data[[1]])[1])[character(0)]
+    linterms <- data.frame(dummy=1:nROW(data))[character(0)]
   # }
   }
   if(intercept & attr(tf,"intercept"))#{
     # if(NCOL(linterms)==0)
-    linterms <- cbind("(Intercept)" = rep(1,nROW(linterms)), 
-                      as.data.frame(linterms))# else
-                        # linterms <- 
-                        #   cbind("(Intercept)" = 
-                        #           rep(1,NROW(linterms[[1]])[1]), 
-                        #         as.data.frame(linterms))
-    
-  # }
+    if(NROW(linterms)==0)
+      linterms <- data.frame("(Intercept)" = rep(1,nROW(data))) else
+        linterms <- cbind("(Intercept)" = rep(1,nROW(data)), 
+                          as.data.frame(linterms))# else
+
   attr(linterms, "names") <- names(linterms)
   
   # get gam terms
@@ -188,6 +185,9 @@ get_contents <- function(lf, data, df,
       attr(deepterms, "names") <- names(deepterms)
       return(deepterms)
     })
+    if(length(network_names)==1)
+      names(deepterms) <- rep(network_names, length(deepterms)) else
+        names(deepterms) <- network_names
   }
   
   return(list(linterms = linterms,

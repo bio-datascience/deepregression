@@ -149,6 +149,8 @@ deepregression <- function(
   netnames <- names(list_of_deep_models)
   if(is.null(netnames) & length(list_of_deep_models) > 0)
     netnames <- "d"
+  if(!is.null(list_of_deep_models) && is.null(names(list_of_deep_models)))
+    names(list_of_deep_models) <- rep("d", length(list_of_deep_models))
   # number of observations
   n_obs <- NROW(y)
   # number of output dim
@@ -192,6 +194,7 @@ deepregression <- function(
       names(ret) <- names(x)
       return(ret)
     })
+      
   ncol_structured <- sapply(
     parsed_formulae_contents[!sapply(parsed_formulae_contents,is.null)],
     function(x){
@@ -213,9 +216,6 @@ deepregression <- function(
     for(i in 2:nr_psarams)
       parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
   }
-
-  if(!is.null(list_of_deep_models) && is.null(names(list_of_deep_models)))
-    names(list_of_deep_models) <- rep("d", length(list_of_deep_models))
     
   # initialize the model
   model <- deepregression_init(

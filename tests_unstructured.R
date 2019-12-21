@@ -191,6 +191,7 @@ formulae <- c(
 list_models <- list(deep_model = deep_model,
                     another_deep_model = another_deep_model,
                     third_model = third_model)
+list_models_wo_name <- list(deep_model, another_deep_model)
 
 use <- list(1,1,1:2,1:2,1:2,1:3)
 
@@ -199,7 +200,15 @@ for(i in 1:length(formulae)){
   form <- formulae[i]
   usei <- use[[i]]
   this_list <- list_models[usei]
-  if(length(usei)==1) names(this_list) <- NULL
+  if(i %in% 1:3){ 
+    
+    use_list <- list_models_wo_name[use[[i]]]
+    
+  }else{
+    
+    use_list <- list_models[use[[i]]]
+    
+  }
   
   cat("Formula: ", form, " ... ")
   suppressWarnings(
@@ -208,7 +217,7 @@ for(i in 1:length(formulae)){
       data = data,
       # define how parameters should be modeled
       list_of_formulae = list(loc = as.formula(form), scale = ~1),
-      list_of_deep_models = this_list
+      list_of_deep_models = use_list
     ), silent=silent)
   )
   # test if model can be fitted
