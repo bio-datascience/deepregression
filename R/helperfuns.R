@@ -329,7 +329,7 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   }
   if(is.null(index) & !pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
-      if(is.null(x)) return(NULL) else
+      if(is.null(x_per_param)) return(NULL) else
         unlist(lapply(x_per_param, function(x)
           tf$constant(x, dtype="float32")))), recursive=F)
   }
