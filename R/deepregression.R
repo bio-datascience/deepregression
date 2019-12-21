@@ -253,10 +253,12 @@ deepregression <- function(
   }
   input_cov <- make_cov(parsed_formulae_contents)
   ox <- lapply(parsed_formulae_contents, make_orthog)
-  input_cov <- c(input_cov, 
-                 unname(lapply(ox[!sapply(ox,is.null)],
-                               function(x) tf$constant(x, dtype="float32")))
-  )
+  input_cov <- unname(c(input_cov, 
+                 unlist(lapply(ox[!sapply(ox,is.null)],
+                               function(x_per_param) 
+                                 unlist(lapply(x_per_param, function(x)
+                                   tf$constant(x, dtype="float32")))), recursive = F)
+  ))
 
   param_names <- names(parsed_formulae_contents)
   l_names_effets <- lapply(parsed_formulae_contents, get_names)

@@ -115,7 +115,7 @@ get_contents <- function(lf, data, df,
   }
   if(intercept & attr(tf,"intercept"))#{
     # if(NCOL(linterms)==0)
-    linterms <- cbind("(Intercept)" = rep(1,NROW(linterms)), 
+    linterms <- cbind("(Intercept)" = rep(1,nROW(linterms)), 
                       as.data.frame(linterms))# else
                         # linterms <- 
                         #   cbind("(Intercept)" = 
@@ -259,7 +259,8 @@ make_cov <- function(pcf, newdata=NULL,
   list_len_1 <- sapply(input_cov, function(x) is.list(x) & length(x)==1)
   input_cov[list_len_1] <- lapply(input_cov[list_len_1], function(x) x[[1]])
   input_cov[sapply(lapply(input_cov,dim),is.null)] <- 
-    lapply(input_cov[sapply(lapply(input_cov,dim),is.null)], function(x) matrix(x, ncol=1))
+    lapply(input_cov[sapply(lapply(input_cov,dim),is.null)], 
+           function(x) matrix(x, ncol=1))
   input_cov_isdf <- sapply(input_cov, is.data.frame)
   if(sum(input_cov_isdf)>0)
     input_cov[which(input_cov_isdf)] <- 
@@ -313,12 +314,24 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   input_cov_new <- make_cov(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){
-    ox <- lapply(ox, function(x)  if(is.null(x)) return(NULL) else 
-      tf$constant(x*0, dtype="float32"))
+    ox <- unlist(lapply(ox, function(x_per_param) 
+      if(is.null(x)) return(NULL) else
+             unlist(lapply(x_per_param, function(x)
+               tf$constant(x*0, dtype="float32")))), recursive=F)
   }
   if(!is.null(index)){
-    ox <- lapply(ox, function(xox) if(is.null(xox)) return(NULL) else 
-      tf$constant(as.matrix(xox)[index,,drop=FALSE], dtype="float32"))
+    ox <- unlist(lapply(ox, function(x_per_param) 
+      if(is.null(x)) return(NULL) else
+      unlist(lapply(x_per_param, function(xox)
+        tf$constant(as.matrix(xox)[index,,drop=FALSE], 
+                    dtype="float32")))), 
+      recursive=F)
+  }
+  if(is.null(index) & !pred){
+    ox <- unlist(lapply(ox, function(x_per_param) 
+      if(is.null(x)) return(NULL) else
+        unlist(lapply(x_per_param, function(x)
+          tf$constant(x, dtype="float32")))), recursive=F)
   }
   newdata_processed <- append(
     c(unname(input_cov_new)),

@@ -195,7 +195,7 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
                 "one deep model in each predictor.")
       
       return(
-        layer_add( list(deep_top[[1]](orthog_fun[[1]](deep[[1]], ox[[1]])), struct) )
+        layer_add( list(deep_top[[1]](orthog_fun(deep[[1]], ox[[1]])), struct) )
       )
     }
   }
