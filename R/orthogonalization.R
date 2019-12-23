@@ -1,3 +1,34 @@
+orthog_structured <- function(S,L)
+{
+  qrL <- qr(L)
+  Q <- qr.Q(qrL)
+  XtXinvXt <- tcrossprod(Q)
+  Sorth <- S - XtXinvXt%*%S
+  return(Sorth)
+}
+
+orthog_smooth <- function(pcf){
+  
+  nml <- attr(pcf$linterms, "names")
+  nms <- attr(pcf$smoothterms, "names")
+  for(nm in nms){
+    
+    L <- matrix(rep(1,NROW(pcf$linterms)), ncol=1)
+    
+    if(nm %in% nml){
+      
+      L <- cbind(L, pcf$linterms[,nm])
+      
+    }
+    
+    pcf$smoothterms[[nm]]$X <- 
+      orthog_structured(pcf$smoothterms[[nm]]$X, L) 
+  
+  }
+  
+  return(pcf)
+}
+
 make_orthog <- function(
   pcf,
   retcol = FALSE
@@ -11,53 +42,44 @@ make_orthog <- function(
   if(!is.null(nms$smoothterms))
     struct_nms <- c(nms$linterms, unlist(strsplit(nms$smoothterms,","))) else
       struct_nms <- nms$linterms
-  if(length(intersect(unlist(nmsd), struct_nms)) > 0){
-
-    qList <- lapply(nmsd, function(nn){
+  if(is.null(pcf$linterms) & is.null(pcf$smoothterms))
+    return(NULL)
+  qList <- lapply(nmsd, function(nn){
       
-      X <- matrix(nrow = n_obs, ncol=0)
+      # if there is any smooth or 
+      X <- matrix(rep(1,n_obs), ncol=1) 
       # Ps <- list()
       # lambdas <- c()
-      
-      for(nm in nn){
+      if(length(intersect(nn, struct_nms)) > 0){
         
-        if(nm %in% nms$linterms){
+        for(nm in nn){
           
-          X <- cbind(X,pcf$linterms[,nm])
-          # Ps <- append(Ps, list(0))
-          # lambdas <- c(lambdas, 0)
-          
-        }
-        wh <- grepl(nm,nms$smoothterms)
-        if(any(wh)){
-          
-          for(w in which(wh)){
+          if(nm %in% nms$linterms){
             
-            # Ps <- append(Ps, pcf$smoothterms[[w]]$S)
-            # lambdas <- c(lambdas, pcf$smoothterms[[w]]$sp)
-            # if(nm %in% nms$linterms){
-            #   X <- cbind(X, pcf$smoothterms[[w]]$X,
-            #                          do.call("+",pcf$smoothterms[[w]]$S)
-            # }else{
-            X <- cbind(X, pcf$smoothterms[[w]]$X)
-            # }
+            X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
+            # Ps <- append(Ps, list(0))
+            # lambdas <- c(lambdas, 0)
             
           }
+          if(nm %in% nms$smoothterms){
+  
+              X <- cbind(X, pcf$smoothterms[[grep(nm,nms$smoothterms)]]$X)
+              
+          }
         }
+        
       }
       
-      # P = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
-      
-      # this_Px <- tcrossprod(tcrossprod(X,solve(crossprod(X))),X)
       qrX <- qr(X)
       Q <- qr.Q(qrX)
       # coefmat <- tcrossprod(Q)
       if(retcol) return(NCOL(Q)) else 
         return(Q)
-    })
-  }else{
-    return(NULL)
-  }
+      
+  })
+  
+  return(qList)
+        
 }
 
 # for P-Splines

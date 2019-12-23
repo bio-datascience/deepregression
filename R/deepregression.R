@@ -43,7 +43,8 @@
 #' @param defaultSmoothing function applied to all s-terms, per default (NULL)
 #' the minimum df of all possible terms is used.
 #' @param cv_folds a list of lists, each list element has two elements, one for
-#' training indices and one for testing indices; if a single integer number is given, 
+#' training indices and one for testing indices; 
+#' if a single integer number is given, 
 #' a simple k-fold cross-validation is defined, where k is the supplied number.
 #' @param validation_data data for validation during training.
 #' @param validation_spit percentage of training data used for validation. 
@@ -251,13 +252,16 @@ deepregression <- function(
     if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
+  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth)
   input_cov <- make_cov(parsed_formulae_contents)
   ox <- lapply(parsed_formulae_contents, make_orthog)
+  
   input_cov <- unname(c(input_cov, 
                  unlist(lapply(ox[!sapply(ox,is.null)],
                                function(x_per_param) 
                                  unlist(lapply(x_per_param, function(x)
-                                   tf$constant(x, dtype="float32")))), recursive = F)
+                                   tf$constant(x, dtype="float32")))), 
+                        recursive = F)
   ))
 
   param_names <- names(parsed_formulae_contents)
@@ -284,7 +288,8 @@ deepregression <- function(
       
       if(cv_folds <= 0) stop("cv_folds must be a positive integer, but is ", 
                              cv_folds, ".")
-      cv_folds <- make_cv_list_simple(data_size=NROW(data[[1]]), round(cv_folds), seed)
+      cv_folds <- make_cv_list_simple(data_size=NROW(data[[1]]), round(cv_folds), 
+                                      seed)
       
     }
   }
@@ -331,11 +336,6 @@ deepregression <- function(
 #' (list length between 0 and number of parameters)
 #' @param list_deep list of deep models to be used
 #' (list length between 0 and number of parameters)
-#' @param residual_projection logical; defines which type of
-#' projection is used.
-#' If \code{TRUE}, the deep part is estimated together with the structured part;
-#' if \code{FALSE}, the deep part is fitted on the residuals of the structured part.
-#'
 #' @export deepregression_init
 #'
 deepregression_init <- function(
@@ -432,7 +432,8 @@ deepregression_init <- function(
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l1,
-                                                name = paste0("structured_lasso_",i))
+                                                name = paste0("structured_lasso_",
+                                                              i))
                                      )
                                    }else{
                                      return(inputs_struct[[i]] %>%
@@ -440,7 +441,8 @@ deepregression_init <- function(
                                                 units = output_dim, 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
-                                                name = paste0("structured_linear_",i))
+                                                name = paste0("structured_linear_",
+                                                              i))
                                      )
                                    }
                                  }else{
