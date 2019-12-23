@@ -315,13 +315,13 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   ox <- lapply(pfc, make_orthog)
   if(pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
-      if(is.null(x)) return(NULL) else
+      if(is.null(x_per_param)) return(NULL) else
              unlist(lapply(x_per_param, function(x)
                tf$constant(x*0, dtype="float32")))), recursive=F)
   }
-  if(!is.null(index)){
+  if(!is.null(index) & !pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
-      if(is.null(x)) return(NULL) else
+      if(is.null(x_per_param)) return(NULL) else
       unlist(lapply(x_per_param, function(xox)
         tf$constant(as.matrix(xox)[index,,drop=FALSE], 
                     dtype="float32")))), 

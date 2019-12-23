@@ -623,7 +623,7 @@ deepregression_init <- function(
     unlist(inputs_deep[!sapply(inputs_deep, is.null)],
            recursive = F),
     inputs_struct[!sapply(inputs_struct, is.null)],
-    ox[!sapply(ox, is.null)])
+    unlist(ox[!sapply(ox, is.null)]))
   )
   # the final model is defined by its inputs
   # and outputs

@@ -11,19 +11,24 @@ orthog_smooth <- function(pcf){
   
   nml <- attr(pcf$linterms, "names")
   nms <- attr(pcf$smoothterms, "names")
+  L <- NULL
   for(nm in nms){
     
-    L <- matrix(rep(1,NROW(pcf$linterms)), ncol=1)
+    if("(Intercept)" %in% nml)
+      L <- matrix(rep(1,NROW(pcf$linterms)), ncol=1)
     
     if(nm %in% nml){
       
-      L <- cbind(L, pcf$linterms[,nm])
+      if(!is.null(L))
+        L <- cbind(L, pcf$linterms[,nm]) else
+          L <- pcf$linterms[,nm]
       
     }
     
-    pcf$smoothterms[[nm]]$X <- 
-      orthog_structured(pcf$smoothterms[[nm]]$X, L) 
-  
+    if(!is.null(L))
+      pcf$smoothterms[[nm]]$X <- 
+        orthog_structured(pcf$smoothterms[[nm]]$X, L) 
+    
   }
   
   return(pcf)
@@ -213,11 +218,13 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
     }else{
       
       if(length(deep) > 1) 
-        stop("Orthogonalization not yet possible for more than ",
+        warning("Applying orthogonalization for more than ", 
                 "one deep model in each predictor.")
       
       return(
-        layer_add( list(deep_top[[1]](orthog_fun(deep[[1]], ox[[1]])), struct) )
+        layer_add( append(lapply(1:length(deep), 
+                                 function(j) deep_top[[j]](
+                                   orthog_fun(deep[[j]], ox[[j]]))), struct) )
       )
     }
   }
