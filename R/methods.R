@@ -336,6 +336,8 @@ cv <- function(
         subset_array(x, train_ind))
       test_data <- lapply(object$init_params$data, function(x) 
         subset_array(x, test_ind))
+    }else{
+      stop("Invalid input format for CV.")
     }
     
     # make callbacks 

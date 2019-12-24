@@ -221,7 +221,11 @@ make_cov <- function(pcf, newdata=NULL,
   }
   if(is.list(input_cov) & all(sapply(input_cov, is.list)))
     input_cov <- unlist(input_cov, recursive = F, use.names = F)
-    
+  input_cov_isdf <- sapply(input_cov, is.data.frame)
+  if(sum(input_cov_isdf)>0)
+    input_cov[which(input_cov_isdf)] <- 
+      lapply(input_cov[which(input_cov_isdf)], as.matrix)  
+  
   input_cov <- c(input_cov,
                  lapply(pcf, function(x){
                    ret <- NULL
@@ -492,9 +496,13 @@ unlist_order_preserving <- function(x)
       end <- if(w<length(x)) 
         x[(w+1):length(x)] else list()
       
-      x <- append(beginning,
-                          x[[w]])
+      is_data_frame <- is.data.frame(x[[w]])
+      if(is_data_frame) x[[w]] <- as.matrix(x[[w]])
+      len_bigger_one <- length(x[[w]])>1 & is.list(x[[w]])
+      if(is_data_frame) x <- append(beginning, x) else
+        x <- append(beginning, x[[w]]) 
       x <- append(x, end)
+      if(len_bigger_one) return(unlist_order_preserving(x))
       
     }
     
