@@ -1,23 +1,3 @@
-### ToDos:
-## 7) scale in and outputs (with adjustment of the values afterwords)
-## for better convergence
-## 10) allow predicition
-## mixture in python:
-#mean,var,pi have the same shape(3,4).
-# mean = tf.convert_to_tensor(np.arange(12.0).reshape(3,4))
-# var = mean
-# dist = tfd.Normal(loc=-1., scale=0.1)
-#
-# pi = tf.transpose(tf.ones_like(mean))
-#
-# mix = tfd.Mixture(cat = tfd.Categorical(probs=[pi/3,
-#                                                pi/3,
-#                                                pi/3]),
-#                   components=[tfd.Normal(loc=mean,scale=var),
-#                               tfd.Normal(loc=mean,scale=var),
-#                               tfd.Normal(loc=mean,scale=var)]
-# )
-
 #'@title Fitting Deep Distributional Regression
 #'
 #' @param y response variable
@@ -118,11 +98,6 @@ deepregression <- function(
   cv_folds = NULL,
   validation_data = NULL,
   validation_split = ifelse(is.null(validation_data) & is.null(cv_folds), 0.2, 0),
-  # verbose = getOption("keras.fit_verbose", default = 1),
-  # shuffle = TRUE,
-  # view_metrics = getOption("keras.view_metrics", default = "auto"),
-  # class_weight = NULL,
-  # sample_weight = NULL,
   dist_fun = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),

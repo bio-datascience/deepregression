@@ -103,7 +103,7 @@ get_contents <- function(lf, data, df,
   # }else{
   if(!is.null(desel)){ 
     ind <- attr(tf, "term.labels")[-1*desel]
-    if(length(ind)!=0) linterms <- data[ind] else
+    if(length(ind)!=0) linterms <- as.data.frame(data[ind]) else
       linterms <- data.frame(dummy=1:nROW(data))[character(0)]
   }else{
   # else
@@ -133,7 +133,7 @@ get_contents <- function(lf, data, df,
                           function(t) 
                             smoothCon(eval(t), 
                                       data=data.frame(data[unlist(terms_w_s)]), 
-                                      knots=NULL))
+                                      knots=NULL, absorb.cons=F))
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
@@ -197,7 +197,8 @@ get_contents <- function(lf, data, df,
 
 make_cov <- function(pcf, newdata=NULL,
                      convertfun = function(x)
-                       tf$constant(x, dtype="float32")){
+                       tf$constant(x, dtype="float32"),
+                     pred = !is.null(newdata)){
 
   if(is.null(newdata)){
     input_cov <- lapply(pcf, function(x){
@@ -238,7 +239,7 @@ make_cov <- function(pcf, newdata=NULL,
                        }
                      if(!is.null(x$smoothterms))
                      {
-                       if(!is.null(newdata)){
+                       if(!is.null(newdata) & pred){
                          Xp <- lapply(x$smoothterms, function(sm)
                            PredictMat(sm,as.data.frame(
                              newdata[names(x$smoothterms)])))
@@ -246,9 +247,12 @@ make_cov <- function(pcf, newdata=NULL,
                          Xp <- lapply(x$smoothterms, "[[", "X")
                        }
                        st <- do.call("cbind", Xp)
-                       if(!is.null(ret))
-                         ret <- cbind(as.data.frame(ret), st) else
+                       if(!is.null(ret)){
+                         ret <- cbind(as.data.frame(ret), st) 
+                         
+                       }else{
                            ret <- st
+                       }
                        ret <- array(as.matrix(ret), 
                                     dim = c(nrow(ret),1,ncol(ret)))
                      }
@@ -315,7 +319,7 @@ get_indices <- function(x)
 prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
 {
   n_obs <- nROW(data)
-  input_cov_new <- make_cov(pfc, data)
+  input_cov_new <- make_cov(pfc, data, pred = pred)
   ox <- lapply(pfc, make_orthog)
   if(pred){
     ox <- unlist(lapply(ox, function(x_per_param) 

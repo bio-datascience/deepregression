@@ -12,7 +12,8 @@ Description:
     structured linear effects, structured non-linear effects or modeled using an unstructured deep
     network model.
 Suggests: 
-    rsvd
+    rsvd,
+    testthat
 Imports: 
     tensorflow, 
     tfprobability, 
