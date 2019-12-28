@@ -131,6 +131,18 @@ deepregression <- function(
   n_obs <- NROW(y)
   # number of output dim
   output_dim <- NCOL(y)
+  # check consistency of #parameters
+  nr_params <- length(list_of_formulae)
+  if(is.null(dist_fun)) 
+    nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
+      nrparams_dist <- nr_params
+  if(nrparams_dist < nr_params)
+  {
+    warning("More formulae specified than parameters available.",
+            " Will only use ", nrparams_dist, " formula(e).") 
+    nr_params <- nrparams_dist
+    list_of_formulae <- list_of_formulae[1:nr_params]
+  }
 
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
@@ -185,8 +197,6 @@ deepregression <- function(
   list_structured <- lapply(1:length(parsed_formulae_contents), function(i)
                             get_layers_from_s(parsed_formulae_contents[[i]], i))
   
-  nr_params <- length(list_of_formulae)
-  
   if(train_together){
     ncol_deep <- ncol_deep[[1]]
     for(i in 2:nr_psarams)
@@ -217,7 +227,12 @@ deepregression <- function(
     ...
     )
 
-
+  # check distribution wrt to specified parameters
+  # (not when distfun is given)
+  if(is.null(dist_fun)) 
+    nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
+      nrparams_dist <- nr_params
+  
   # get covariates
   #
   # must be a list of the following form:
@@ -343,19 +358,6 @@ deepregression_init <- function(
   )
 {
 
-  # check distribution wrt to specified parameters
-  # (not when distfun is given)
-  if(is.null(dist_fun)) 
-    nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
-      nrparams_dist <- nr_params
-  if(nrparams_dist < nr_params)
-  {
-    warning("More formulae specified than parameters available.",
-            " Will only use ", nrparams_dist, " formula(e).") 
-    nr_params <- nrparams_dist
-    ncol_deep <- ncol_deep[1:nr_params]
-    ncol_structured <- ncol_structured[1:nr_params]
-  }
   # check injection
   # if(length(inject_after_layer) > nr_params)
   #   stop("Can't have more injections than parameters.")

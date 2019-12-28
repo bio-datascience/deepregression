@@ -70,7 +70,8 @@ make_orthog <- function(
           }
           if(nm %in% nms$smoothterms){
   
-              X <- cbind(X, pcf$smoothterms[[grep(nm,nms$smoothterms)]]$X)
+              X <- cbind(X, pcf$smoothterms[[
+                grep(paste0("\\b",nm,"\\b"),nms$smoothterms)]]$X)
               
           }
         }

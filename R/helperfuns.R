@@ -8,7 +8,7 @@ extract_from_special <- function(x)
 # convert sparse matrix to sparse tensor
 sparse_mat_to_tensor <- function(X)
 {
-
+  
   missing_ind <- setdiff(c("i","j","p"), slotNames(X))
   if(missing_ind=="j")
     j = findInterval(seq(X@x)-1,X@p[-1])
@@ -17,7 +17,7 @@ sparse_mat_to_tensor <- function(X)
   tf$SparseTensor(indices = lapply(1:length(i), function(ind) c(i[ind], j[ind])),
                   values = X@x,
                   dense_shape = X@Dim)
-
+  
 }
 
 NCOL0 <- function(x)
@@ -43,11 +43,19 @@ get_contents <- function(lf, data, df,
         linterms <- data.frame(a=rep(1,nROW(data)))
       names(linterms) <- "(Intercept)"
       attr(linterms, "names") <- names(linterms)
-      return(
-        list(linterms = linterms,
-             smoothterms = NULL,
-             deepterms = NULL)
-      )
+      ret <- list(linterms = linterms,
+                  smoothterms = NULL,
+                  deepterms = NULL)
+      attributes(ret) <- 
+        c(attributes(ret),
+          list(formula = lf, 
+               df = df, 
+               variable_names = variable_names, 
+               network_names = network_names, 
+               intercept = intercept, 
+               defaultSmoothing = defaultSmoothing)
+        )
+      return(ret)
     }else{ return(NULL) }
   }
   trmstrings <- attr(tf, "term.labels")
@@ -76,12 +84,12 @@ get_contents <- function(lf, data, df,
       if(grepl("d\\(",j))
         ff <- gsub("\\.", paste(variable_names, collapse=","), ff) else
           ff <- gsub(".", paste(variable_names, collapse="+"), ff)
-      return(get_contents(lf = as.formula(paste0("~ ", ff)), 
-                          data = data, 
-                          df = df, 
-                          variable_names = variable_names, 
-                          intercept = intercept, 
-                          defaultSmoothing = defaultSmoothing))
+        return(get_contents(lf = as.formula(paste0("~ ", ff)), 
+                            data = data, 
+                            df = df, 
+                            variable_names = variable_names, 
+                            intercept = intercept, 
+                            defaultSmoothing = defaultSmoothing))
     }
     whatsleft <- setdiff(vars, variable_names)
     if(length(whatsleft) > 0){
@@ -106,12 +114,12 @@ get_contents <- function(lf, data, df,
     if(length(ind)!=0) linterms <- as.data.frame(data[ind]) else
       linterms <- data.frame(dummy=1:nROW(data))[character(0)]
   }else{
-  # else
-  #     stop("When using only structured terms, data must be a data.frame")
+    # else
+    #     stop("When using only structured terms, data must be a data.frame")
     if(length(attr(tf,"term.labels"))>0)
       linterms <- as.data.frame(data[attr(tf, "term.labels")]) else
-    linterms <- data.frame(dummy=1:nROW(data))[character(0)]
-  # }
+        linterms <- data.frame(dummy=1:nROW(data))[character(0)]
+      # }
   }
   if(intercept & attr(tf,"intercept"))#{
     # if(NCOL(linterms)==0)
@@ -119,7 +127,7 @@ get_contents <- function(lf, data, df,
       linterms <- data.frame("(Intercept)" = rep(1,nROW(data))) else
         linterms <- cbind("(Intercept)" = rep(1,nROW(data)), 
                           as.data.frame(linterms))# else
-
+  
   attr(linterms, "names") <- names(linterms)
   
   # get gam terms
@@ -190,21 +198,42 @@ get_contents <- function(lf, data, df,
         names(deepterms) <- network_names
   }
   
-  return(list(linterms = linterms,
+  ret <- list(linterms = linterms,
               smoothterms = smoothterms,
-              deepterms = deepterms))
+              deepterms = deepterms)
+  
+  attributes(ret) <- 
+    c(attributes(ret),
+    list(formula = lf, 
+         df = df, 
+         variable_names = variable_names, 
+         network_names = network_names, 
+         intercept = intercept, 
+         defaultSmoothing = defaultSmoothing)
+    )
+  
+  return(ret)
 }
+
+get_contents_newdata <- function(pcf, newdata)
+  lapply(pcf, function(x) get_contents(lf = attr(x, "formula"),
+                                       data = newdata,
+                                       df = attr(x, "df"),
+                                       variable_names = attr(x, "variable_names"),
+                                       network_names = attr(x, "network_names"),
+                                       intercept = attr(x, "intercept"),
+                                       defaultSmoothing = attr(x, "defaultSmoothing")))
 
 make_cov <- function(pcf, newdata=NULL,
                      convertfun = function(x)
                        tf$constant(x, dtype="float32"),
                      pred = !is.null(newdata)){
-
+  
   if(is.null(newdata)){
     input_cov <- lapply(pcf, function(x){
       if(is.null(x$deepterms)) return(NULL) else 
         return(x$deepterms)
-      }) 
+    }) 
   }else{
     input_cov <- lapply(pcf, function(x){
       if(length(intersect(sapply(x$deepterms, 
@@ -216,7 +245,7 @@ make_cov <- function(pcf, newdata=NULL,
             return(newdata[names(y)])            
           }
         })
-
+        
       }else{ return(NULL) }
     })
   }
@@ -225,10 +254,14 @@ make_cov <- function(pcf, newdata=NULL,
   input_cov_isdf <- sapply(input_cov, is.data.frame)
   if(sum(input_cov_isdf)>0)
     input_cov[which(input_cov_isdf)] <- 
-      lapply(input_cov[which(input_cov_isdf)], as.matrix)  
+    lapply(input_cov[which(input_cov_isdf)], as.matrix)  
+  
+  if(!is.null(newdata) & pred)
+    pcfnew <- get_contents_newdata(pcf, newdata)
   
   input_cov <- c(input_cov,
-                 lapply(pcf, function(x){
+                 lapply(1:length(pcf), function(i){
+                   x = pcf[[i]]
                    ret <- NULL
                    if(!is.null(x$linterms))
                      if(is.null(newdata))
@@ -239,10 +272,12 @@ make_cov <- function(pcf, newdata=NULL,
                        }
                      if(!is.null(x$smoothterms))
                      {
-                       if(!is.null(newdata) & pred){
+                       if(!is.null(newdata) & !pred){
                          Xp <- lapply(x$smoothterms, function(sm)
                            PredictMat(sm,as.data.frame(
                              newdata[names(x$smoothterms)])))
+                       }else if(!is.null(newdata) & pred){
+                         Xp <- lapply(pcfnew[[i]]$smoothterms, "[[", "X")
                        }else{
                          Xp <- lapply(x$smoothterms, "[[", "X")
                        }
@@ -251,7 +286,7 @@ make_cov <- function(pcf, newdata=NULL,
                          ret <- cbind(as.data.frame(ret), st) 
                          
                        }else{
-                           ret <- st
+                         ret <- st
                        }
                        ret <- array(as.matrix(ret), 
                                     dim = c(nrow(ret),1,ncol(ret)))
@@ -276,12 +311,12 @@ make_cov <- function(pcf, newdata=NULL,
   input_cov[!sapply(input_cov,is.factor)] <- 
     lapply(input_cov[!sapply(input_cov,is.factor)], convertfun)
   return(input_cov)
-
+  
 }
 
 get_names <- function(x)
 {
-
+  
   lret <- list(linterms = NULL,
                smoothterms = NULL,
                deepterms = NULL)
@@ -297,23 +332,23 @@ get_indices <- function(x)
   if(!is.null(x$linterms) & 
      !(length(x$linterms)==1 & is.null(x$linterms[[1]]))) 
     ncollin <- ncol(x$linterms) else ncollin <- 0
-  if(!is.null(x$smoothterms))
-    bsdims <- sapply(x$smoothterms, function(y){
-      if(is.null(y$margin)) return(y$bs.dim) else
-        # Tensorprod
-        return(prod(sapply(y$margin,"[[", "bs.dim")))
+    if(!is.null(x$smoothterms))
+      bsdims <- sapply(x$smoothterms, function(y){
+        if(is.null(y$margin)) return(y$bs.dim) else
+          # Tensorprod
+          return(prod(sapply(y$margin,"[[", "bs.dim")))
       }) else bsdims <- c()
-    ind <- if(ncollin > 0) seq(1, ncollin, by = 1) else c()
-    end <- if(ncollin > 0) ind else c()
-    if(length(bsdims) > 0) ind <- c(ind, max(c(ind,0))+1, max(c(ind+1,1)) +
-                                      cumsum(bsdims[-length(bsdims)]))
-    if(length(bsdims) > 0) end <- c(end, max(c(end,0)) +
-                                      cumsum(bsdims))
-
-    return(data.frame(start=ind, end=end, 
-                      type=c(rep("lin",ncollin),
-                             rep("smooth",length(bsdims))))
-    )
+      ind <- if(ncollin > 0) seq(1, ncollin, by = 1) else c()
+      end <- if(ncollin > 0) ind else c()
+      if(length(bsdims) > 0) ind <- c(ind, max(c(ind,0))+1, max(c(ind+1,1)) +
+                                        cumsum(bsdims[-length(bsdims)]))
+      if(length(bsdims) > 0) end <- c(end, max(c(end,0)) +
+                                        cumsum(bsdims))
+      
+      return(data.frame(start=ind, end=end, 
+                        type=c(rep("lin",ncollin),
+                               rep("smooth",length(bsdims))))
+      )
 }
 
 prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
@@ -324,15 +359,15 @@ prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
   if(pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
       if(is.null(x_per_param)) return(NULL) else
-             unlist(lapply(x_per_param, function(x)
-               tf$constant(x*0, dtype="float32")))), recursive=F)
+        unlist(lapply(x_per_param, function(x)
+          tf$constant(x*0, dtype="float32")))), recursive=F)
   }
   if(!is.null(index) & !pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
       if(is.null(x_per_param)) return(NULL) else
-      unlist(lapply(x_per_param, function(xox)
-        tf$constant(as.matrix(xox)[index,,drop=FALSE], 
-                    dtype="float32")))), 
+        unlist(lapply(x_per_param, function(xox)
+          tf$constant(as.matrix(xox)[index,,drop=FALSE], 
+                      dtype="float32")))), 
       recursive=F)
   }
   if(is.null(index) & !pred){
@@ -353,7 +388,7 @@ coefkeras <- function(model)
   layer_names <- sapply(model$layers, "[[", "name")
   layers_names_structured <- layer_names[
     grep("structured_", layer_names)
-  ]
+    ]
   unlist(sapply(layers_names_structured, 
                 function(name) model$get_layer(name)$get_weights()[[1]]))
 }
@@ -417,10 +452,10 @@ plot.drCV <- function(x, what=c("loss","weight"), ...){
     
   }else{
     
-      
+    
     
   }
-
+  
 }
 
 
