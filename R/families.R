@@ -57,10 +57,12 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and 
 #'  scale (exp)}
 #'  \item{"uniform": }{uniform with upper and lower (both identity)}
+#'  \item{"zip":  }{Zero-inflated poisson distribution with }
 #' }
 #' 
 #' @rdname dr_families
-make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
+make_tfd_dist <- function(family, add_const = 1e-8, 
+                          return_nrparams = FALSE, trafo_list = NULL)
 {
   
   # define dist_fun
@@ -115,7 +117,8 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
                      truncated_normal = tfd_truncated_normal,
                      uniform = tfd_uniform,
                      von_mises_fisher = tfd_von_mises_fisher,
-                     von_mises = tfd_von_mises#,
+                     von_mises = tfd_von_mises,
+                     zip = tfd_zip
                      # zipf = function(x)
                      #   tfd_zipf(x, 
                      #            dtype = tf$float32,
@@ -142,68 +145,72 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
     stop("Family binomial not implemented yet.",
          " If you are trying to model independent",
          " draws from a bernoulli distribution, use family='bernoulli'.")
-  
-  trafo_list <- switch(family, 
-                       normal = list(function(x) x,
-                                     function(x) add_const + tfe(x)),
-                       bernoulli = list(function(x) x),
-                       bernoulli_prob = list(function(x) tfsig(x)),
-                       beta = list(function(x) add_const + tfe(x),
-                                   function(x) add_const + tfe(x)),
-                       betar = list(function(x) x,
-                                    function(x) x),
-                       binomial = list(), # tbd
-                       categorial = list(), #tbd
-                       cauchy = list(function(x) x,
-                                     function(x) add_const + tfe(x)),
-                       chi2 = list(function(x) add_const + tfe(x)),
-                       chi = list(function(x) add_const + tfe(x)),
-                       dirichlet_multinomial = list(), #tbd
-                       dirichlet = list(), #tbd
-                       exponential = list(function(x) add_const + tfe(x)),
-                       gamma_gamma = list(), #tbd
-                       gamma = list(function(x) add_const + tfe(x),
-                                    function(x) add_const + tfe(x)),
-                       geometric = list(function(x) x),
-                       gammar = list(function(x) x, 
-                                     function(x) x),
-                       gumbel = list(function(x) x,
-                                     function(x) add_const + tfe(x)),
-                       half_cauchy = list(function(x) x,
-                                          function(x) add_const + tfe(x)),
-                       half_normal = list(function(x) add_const + tfe(x)),
-                       horseshoe = list(function(x) add_const + tfe(x)),
-                       inverse_gamma = list(function(x) add_const + tfe(x),
-                                            function(x) add_const + tfe(x)),
-                       inverse_gaussian = list(function(x) add_const + tfe(x),
-                                               function(x) 
-                                                 add_const + tfe(x)),
-                       kumaraswamy = list(), #tbd
-                       laplace = list(function(x) x,
-                                      function(x) add_const + tfe(x)),
-                       log_normal = list(function(x) x,
-                                         function(x) add_const + tfe(x)),
-                       logistic = list(function(x) x,
+  if(is.null(trafo_list))
+    trafo_list <- switch(family, 
+                         normal = list(function(x) x,
                                        function(x) add_const + tfe(x)),
-                       negbinom = list(function(x) x,
-                                       function(x) x),
-                       multinomial = list(function(x) tfsoft(x)),
-                       multinoulli = list(function(x) x), 
-                       pareto = list(function(x) add_const + tfe(x),
+                         bernoulli = list(function(x) x),
+                         bernoulli_prob = list(function(x) tfsig(x)),
+                         beta = list(function(x) add_const + tfe(x),
                                      function(x) add_const + tfe(x)),
-                       poisson = list(function(x) add_const + tfe(x)),
-                       poisson_lograte = list(function(x) x),
-                       student_t = list(function(x) x), 
-                       student_t_ls = list(function(x) add_const + tfe(x),
-                                           function(x) x,
-                                           function(x) add_const + tfe(x)),
-                       truncated_normal = list(), # tbd
-                       uniform = list(function(x) x, 
+                         betar = list(function(x) x,
                                       function(x) x),
-                       von_mises = list(function(x) x,
+                         binomial = list(), # tbd
+                         categorial = list(), #tbd
+                         cauchy = list(function(x) x,
+                                       function(x) add_const + tfe(x)),
+                         chi2 = list(function(x) add_const + tfe(x)),
+                         chi = list(function(x) add_const + tfe(x)),
+                         dirichlet_multinomial = list(), #tbd
+                         dirichlet = list(), #tbd
+                         exponential = list(function(x) add_const + tfe(x)),
+                         gamma_gamma = list(), #tbd
+                         gamma = list(function(x) add_const + tfe(x),
+                                      function(x) add_const + tfe(x)),
+                         geometric = list(function(x) x),
+                         gammar = list(function(x) x, 
+                                       function(x) x),
+                         gumbel = list(function(x) x,
+                                       function(x) add_const + tfe(x)),
+                         half_cauchy = list(function(x) x,
+                                            function(x) add_const + tfe(x)),
+                         half_normal = list(function(x) add_const + tfe(x)),
+                         horseshoe = list(function(x) add_const + tfe(x)),
+                         inverse_gamma = list(function(x) add_const + tfe(x),
+                                              function(x) add_const + tfe(x)),
+                         inverse_gaussian = list(function(x) add_const + tfe(x),
+                                                 function(x) 
+                                                   add_const + tfe(x)),
+                         kumaraswamy = list(), #tbd
+                         laplace = list(function(x) x,
                                         function(x) add_const + tfe(x)),
-                       zipf = list(function(x) 1 + tfe(x))
-  )
+                         log_normal = list(function(x) x,
+                                           function(x) add_const + tfe(x)),
+                         logistic = list(function(x) x,
+                                         function(x) add_const + tfe(x)),
+                         negbinom = list(function(x) x,
+                                         function(x) x),
+                         multinomial = list(function(x) tfsoft(x)),
+                         multinoulli = list(function(x) x), 
+                         pareto = list(function(x) add_const + tfe(x),
+                                       function(x) add_const + tfe(x)),
+                         poisson = list(function(x) add_const + tfe(x)),
+                         poisson_lograte = list(function(x) x),
+                         student_t = list(function(x) x), 
+                         student_t_ls = list(function(x) add_const + tfe(x),
+                                             function(x) x,
+                                             function(x) add_const + tfe(x)),
+                         truncated_normal = list(), # tbd
+                         uniform = list(function(x) x, 
+                                        function(x) x),
+                         von_mises = list(function(x) x,
+                                          function(x) add_const + tfe(x)),
+                         zip = list(function(x) tf$math$exp(x),
+                                    function(x) tf$stack(list(tf$math$sigmoid(x),
+                                                              1-tf$math$sigmoid(x)),
+                                                         axis=2L)),
+                         zipf = list(function(x) 1 + tfe(x))
+    )
   
     
   ret_fun <- function(x) do.call(tfd_dist,
@@ -221,9 +228,7 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
     
     ret_fun <- function(x) tfd_dist(trafo_list[[1]](x))
     
-    
   }
-  
   
   # return number of parameters if specified
   if(return_nrparams) return(length(trafo_list))
@@ -232,7 +237,7 @@ make_tfd_dist <- function(family, add_const = 1e-8, return_nrparams = FALSE)
   
 }
 
-family_trafo_funs <- function(family, add_const = 1e-8)
+family_trafo_funs_special <- function(family, add_const = 1e-8)
 {
   
   # specially treated distributions
@@ -244,8 +249,8 @@ family_trafo_funs <- function(family, add_const = 1e-8)
       
       mu = add_const + tfe(x[,1,drop=FALSE])
       sig = add_const + tfe(x[,2,drop=FALSE])
-      con = tfrec(tfsq(sig))
-      rate = tfrec(tfmult(tfsq(sig),mu))
+      con = tf$compat$v2$maximum(tfrec(tfsq(sig)),0 + add_const)
+      rate = tf$compat$v2$maximum(tfrec(tfmult(tfsq(sig),mu)),0 + add_const)
       
       return(list(con,rate))
     },
@@ -255,8 +260,14 @@ family_trafo_funs <- function(family, add_const = 1e-8)
       # sig=(1/(a+b+1))^0.5
       mu = tfsig(x[,1,drop=FALSE])
       sigsq = tfsq(tfsig(x[,2,drop=FALSE]))
-      a = tfmult(mu, (tfrec(sigsq) - 1))
-      b = tfmult((tfrec(mu) - 1), a)
+      #a = tf$compat$v2$maximum(tfmult(mu, (tfrec(sigsq) - 1)), 1 + add_const)
+      #b = tf$compat$v2$maximum(tfmult((tfrec(mu) - 1), a), 1 + add_const)
+      a = tf$compat$v2$maximum(
+        tfmult(mu, tfdiv(tf$constant(1) - sigsq, sigsq)), 
+        tf$constant(0) + add_const)
+      b = tf$compat$v2$maximum(
+        tfmult(a, tfdiv(tf$constant(1) - mu,mu)), 
+        tf$constant(0) + add_const)
       
       return(list(a,b))
     },
@@ -278,8 +289,19 @@ family_trafo_funs <- function(family, add_const = 1e-8)
       return(list(f,p))
     }
   )
+  
+  tfd_dist <- switch(family,
+                     betar = tfd_beta,
+                     gammar = tfd_gamma,
+                     negbinom = function(fail, probs) 
+                       tfd_negative_binomial(total_count = fail, probs = probs#,
+                                             # validate_args = TRUE
+                       )
+  )
+  
+  ret_fun <- function(x) do.call(tfd_dist, trafo_fun(x))
       
-    return(trafo_fun)
+  return(ret_fun)
     
 }
 
@@ -340,3 +362,18 @@ mix_dist_maker <- function(
   
 }
 
+#' Zero-inflated poisson distribution
+tfd_zip <- function(lambda, probs)
+{
+  
+  return(
+    tfd_mixture(cat = tfd_categorical(probs = probs),
+                components = 
+                  list(tfd_poisson(rate = lambda),
+                       tfd_deterministic(loc = tf$constant(0L, 
+                                                           dtype = "float32",
+                                                           shape = list(1,1)))
+                  ),
+                name="zip")
+  )
+}

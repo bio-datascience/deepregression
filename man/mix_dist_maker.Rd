@@ -4,18 +4,20 @@
 \alias{mix_dist_maker}
 \title{generate mixture distribution of same family}
 \usage{
-mix_dist_maker(dist = tfd_normal, nr_comps = 3,
-  trafo_list = list(function(x) tf$math$exp(x), function(x)
-  tf$stack(list(tf$math$sigmoid(x), 1 - tf$math$sigmoid(x)), axis = 2L)))
+mix_dist_maker(
+  dist = tfd_normal,
+  nr_comps = 3,
+  trafos_each_param = list(function(x) x, function(x) 1e-08 + tfe(x))
+)
 }
 \arguments{
 \item{dist}{tfp distribution}
 
 \item{nr_comps}{number of mixture components}
 
-\item{trafo_list}{list of transformaiton applied before plugging
-the linear predictor into probabilities and parameters of the distribution.
-Should be of length #parameters of \code{dist} + 1 (for probabilities)}
+\item{trafos_each_param}{list of transformaiton applied before plugging
+the linear predictor into the parameters of the distributions.
+Should be of length #parameters of \code{dist}}
 }
 \description{
 generate mixture distribution of same family

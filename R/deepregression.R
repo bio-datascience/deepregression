@@ -551,9 +551,11 @@ deepregression_init <- function(
     # special families needing transformations
     if(family %in% c("betar", "gammar", "negbinom")){
       
-      trafo_fun <- family_trafo_funs(family)
-      predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
-      preds <- layer_concatenate(predsTrafo)
+      # trafo_list <- family_trafo_funs(family)
+      # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
+      # preds <- layer_concatenate(predsTrafo)
+      
+      dist_fun <- family_trafo_funs_special(family)
       
     }
     

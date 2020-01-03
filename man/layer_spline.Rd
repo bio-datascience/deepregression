@@ -4,10 +4,19 @@
 \alias{layer_spline}
 \title{Wrapper function to create spline layer}
 \usage{
-layer_spline(object, name = NULL, trainable = TRUE, input_shape,
-  shared_weights = FALSE, lambdas, Ps, use_bias = FALSE,
-  kernel_initializer = "glorot_uniform", bias_initializer = "zeros",
-  ...)
+layer_spline(
+  object,
+  name = NULL,
+  trainable = TRUE,
+  input_shape,
+  shared_weights = FALSE,
+  lambdas,
+  Ps,
+  use_bias = FALSE,
+  kernel_initializer = "glorot_uniform",
+  bias_initializer = "zeros",
+  ...
+)
 }
 \arguments{
 \item{name}{An optional name string for the layer (should be unique).}

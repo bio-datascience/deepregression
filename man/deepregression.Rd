@@ -4,19 +4,34 @@
 \alias{deepregression}
 \title{Fitting Deep Distributional Regression}
 \usage{
-deepregression(y, list_of_formulae, list_of_deep_models,
-  family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar",
-  "cauchy", "chi2", "chi", "exponential", "gamma_gamma", "gamma", "gammar",
-  "gumbel", "half_cauchy", "half_normal", "horseshoe", "inverse_gamma",
-  "inverse_gaussian", "laplace", "log_normal", "logistic", "negbinom",
-  "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
-  "truncated_normal", "uniform"), train_together = FALSE,
-  mean_regression = FALSE, data, df = NULL, lambda_lasso = NULL,
-  defaultSmoothing = NULL, cv_folds = NULL, validation_data = NULL,
-  validation_split = ifelse(is.null(validation_data) & is.null(cv_folds),
-  0.2, 0), dist_fun = NULL, learning_rate = 0.01,
-  optimizer = optimizer_adam(lr = learning_rate), variational = FALSE,
-  monitor_metric = list(), seed = 1991 - 5 - 4, ...)
+deepregression(
+  y,
+  list_of_formulae,
+  list_of_deep_models,
+  family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar", "cauchy", "chi2",
+    "chi", "exponential", "gamma_gamma", "gamma", "gammar", "gumbel", "half_cauchy",
+    "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian", "laplace",
+    "log_normal", "logistic", "multinomial", "multinoulli", "negbinom", "pareto",
+    "poisson", "poisson_lograte", "student_t", "student_t_ls", "truncated_normal",
+    "uniform"),
+  train_together = FALSE,
+  data,
+  df = NULL,
+  lambda_lasso = NULL,
+  defaultSmoothing = NULL,
+  cv_folds = NULL,
+  validation_data = NULL,
+  validation_split = ifelse(is.null(validation_data) & is.null(cv_folds), 0.2, 0),
+  dist_fun = NULL,
+  learning_rate = 0.01,
+  optimizer = optimizer_adam(lr = learning_rate),
+  variational = FALSE,
+  monitor_metric = list(),
+  seed = 1991 - 5 - 4,
+  mixture_dist = 0,
+  split_fun = split_model,
+  ...
+)
 }
 \arguments{
 \item{y}{response variable}
@@ -41,6 +56,8 @@ possible distribution and parameters, see \code{\link{make_tfd_dist}}}
 \item{train_together}{logical; whether or not to train all parameters in 
 one deep network.}
 
+\item{data}{data.frame or named list with input features}
+
 \item{df}{degrees of freedom for all non-linear structural terms}
 
 \item{lambda_lasso}{smoothing parameter for lasso regression}
@@ -49,7 +66,8 @@ one deep network.}
 the minimum df of all possible terms is used.}
 
 \item{cv_folds}{a list of lists, each list element has two elements, one for
-training indices and one for testing indices; if a single integer number is given, 
+training indices and one for testing indices; 
+if a single integer number is given, 
 a simple k-fold cross-validation is defined, where k is the supplied number.}
 
 \item{validation_data}{data for validation during training.}
@@ -71,7 +89,8 @@ the via the ellipsis to the initialization function
 
 \item{...}{further arguments passed to the \code{deepRegression_init} function}
 
-\item{validation_spit}{percentage of training data used for validation. Per default 0.2.}
+\item{validation_spit}{percentage of training data used for validation. 
+Per default 0.2.}
 }
 \description{
 Fitting Deep Distributional Regression
@@ -101,4 +120,5 @@ list_of_deep_models = list(deep_model, NULL))
 
 mod \%>\% fit(epochs = 100)
 mod \%>\% plot()
+
 }

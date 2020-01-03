@@ -351,7 +351,7 @@ get_indices <- function(x)
       )
 }
 
-prepare_newdata <- function(pfc, data, pred = TRUE, index = NULL)
+prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
 {
   n_obs <- nROW(data)
   input_cov_new <- make_cov(pfc, data, pred = pred)

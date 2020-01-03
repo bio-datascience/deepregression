@@ -9,28 +9,56 @@
 \alias{coef.deepregression}
 \alias{print.deepregression}
 \alias{cv}
+\alias{mean.deepregression}
+\alias{sd.deepregression}
+\alias{quantile.deepregression}
 \title{Generic functions for deepregression models}
 \usage{
-\method{plot}{deepregression}(object, which = NULL, which_param = 1,
-  plot = TRUE, ...)
+\method{plot}{deepregression}(object, which = NULL, which_param = 1, plot = TRUE, ...)
 
 prepare_data(object, data)
 
-\method{predict}{deepregression}(object, newdata = NULL,
-  apply_fun = tfd_mean, convert_fun = as.matrix, ...)
+\method{predict}{deepregression}(
+  object,
+  newdata = NULL,
+  apply_fun = tfd_mean,
+  convert_fun = as.matrix,
+  ...
+)
 
 \method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
 
-\method{fit}{deepregression}(object, early_stopping = FALSE,
-  verbose = FALSE, view_metrics = TRUE, patience = 20,
-  save_weights = FALSE, ...)
+\method{fit}{deepregression}(
+  object,
+  early_stopping = FALSE,
+  verbose = FALSE,
+  view_metrics = TRUE,
+  patience = 20,
+  save_weights = FALSE,
+  ...
+)
 
 \method{coef}{deepregression}(object)
 
 \method{print}{deepregression}(object)
 
-cv(object, verbose = FALSE, patience = 20, plot = TRUE,
-  print_folds = TRUE, cv_folds = NULL, mylapply = lapply, ...)
+cv(
+  object,
+  verbose = FALSE,
+  patience = 20,
+  plot = TRUE,
+  print_folds = TRUE,
+  cv_folds = NULL,
+  stop_if_nan = TRUE,
+  mylapply = lapply,
+  ...
+)
+
+\method{mean}{deepregression}(object, data, ...)
+
+\method{sd}{deepregression}(object, data, ...)
+
+\method{quantile}{deepregression}(object, data, value, ...)
 }
 \arguments{
 \item{object}{deepregression object}
@@ -38,30 +66,30 @@ cv(object, verbose = FALSE, patience = 20, plot = TRUE,
 \item{which}{which effect to plot, default selects all.}
 
 \item{which_param}{integer of length 1.
-Corresponds to the distribution parameter for which the effects should be plotted.}
+Corresponds to the distribution parameter for 
+which the effects should be plotted.}
 
 \item{plot}{whether to plot the resulting losses in each fold}
 
-\item{...}{further arguments, passed to fit, plot or predict function}
+\item{...}{further arguments passed to 
+\code{keras:::fit.keras.engine.training.Model}}
 
 \item{newdata}{new data for prediction, defaults to \code{NULL}}
 
 \item{apply_fun}{function to apply to distribution, default is \code{tfd_mean}.}
 
-\item{convert_fun}{function which converts the tensor outputted by predict function}
+\item{convert_fun}{function which converts the tensor 
+outputted by predict function}
 
 \item{verbose}{whether to print training in each fold}
 
 \item{patience}{number of patience for early stopping}
 
+\item{cv_folds}{see \code{deepregression}}
+
+\item{stop_if_nan}{logical; whether to stop CV if NaN values occur}
+
 \item{mylapply}{lapply function to be used; defaults to \code{lapply}}
-
-\item{...}{further arguments passed to \code{keras:::fit.keras.engine.training.Model}
-such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )}
-
-\item{...}{further arguments passed to \code{keras:::fit.keras.engine.training.Model}}
-
-\item{object}{deepregression object}
 
 \item{printfolds}{whether to print the current fold}
 }
@@ -73,4 +101,10 @@ containing the model fit and the \code{weighthistory}.
 Generic functions for deepregression models
 
 Cross-validation for deepgression objects
+
+mean of model fit
+
+standard deviation of model fit
+
+quantile of fitted values
 }

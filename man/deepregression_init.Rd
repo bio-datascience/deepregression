@@ -4,15 +4,34 @@
 \alias{deepregression_init}
 \title{Initializing Deep Distributional Regression Models}
 \usage{
-deepregression_init(n_obs, ncol_structured, ncol_deep, list_structured,
-  list_deep, input_pwr = NULL, use_bias_in_structured = TRUE,
-  nr_params = 2, lss = TRUE, train_together = FALSE,
-  lambda_lasso = NULL, family, dist_fun = NULL, variational = TRUE,
-  weights = NULL, learning_rate = 0.01, optimizer = optimizer_adam(lr
-  = learning_rate), monitor_metric = list(),
-  mean_field = posterior_mean_field, prior = prior_trainable,
-  orthog_fun = orthog, orthogX = NULL, inject_after_layer = rep(-1,
-  length(list_deep)), residual_projection = FALSE, kl_weight = 1/n_obs)
+deepregression_init(
+  n_obs,
+  ncol_structured,
+  ncol_deep,
+  list_structured,
+  list_deep,
+  use_bias_in_structured = FALSE,
+  nr_params = 2,
+  lss = TRUE,
+  train_together = FALSE,
+  lambda_lasso = NULL,
+  family,
+  dist_fun = NULL,
+  variational = TRUE,
+  weights = NULL,
+  learning_rate = 0.01,
+  optimizer = optimizer_adam(lr = learning_rate),
+  monitor_metric = list(),
+  mean_field = posterior_mean_field,
+  prior = prior_trainable,
+  orthog_fun = orthog,
+  orthogX = NULL,
+  residual_projection = FALSE,
+  kl_weight = 1/n_obs,
+  output_dim = 1,
+  mixture_dist = FALSE,
+  split_fun = split_model
+)
 }
 \arguments{
 \item{n_obs}{number of observations}
@@ -34,11 +53,6 @@ non-zero while the others must be zero.}
 
 \item{list_deep}{list of deep models to be used
 (list length between 0 and number of parameters)}
-
-\item{residual_projection}{logical; defines which type of
-projection is used.
-If \code{TRUE}, the deep part is estimated together with the structured part;
-if \code{FALSE}, the deep part is fitted on the residuals of the structured part.}
 }
 \description{
 Initializing Deep Distributional Regression Models
