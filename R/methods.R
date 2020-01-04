@@ -359,7 +359,7 @@ cv <- function(
                           prepare_newdata(
                             object$init_params$parsed_formulae_contents,
                             test_data,
-                            pred = TRUE,
+                            pred = FALSE,
                             index = test_ind),
                           subset_fun(object$init_params$y,test_ind)
                         ),
