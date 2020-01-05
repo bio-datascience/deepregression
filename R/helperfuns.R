@@ -289,7 +289,7 @@ make_cov <- function(pcf, newdata=NULL,
                          ret <- st
                        }
                        ret <- array(as.matrix(ret), 
-                                    dim = c(nrow(ret),1,ncol(ret)))
+                                    dim = c(nrow(ret),ncol(ret)))
                      }
                      return(ret)
                  }))

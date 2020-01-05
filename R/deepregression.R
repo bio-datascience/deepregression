@@ -106,6 +106,8 @@ deepregression <- function(
   seed = 1991-5-4,
   mixture_dist = 0,
   split_fun = split_model,
+  posterior_fun = posterior_mean_field,
+  prior_fun = prior_trainable,
   ...
 )
 {
@@ -195,7 +197,11 @@ deepregression <- function(
     })
   # create structured layers
   list_structured <- lapply(1:length(parsed_formulae_contents), function(i)
-                            get_layers_from_s(parsed_formulae_contents[[i]], i))
+                            get_layers_from_s(parsed_formulae_contents[[i]], i,
+                                              variational = variational,
+                                              posterior_fun = posterior_fun,
+                                              prior_fun = prior_fun
+                                              ))
   
   if(train_together){
     ncol_deep <- ncol_deep[[1]]
@@ -224,6 +230,8 @@ deepregression <- function(
     output_dim = output_dim,
     mixture_dist = mixture_dist,
     split_fun = split_fun,
+    posterior = posterior_fun,
+    prior = prior_fun,
     ...
     )
 
@@ -346,7 +354,7 @@ deepregression_init <- function(
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
   monitor_metric = list(),
-  mean_field = posterior_mean_field,
+  posterior = posterior_mean_field,
   prior = prior_trainable,
   orthog_fun = orthog,
   orthogX = NULL,
@@ -364,6 +372,20 @@ deepregression_init <- function(
   # if(any(sapply(inject_after_layer, function(x) x%%1!=0)))
   #   stop("inject_after_layer must be a positive / negative integer")
   
+  if(variational){ 
+    dense_layer <- function(x, ...)
+      layer_dense_variational(x,
+        make_posterior_fn = posterior,
+        make_prior_fn = prior,
+        kl_weight = kl_weight,
+        ...
+      )
+  }else{
+    dense_layer <- function(x, ...)
+      layer_dense(x, ...)
+  }
+    
+  
   # define the input layers
   inputs_deep <- lapply(ncol_deep, function(param_list){
     lapply(param_list, function(nc){
@@ -379,9 +401,8 @@ deepregression_init <- function(
   inputs_struct <- lapply(1:length(ncol_structured), function(i){
     nc = ncol_structured[i]
     if(nc==0) return(NULL) else
-      if(!is.null(list_structured[[i]]) & nc > 1)
+      # if(!is.null(list_structured[[i]]) & nc > 1)
         # nc>1 will cause problems when implementing ridge/lasso
-        layer_input(shape = list(1,nc)) else
           layer_input(shape = list(nc))
   })
 
@@ -404,7 +425,7 @@ deepregression_init <- function(
                                    if(!is.null(lambda_lasso)){
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(
+                                              dense_layer(
                                                 units = output_dim, 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
@@ -414,7 +435,7 @@ deepregression_init <- function(
                                      )
                                    }else{
                                      return(inputs_struct[[i]] %>%
-                                              layer_dense(
+                                              dense_layer(
                                                 units = output_dim, 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
@@ -533,7 +554,7 @@ deepregression_init <- function(
                                          axis = 1L)
                                 })
     list_pred[[1]] <- list_pred[[1]] %>% 
-      layer_dense(units = mixture_dist, 
+      dense_layer(units = mixture_dist, 
                   activation = "softmax", 
                   use_bias = FALSE)
     preds <- layer_concatenate(list_pred)
@@ -565,23 +586,23 @@ deepregression_init <- function(
       dist_fun <- make_tfd_dist(family)
 
     # make model variational and output distribution
-    if(variational){
+    # if(variational){
+    # 
+    #   out <- preds %>%
+    #     layer_dense_variational(
+    #       units = length(nr_params),
+    #       make_posterior_fn = posterior,
+    #       make_prior_fn = prior,
+    #       kl_weight = kl_weight
+    #     ) %>%
+    #     layer_distribution_lambda(dist_fun)
+    # 
+    # }else{
 
       out <- preds %>%
-        layer_dense_variational(
-          units = length(list_pred_parameters),
-          make_posterior_fn = mean_field,
-          make_prior_fn = prior,
-          kl_weight = kl_weight
-        ) %>%
         layer_distribution_lambda(dist_fun)
 
-    }else{
-
-      out <- preds %>%
-        layer_distribution_lambda(dist_fun)
-
-    }
+    # }
 
   }else{
     # no location scale and shape model

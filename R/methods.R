@@ -5,11 +5,12 @@
 #' @param which_param integer of length 1.
 #' Corresponds to the distribution parameter for 
 #' which the effects should be plotted.
+#' @param use_posterior logical; if \code{TRUE} it is assumed that
+#' the strucuted_nonlinear layer has stored a list of length two
+#' as weights, where the first entry is a vector of mean and sd
+#' for each network weight. The sd is transformed using the \code{exp} function.
+#' The plot then shows the mean curve +- 2 times sd.
 #' @param ... further arguments, passed to fit, plot or predict function
-#' @param apply_fun function to apply to distribution, default is \code{tfd_mean}.
-#' @param newdata new data for prediction, defaults to \code{NULL}
-#' @param convert_fun function which converts the tensor 
-#' outputted by predict function
 #'
 #' @method plot deepregression
 #' @export
@@ -21,6 +22,7 @@ plot.deepregression <- function(
   # which of the nonlinear structured effects
   which_param = 1, # for which parameter
   plot = TRUE,
+  use_posterior = FALSE,
   ... # passed to plot function
 )
 {
@@ -33,8 +35,17 @@ plot.deepregression <- function(
   org_feature_names <- 
     names(object$init_params$l_names_effets[[which_param]][["smoothterms"]])
   phi <- object$model$get_layer(paste0("structured_nonlinear_",
-                                       which_param))$get_weights()[[1]]
-
+                                       which_param))$get_weights()
+  if(length(phi)>1){
+    if(use_posterior){
+      phi <- matrix(phi[[1]], ncol=2, byrow=T)
+    }else{
+      phi <- as.matrix(phi[[2]], ncol=1)
+    }
+  }else{
+    phi <- phi[[1]]
+  }
+  
   for(w in which){
 
     nam <- org_feature_names[w]
@@ -44,22 +55,53 @@ plot.deepregression <- function(
     BX <- 
       object$init_params$parsed_formulae_contents[[
         which_param]]$smoothterms[[nam]]$X
-    plotData[[w]] <-
-      list(org_feature_name = nam,
-           value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
-           design_mat = BX,
-           coef = phi[this_ind_this_w,],
-           partial_effect = BX%*%phi[this_ind_this_w,])
+    if(use_posterior){
+      
+      # get the correct index as each coefficient has now mean and sd
+      phi_mean <- phi[this_ind_this_w,1]
+      phi_sd <- log(exp(log(expm1(1)) + phi[this_ind_this_w,2])+1)
+      plotData[[w]] <- 
+        list(org_feature_names = nam,
+             value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
+             design_mat = BX,
+             coef = phi[this_ind_this_w,],
+             mean_partial_effect = BX%*%phi_mean,
+             sd_partial_effect = sqrt(diag(BX%*%diag(phi_sd^2)%*%t(BX))))
+    }else{
+      plotData[[w]] <-
+        list(org_feature_name = nam,
+             value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
+             design_mat = BX,
+             coef = phi[this_ind_this_w,],
+             partial_effect = BX%*%phi[this_ind_this_w,])
+    }
     if(plot){
       nrcols <- NCOL(plotData[[w]]$value)
       if(nrcols==1)
       {
-        plot(partial_effect ~ value,
-             data = plotData[[w]],
-             main = paste0("s(", nam, ")"),
-             xlab = nam,
-             ylab = "partial effect",
-             ...)
+        if(use_posterior){
+          plot(mean_partial_effect[order(value)] ~ sort(value),
+               data = plotData[[w]],
+               main = paste0("s(", nam, ")"),
+               xlab = nam,
+               ylab = "partial effect",
+               ylim = c(min(mean_partial_effect - 2*sd_partial_effect),
+                        max(mean_partial_effect + 2*sd_partial_effect)),
+               ...)
+          with(plotData[[w]], {
+            points((mean_partial_effect + 2 * sd_partial_effect)[order(value)] ~
+                     sort(value), type="l", lty=2)
+            points((mean_partial_effect - 2 * sd_partial_effect)[order(value)] ~
+                     sort(value), type="l", lty=2)
+          })
+        }else{
+          plot(partial_effect[order(value)] ~ sort(value),
+               data = plotData[[w]],
+               main = paste0("s(", nam, ")"),
+               xlab = nam,
+               ylab = "partial effect",
+               ...)
+        }
       }else if(nrcols==2){
         # this_data = cbind(plotData[[w]]$value,partial_effect=plotData[[w]]
         # $partial_effect)
