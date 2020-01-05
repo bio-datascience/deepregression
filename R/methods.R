@@ -46,7 +46,7 @@ plot.deepregression <- function(
         which_param]]$smoothterms[[nam]]$X
     plotData[[w]] <-
       list(org_feature_name = nam,
-           value = object$init_params$data[strsplit(nam,",")[[1]]],
+           value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
            design_mat = BX,
            coef = phi[this_ind_this_w,],
            partial_effect = BX%*%phi[this_ind_this_w,])
