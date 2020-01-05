@@ -1,30 +1,41 @@
 
-deepregression
-==============
+# deepregression
 
 Fitting Semistructured Deep Distributional Models in R
 
-Installation
-============
+# Installation
 
-Since the repository is still private, clone the repository to your local machine and run the following
+Since the repository is still private, clone the repository to your
+local machine and run the following
 
 ``` r
 library(devtools)
+```
+
+    ## Loading required package: usethis
+
+``` r
 load_all("R")
 ```
 
     ## Loading deepregression
 
+    ## 
+    ## Attaching package: 'testthat'
+
+    ## The following object is masked from 'package:devtools':
+    ## 
+    ##     test_file
+
 Also make sure you have installed all the dependencies:
 
--   Matrix
--   dplyr
--   keras
--   mgcv
--   reticulate
--   tensorflow
--   tfprobability
+  - Matrix
+  - dplyr
+  - keras
+  - mgcv
+  - reticulate
+  - tensorflow
+  - tfprobability
 
 In the future, the package can be installed as follows:
 
@@ -35,8 +46,7 @@ library(devtools)
 install_github("davidruegamer/deepregression")
 ```
 
-Examples
-========
+# Examples
 
 1.  [Deep Additive Regression](#deep-linear-regression)
 2.  [Deep Logistic Regression](#deep-logistic-regression)
@@ -45,19 +55,23 @@ Examples
 5.  [Deep GAMLSS](#deep-gamlss)
 6.  [Examples for each Distribution](#examples-for-each-distribution)
 7.  [Real World Applications](#real-world-applications)
-    1.  [Deep Mixed Model for Wage Panel Data](#deep-mixed-model-for-wage-panel-data)
-    2.  [Deep Quantile Regression on Motorcycle Data](#deep-quantile-regression-on-motorcycle-data)
-    3.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer Data](#high-dimensional-ridge-and-lasso-regression)
+    1.  [Deep Mixed Model for Wage Panel
+        Data](#deep-mixed-model-for-wage-panel-data)
+    2.  [Deep Quantile Regression on Motorcycle
+        Data](#deep-quantile-regression-on-motorcycle-data)
+    3.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer
+        Data](#high-dimensional-ridge-and-lasso-regression)
     4.  [Mixture distribution for Acidity Modeling](#mixture-of-normals)
 8.  [Unstructured Data Examples](#unstructured-data-examples)
     1.  [MNIST Pictures with Binarized Response](#mnist-zeros)
     2.  [MNIST Pictures with Multinomial Response](#mnist-multinomial)
     3.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
 
-Deep Additive Regression
-------------------------
+## Deep Additive Regression
 
-We first create a very simple regression where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
+We first create a very simple regression where we try to model the
+non-linear part of the data generating process using a complex neural
+network and an intercept using a structured linear part.
 
 ``` r
 set.seed(24)
@@ -105,7 +119,7 @@ mod <- deepregression(
   data = data,
   # define how parameters should be modeled
   list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
-  list_of_deep_models = list(deep_model, NULL)
+  list_of_deep_models = list(deep_model)
 )
 # fit model (may take a few minutes)
 mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
@@ -119,12 +133,13 @@ points(c(as.matrix(mean)) ~ x, col = "red")
 legend("bottomright", col=1:2, pch = 1, legend=c("true mean", "deep prediction"))
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-3-1.png)
+![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-Deep GAM
---------
+## Deep GAM
 
-We now create a very simple logistic additive regression first where we try to model the non-linear part of the data generating process using both a complex neural network and a spline.
+We now create a very simple logistic additive regression first where we
+try to model the non-linear part of the data generating process using
+both a complex neural network and a spline.
 
 ``` r
 set.seed(24)
@@ -196,9 +211,10 @@ ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))
   ylab("partial effect s(x)") + theme_bw()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-4-1.png)
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
-We can check which of the function the cross-validation would have chosen by doing the following:
+We can check which of the function the cross-validation would have
+chosen by doing the following:
 
 ``` r
 mod <- deepregression(
@@ -212,39 +228,50 @@ mod <- deepregression(
   family = "bernoulli",
   df = 10 # use no penalization for spline
 )
-
 cvres <- mod %>% cv(epochs=100)
 ```
 
     ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
 
     ## Fitting Fold  1  ... 
-    ## Done in 22.09402  secs 
+    ## Done in 9.354302  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 20.83552  secs 
+    ## Done in 8.475876  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 20.80279  secs 
+    ## Done in 8.37732  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 21.71101  secs 
+    ## Done in 8.433299  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 24.49135  secs 
+    ## Done in 8.50964  secs 
     ## Fitting Fold  6  ... 
-    ## Done in 21.26566  secs 
+    ## Done in 8.548075  secs 
     ## Fitting Fold  7  ... 
-    ## Done in 23.94886  secs 
+    ## Done in 8.562343  secs 
     ## Fitting Fold  8  ... 
-    ## Done in 24.52409  secs 
+    ## Done in 8.641298  secs 
     ## Fitting Fold  9  ... 
-    ## Done in 24.35747  secs 
+    ## Done in 8.57056  secs 
     ## Fitting Fold  10  ... 
-    ## Done in 23.6644  secs
+    ## Done in 8.363687  secs
 
-![](README_files/figure-markdown_github/unnamed-chunk-5-1.png)
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 Get the optimal stopping iteration and train the whole model again:
 
 ``` r
 bestiter <- stop_iter_cv_result(cvres)
+# fit model
+mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
+# plot model
+mod %>% plot()
+points(sin(10*(sort(x))) ~ sort(x), col = "red", type="l", ylim=c(0,1))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+Now we fit it using variational mean field inference:
+
+``` r
 mod <- deepregression(
   # supply data (response and data.frame for covariates)
   y = y,
@@ -255,22 +282,56 @@ mod <- deepregression(
   # family binomial n=1
   family = "bernoulli",
   validation_split = NULL,
+  variational = TRUE,
   df = 10 # use no penalization for spline
 )
-# fit model
-mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
-# plot model
-par(mfrow=c(1,2))
-plot(true_mean_fun(x) ~ x)
-mod %>% plot()
+cvres <- mod %>% cv(epochs=100)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-6-1.png)
+    ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
 
-GAMLSS
-------
+    ## Fitting Fold  1  ... 
+    ## Done in 11.35368  secs 
+    ## Fitting Fold  2  ... 
+    ## Done in 9.033123  secs 
+    ## Fitting Fold  3  ... 
+    ## Done in 8.681913  secs 
+    ## Fitting Fold  4  ... 
+    ## Done in 8.802747  secs 
+    ## Fitting Fold  5  ... 
+    ## Done in 9.568506  secs 
+    ## Fitting Fold  6  ... 
+    ## Done in 11.45745  secs 
+    ## Fitting Fold  7  ... 
+    ## Done in 11.26  secs 
+    ## Fitting Fold  8  ... 
+    ## Done in 9.435672  secs 
+    ## Fitting Fold  9  ... 
+    ## Done in 10.11161  secs 
+    ## Fitting Fold  10  ... 
+    ## Done in 10.91927  secs
 
-We not create a standard GAMLSS model with Gaussian distribution by modeling the expectation using additive terms and the standard deviation by a linear term.
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+bestiter <- stop_iter_cv_result(cvres)
+# fit model
+mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
+# make prediction intervals
+pred_vals <- sapply(1:100, function(i) (mod %>% predict(data.frame(x=x_test)))[,1])
+q_vals <- apply(pred_vals,1,function(x) quantile(x, probs = c(0.025,0.975)))
+# plot model
+mod %>% plot(use_posterior=TRUE)
+points(sin(10*(sort(x))) ~ sort(x), col = "red", type="l", ylim=c(0,1))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
+
+## GAMLSS
+
+We not create a standard GAMLSS model with Gaussian distribution by
+modeling the expectation using additive terms and the standard deviation
+by a linear term.
 
 ``` r
 set.seed(24)
@@ -344,33 +405,33 @@ mod %>% coef()
     ## $loc
     ## $loc$structured_nonlinear
     ##              [,1]
-    ##  [1,]  0.13732553
-    ##  [2,]  1.05068362
-    ##  [3,] -0.35663056
-    ##  [4,] -2.71700454
-    ##  [5,] -0.83350438
-    ##  [6,] -0.01713021
-    ##  [7,]  0.43711060
-    ##  [8,]  1.22317624
-    ##  [9,] -0.79938602
-    ## [10,]  0.77136862
-    ## [11,]  2.38366628
-    ## [12,]  1.09855545
-    ## [13,] -0.61130136
-    ## [14,]  0.16264610
-    ## [15,] -0.21370493
-    ## [16,] -0.29609966
-    ## [17,]  0.19710314
-    ## [18,] -0.33784550
-    ## [19,] -0.65737909
-    ## [20,]  0.95157951
-    ## [21,]  1.94830942
+    ##  [1,]  0.84839368
+    ##  [2,]  0.86893094
+    ##  [3,] -0.35677627
+    ##  [4,] -2.65775204
+    ##  [5,] -0.83369523
+    ##  [6,] -0.03912989
+    ##  [7,]  0.45583653
+    ##  [8,]  1.23418522
+    ##  [9,] -0.81973726
+    ## [10,]  0.38997889
+    ## [11,]  2.44427371
+    ## [12,]  0.67017853
+    ## [13,] -0.58960259
+    ## [14,]  0.05656475
+    ## [15,] -0.19247641
+    ## [16,] -0.34294558
+    ## [17,]  0.17487967
+    ## [18,] -0.30058622
+    ## [19,] -0.62072754
+    ## [20,]  0.73902410
+    ## [21,]  1.92936766
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
     ##          [,1]
-    ## [1,] 2.040742
+    ## [1,] 2.046165
 
 ``` r
 # plot model
@@ -380,7 +441,7 @@ plot(z^2 ~ z)
 mod %>% plot()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 # get fitted values
@@ -389,10 +450,9 @@ par(mfrow=c(1,1))
 plot(meanpred[,1] ~ x)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-7-2.png)
+![](README_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
 
-Deep GAMLSS
------------
+## Deep GAMLSS
 
 We now extend the example 4 by a Deep model part.
 
@@ -463,7 +523,7 @@ mod %>% fit(epochs=500, verbose = FALSE, view_metrics = FALSE)
 mod %>% plot()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-8-1.png)
+![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 # get coefficients
@@ -472,30 +532,31 @@ mod %>% coef()
 
     ## $loc
     ## $loc$structured_nonlinear
-    ##              [,1]
-    ##  [1,]  0.69396508
-    ##  [2,] -0.18849275
-    ##  [3,] -0.09618219
-    ##  [4,] -2.24367547
-    ##  [5,] -0.87267220
-    ##  [6,] -0.27696791
-    ##  [7,]  0.41991803
-    ##  [8,]  1.27324545
-    ##  [9,] -0.42565411
-    ## [10,]  0.06840106
-    ## [11,]  1.89568913
+    ##             [,1]
+    ##  [1,]  0.2878227
+    ##  [2,] -0.1259579
+    ##  [3,] -0.2041069
+    ##  [4,] -2.2595794
+    ##  [5,] -0.9176710
+    ##  [6,] -0.2325021
+    ##  [7,]  0.4195509
+    ##  [8,]  1.2403539
+    ##  [9,] -0.5062242
+    ## [10,]  0.2015388
+    ## [11,]  2.0637753
     ## 
     ## 
     ## $scale
     ## $scale$structured_linear
-    ##          [,1]
-    ## [1,] 0.103509
-    ## [2,] 2.059198
+    ##            [,1]
+    ## [1,] 0.01116557
+    ## [2,] 2.06416678
 
-Examples for each Distribution
-------------------------------
+## Examples for each Distribution
 
-In this example we just demonstrate all the distributions that can currently be fitted using the deepregression framework. Updates will happen quite frequently.
+In this example we just demonstrate all the distributions that can
+currently be fitted using the deepregression framework. Updates will
+happen quite frequently.
 
 ``` r
 set.seed(24)
@@ -591,12 +652,17 @@ for(dist in dists)
     ## Fitting student_t_ls model... Success.
     ## Fitting uniform model... Infinite values in loss or validation loss.
 
-Real World Application
-----------------------
+## Real World Application
 
 ### Deep Mixed Model for Wage Panel Data
 
-This example applies deep distributional regression to the 'Cornwell and Rupert' data, a balanced panel dataset with 595 individuals and 4165 observations, where each individual is observed for 7 years. This data set is also used in Tran et al. (2018) for within subject prediction of the log of wage in the years 6 and 7 after training on years 1 to 5. They report an MSE of 0.05.
+This example applies deep distributional regression to the ‘Cornwell and
+Rupert’ data, a balanced panel dataset with 595 individuals and 4165
+observations, where each individual is observed for 7 years. This data
+set is also used in Tran et al. (2018) for within subject prediction of
+the log of wage in the years 6 and 7 after training on years 1 to 5.
+They report an MSE of
+0.05.
 
 ``` r
 data <- read.csv("http://people.stern.nyu.edu/wgreene/Econometrics/cornwell&rupert.csv")
@@ -635,11 +701,11 @@ cvres <- mod %>% cv(epochs = 200)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 51.20007  secs 
+    ## Done in 24.35041  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 1.036325  mins
+    ## Done in 27.43032  secs
 
-![](README_files/figure-markdown_github/unnamed-chunk-10-1.png)
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 mod %>% fit(epochs = stop_iter_cv_result(cvres), view_metrics=FALSE)
@@ -648,7 +714,7 @@ pred <- mod %>% predict(test)
 mean((pred-test$LWAGE)^2)
 ```
 
-    ## [1] 0.0573948
+    ## [1] 0.03855939
 
 ### Deep Quantile Regression on Motorcycle Data
 
@@ -658,6 +724,16 @@ mean((pred-test$LWAGE)^2)
 #### and use distributional regression to compare
 #### with quantile regression
 library(MASS)
+```
+
+    ## 
+    ## Attaching package: 'MASS'
+
+    ## The following object is masked from 'package:deepregression':
+    ## 
+    ##     select
+
+``` r
 data("mcycle")
 set.seed(48)
 
@@ -726,9 +802,9 @@ for(sim_iteration in 1:nrsims){
 apply(res, 2, function(x) c(mean(x, na.rm=T), sd(x, na.rm=T)))
 ```
 
-    ##          RMSE       time
-    ## [1,] 38.04549 1.34436015
-    ## [2,] 16.74510 0.03677722
+    ##          RMSE        time
+    ## [1,] 50.22497 0.883597230
+    ## [2,] 17.93658 0.009482691
 
 ``` r
 library(reshape2)
@@ -744,11 +820,13 @@ fitdf %>%
   geom_line(aes(x=times, y=q90), col="red", linetype = 4)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-11-1.png)
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ### High-Dimensional Ridge and Lasso Regression
 
-This examples shows how we can seamlessly employ the software to fit high-dimensional Ridge and Lasso Regression with 2000 covariates with just 42 observations.
+This examples shows how we can seamlessly employ the software to fit
+high-dimensional Ridge and Lasso Regression with 2000 covariates with
+just 42 observations.
 
 ``` r
 data <- read.table("data/colon-cancer")
@@ -780,35 +858,35 @@ cvres <- mod %>% cv(epochs = 100)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 8.382484  secs 
+    ## Done in 6.120511  mins 
     ## Fitting Fold  2  ... 
-    ## Done in 7.223637  secs 
+    ## Done in 6.452453  mins 
     ## Fitting Fold  3  ... 
-    ## Done in 7.546076  secs 
+    ## Done in 6.573855  mins 
     ## Fitting Fold  4  ... 
-    ## Done in 7.9415  secs 
+    ## Done in 6.590473  mins 
     ## Fitting Fold  5  ... 
-    ## Done in 7.334122  secs 
+    ## Done in 6.275715  mins 
     ## Fitting Fold  6  ... 
-    ## Done in 7.737437  secs 
+    ## Done in 6.020251  mins 
     ## Fitting Fold  7  ... 
-    ## Done in 7.466359  secs 
+    ## Done in 6.031105  mins 
     ## Fitting Fold  8  ... 
-    ## Done in 7.750818  secs 
+    ## Done in 6.026873  mins 
     ## Fitting Fold  9  ... 
-    ## Done in 7.288137  secs 
+    ## Done in 6.041285  mins 
     ## Fitting Fold  10  ... 
-    ## Done in 7.544744  secs 
+    ## Done in 5.996561  mins 
     ## Fitting Fold  11  ... 
-    ## Done in 7.268436  secs 
+    ## Done in 6.119858  mins 
     ## Fitting Fold  12  ... 
-    ## Done in 7.654012  secs 
+    ## Done in 6.032337  mins 
     ## Fitting Fold  13  ... 
-    ## Done in 7.350421  secs 
+    ## Done in 6.056118  mins 
     ## Fitting Fold  14  ... 
-    ## Done in 7.387538  secs
+    ## Done in 6.058609  mins
 
-![](README_files/figure-markdown_github/unnamed-chunk-12-1.png)
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 mod %>% fit(epochs = stop_iter_cv_result(cvres),
@@ -818,12 +896,12 @@ summary(coef[[1]][[1]])
 ```
 
     ##        V1            
-    ##  Min.   :-0.5453303  
-    ##  1st Qu.:-0.0056927  
-    ##  Median :-0.0002700  
-    ##  Mean   :-0.0004081  
-    ##  3rd Qu.: 0.0047719  
-    ##  Max.   : 0.0276726
+    ##  Min.   :-0.3595438  
+    ##  1st Qu.:-0.0059966  
+    ##  Median :-0.0006256  
+    ##  Mean   :-0.0004537  
+    ##  3rd Qu.: 0.0047528  
+    ##  Max.   : 0.0277284
 
 ``` r
 pred <- mod %>% predict(newdata = test[,-1])
@@ -846,38 +924,38 @@ mod <- deepregression(y = train$outcome[train_ind],
 cvres <- mod %>% cv(epochs = 100)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-12-2.png)
+![](README_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
 
     ## Fitting Fold  1  ... 
-    ## Done in 5.165127  secs 
+    ## Done in 4.83892  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 4.582513  secs 
+    ## Done in 4.023231  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 4.69524  secs 
+    ## Done in 4.414994  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 4.659523  secs 
+    ## Done in 4.908429  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 4.846127  secs 
+    ## Done in 4.583536  secs 
     ## Fitting Fold  6  ... 
-    ## Done in 4.89717  secs 
+    ## Done in 3.946018  secs 
     ## Fitting Fold  7  ... 
-    ## Done in 4.670654  secs 
+    ## Done in 4.292011  secs 
     ## Fitting Fold  8  ... 
-    ## Done in 4.61822  secs 
+    ## Done in 4.609456  secs 
     ## Fitting Fold  9  ... 
-    ## Done in 4.713288  secs 
+    ## Done in 3.889753  secs 
     ## Fitting Fold  10  ... 
-    ## Done in 4.621037  secs 
+    ## Done in 4.211881  secs 
     ## Fitting Fold  11  ... 
-    ## Done in 4.773211  secs 
+    ## Done in 4.62217  secs 
     ## Fitting Fold  12  ... 
-    ## Done in 4.621058  secs 
+    ## Done in 5.023367  secs 
     ## Fitting Fold  13  ... 
-    ## Done in 4.859197  secs 
+    ## Done in 4.757053  secs 
     ## Fitting Fold  14  ... 
-    ## Done in 4.605291  secs
+    ## Done in 3.917783  secs
 
-![](README_files/figure-markdown_github/unnamed-chunk-12-3.png)
+![](README_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
 
 ``` r
 mod %>% fit(epochs = stop_iter_cv_result(cvres),
@@ -889,16 +967,27 @@ boxplot(pred ~ test$outcome)
 plot(coef[[1]][[1]])
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-12-4.png)
+![](README_files/figure-gfm/unnamed-chunk-13-4.png)<!-- -->
 
-Mixture of normals
-------------------
+## Mixture of normals
 
-We here estimate a mixture of three normal distributions for the acidity data, a data set showing the acidity index for 155 lakes in the Northeastern United States.
+We here estimate a mixture of three normal distributions for the acidity
+data, a data set showing the acidity index for 155 lakes in the
+Northeastern United States.
 
 ``` r
 # load data
 library("gamlss.data")
+```
+
+    ## 
+    ## Attaching package: 'gamlss.data'
+
+    ## The following object is masked from 'package:datasets':
+    ## 
+    ##     sleep
+
+``` r
 data(acidity)
 
 # softmax function
@@ -927,17 +1016,17 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 35.70982  secs 
+    ## Done in 25.35681  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 38.83584  secs 
+    ## Done in 24.126  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 41.88017  secs 
+    ## Done in 24.38965  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 51.84174  secs 
+    ## Done in 24.51638  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 49.26305  secs
+    ## Done in 24.79158  secs
 
-![](README_files/figure-markdown_github/unnamed-chunk-13-1.png)
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 mod %>% fit(epochs = stop_iter_cv_result(cvres), 
@@ -946,23 +1035,61 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1]  1.1307266  0.3487663 -0.7707656
+    ## [1]  1.1285480 -0.7829522 -0.4585955
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.5324980 2.3916503 0.3343867
+    ## [1] 0.5409427 0.3213030 1.5896646
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.40977218 0.01705999 0.57316783
+    ## [1] 0.39367941 0.56590463 0.04041596
 
 ``` r
 library(distr)
+```
 
+    ## Loading required package: startupmsg
+
+    ## Utilities for Start-Up Messages (version 0.9.6)
+
+    ## For more information see ?"startupmsg", NEWS("startupmsg")
+
+    ## Loading required package: sfsmisc
+
+    ## 
+    ## Attaching package: 'sfsmisc'
+
+    ## The following object is masked from 'package:deepregression':
+    ## 
+    ##     last
+
+    ## Object Oriented Implementation of Distributions (version 2.8.0)
+
+    ## Attention: Arithmetics on distribution objects are understood as operations on corresponding random variables (r.v.s); see distrARITH().
+    ## Some functions from package 'stats' are intentionally masked ---see distrMASK().
+    ## Note that global options are controlled by distroptions() ---c.f. ?"distroptions".
+
+    ## For more information see ?"distr", NEWS("distr"), as well as
+    ##   http://distr.r-forge.r-project.org/
+    ## Package "distrDoc" provides a vignette to this package as well as to several extension packages; try vignette("distr").
+
+    ## 
+    ## Attaching package: 'distr'
+
+    ## The following objects are masked from 'package:deepregression':
+    ## 
+    ##     location, n, shape
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     df, qqplot, sd
+
+``` r
 mixDist <- UnivarMixingDistribution(Norm(means[1],stds[1]),
                                     Norm(means[2],stds[2]),
                                     Norm(means[3],stds[3]),
@@ -972,13 +1099,11 @@ plot(mixDist, to.draw.arg="d", ylim=c(0,1.4))
 with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-13-2.png)
+![](README_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
 
-Unstructured Data Examples
-==========================
+# Unstructured Data Examples
 
-MNIST zeros
------------
+## MNIST zeros
 
 ``` r
 mnist <- dataset_mnist()
@@ -1009,8 +1134,8 @@ nn_model <- function(x) x %>%
 
 
 mod <- deepregression(y = y_train,
-                      list_of_formulae = list(logit = ~ 0 + d(.)),
-                      list_of_deep_models = list(nn_model),
+                      list_of_formulae = list(logit = ~ 0 + nn_model(.)),
+                      list_of_deep_models = list(nn_model = nn_model),
                       data = x_train,
                       family = "bernoulli")
 
@@ -1021,12 +1146,12 @@ pred <- mod %>% predict(x_test)
 boxplot(pred ~ y_test, ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-14-1.png)
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
-MNIST Multinomial
------------------
+## MNIST Multinomial
 
-The non-binarized MNIST example demonstrates the capabilities of the framework to handle multinomial (or in general multivariate) responses.
+The non-binarized MNIST example demonstrates the capabilities of the
+framework to handle multinomial (or in general multivariate) responses.
 
 ``` r
 mnist <- dataset_mnist()
@@ -1077,26 +1202,25 @@ table(data.frame(pred=apply(pred,1,which.max)-1,
 
     ##     truth
     ## pred    0    1    2    3    4    5    6    7    8    9
-    ##    0  968    0   11    1    1    6    9    0    3    8
-    ##    1    0 1121    1    0    1    1    3    7    3    6
-    ##    2    0    4  978   11    5    0    0   19    5    1
-    ##    3    1    2    7  959    0   19    1    3   14   15
-    ##    4    0    1    8    0  938    3    6    2    7   23
-    ##    5    3    1    0    8    0  840    7    1   10    5
-    ##    6    5    4    6    0   13    9  926    0    8    1
-    ##    7    2    0    9   13    1    0    0  984    7    7
-    ##    8    1    2   11   13    3    9    6    0  913    7
-    ##    9    0    0    1    5   20    5    0   12    4  936
+    ##    0  970    0   10    0    1    2    8    2    6    5
+    ##    1    0 1120    0    0    0    0    3    7    1    5
+    ##    2    1    3  989    9    8    0    1   12    8    0
+    ##    3    1    2    4  975    0   15    1    1   10   12
+    ##    4    0    0    3    0  952    1    6    1    4   19
+    ##    5    2    1    2    8    0  856    8    0   10    4
+    ##    6    4    2    5    1    6    9  928    0    6    0
+    ##    7    1    0    8    8    2    1    0  994    6    5
+    ##    8    1    7    9    8    2    4    3    0  921    4
+    ##    9    0    0    2    1   11    4    0   11    2  955
 
-Text as Input
--------------
+## Text as Input
 
-We use IMDB Reviews for sentiment analysis to predict 1 = positive or 0 = negative reviews
+We use IMDB Reviews for sentiment analysis to predict 1 = positive or 0
+= negative reviews. The example is taken from the [Tensorflow
+Blog](https://blogs.rstudio.com/tensorflow/posts/2017-12-07-text-classification-with-keras/)
+but just a small example with 1000 words.
 
 ``` r
-# example taken from 
-# https://blogs.rstudio.com/tensorflow/posts/2017-12-07-text-classification-with-keras/
-# but just a small example with 1000 words
 nr_words = 1000
 imdb <- dataset_imdb(num_words = nr_words)
 train_data <- imdb$train$x
@@ -1117,8 +1241,9 @@ cat(decoded_review[2:87])
 
     ## this film was just brilliant casting [...] [...] story direction [...] really [...] the part they played and you could just imagine being there robert [...] is an amazing actor and now the same being director [...] father came from the same [...] [...] as myself so i loved the fact there was a real [...] with this film the [...] [...] throughout the film were great it was just brilliant so much that i [...] the film as soon as it was released for [...]
 
+Do the actual pre-processing and model fitting
+
 ``` r
-# pre-processing and model fitting
 vectorize_sequences <- function(sequences, dimension = nr_words) {
   results <- matrix(0, nrow = length(sequences), ncol = dimension) 
   for (i in 1:length(sequences))
@@ -1163,4 +1288,4 @@ pred <- mod %>% predict(as.data.frame(x_test))
 boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
