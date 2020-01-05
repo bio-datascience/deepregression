@@ -81,7 +81,8 @@ get_contents <- function(lf, data, df,
     if(length(vars)==1 && vars==".")
     {
       ff <- as.character(lf)[[2]]
-      if(grepl("d\\(",j))
+      net_w_dot <- sapply(network_names, function(x) grepl(paste0(x,"\\("),j))
+      if(grepl("d\\(",j) | any(net_w_dot))
         ff <- gsub("\\.", paste(variable_names, collapse=","), ff) else
           ff <- gsub(".", paste(variable_names, collapse="+"), ff)
         return(get_contents(lf = as.formula(paste0("~ ", ff)), 
@@ -89,6 +90,7 @@ get_contents <- function(lf, data, df,
                             df = df, 
                             variable_names = variable_names, 
                             intercept = intercept, 
+                            network_names = network_names,
                             defaultSmoothing = defaultSmoothing))
     }
     whatsleft <- setdiff(vars, variable_names)
@@ -355,6 +357,8 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
 {
   n_obs <- nROW(data)
   input_cov_new <- make_cov(pfc, data, pred = pred)
+  if(pred & !is.null(data))
+    pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
@@ -514,6 +518,7 @@ nCOL <- function(x)
 ncol_lint <- function(z)
 {
   
+  if(is.null(z)) return(0)
   z_num <- NCOL(z[,!sapply(z,is.factor),drop=F])
   facs <- sapply(z,is.factor)
   if(length(facs)>0) z_fac <- sapply(z[,facs,drop=F], nlevels) else

@@ -132,12 +132,13 @@ plot.deepregression <- function(
 #'
 prepare_data <- function(
   object,
-  data
+  data,
+  pred=FALSE
 )
 {
   newdata_processed <- prepare_newdata(
     object$init_params$parsed_formulae_contents,
-    data)
+    data, pred=pred)
   return(newdata_processed)
 }
 
@@ -160,7 +161,7 @@ predict.deepregression <- function(
   }else{
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(object, newdata)
+    newdata_processed <- prepare_data(object, newdata, pred=TRUE)
     yhat <- object$model(newdata_processed)
   }
 

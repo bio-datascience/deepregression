@@ -154,6 +154,12 @@ deepregression <- function(
                                      variable_names = varnames,
                                      network_names = netnames,
                                      defaultSmoothing = defaultSmoothing)
+  
+  # check for zero ncol linterms
+  for(i in 1:nr_params){
+    if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
+      parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
+  }
 
   this_OX <- lapply(parsed_formulae_contents, make_orthog, retcol = TRUE)
 
@@ -246,10 +252,6 @@ deepregression <- function(
   # must be a list of the following form:
   # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
   #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
-  for(i in 1:nr_params){
-    if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
-      parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
-  }
   parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth)
   input_cov <- make_cov(parsed_formulae_contents)
   ox <- lapply(parsed_formulae_contents, make_orthog)

@@ -204,6 +204,8 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
   
   }else if(is.null(struct)){
     
+    if(length(deep)==1) return(deep_top[[1]](deep[[1]]))
+    
     return(layer_add(lapply(1:length(deep), 
                             function(j) deep_top[[j]](deep[[j]]))))
     

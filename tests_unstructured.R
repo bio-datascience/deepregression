@@ -243,6 +243,86 @@ for(i in 1:length(formulae)){
 ############# Prediction: #############
 #############
 
+set.seed(24)
+
+# generate the data
+n <- 1500
+b0 <- 1
+
+# training data; predictor 
+x <- runif(n) %>% as.matrix()
+z <- runif(n)
+fac <- gl(10, n/10)
+
+true_mean_fun <- function(xx) sin(10*xx) + b0
+
+# training data
+y <- true_mean_fun(x) + rnorm(n = n, mean = 0, sd = 2)
+
+data = data.frame(x = x, fac = fac, z = z)
+
+# test data
+x_test <- runif(n) %>% as.matrix()
+
+validation_data = data.frame(x = x_test, fac = fac, z = z)
+
+y_test <- true_mean_fun(x_test) + rnorm(n = n, sd = 2)
+
+deep_model <- function(x) x %>% 
+  layer_dense(units = 4, activation = "relu") %>% 
+  layer_dense(units = 1, activation = "linear")
+
+# first without the need for orthogonalization
+formulae <- c(
+  "~ 0 + x",
+  "~ 1 + x",
+  "~ 1 + x + z",
+  "~ 0 + s(x)",
+  "~ 1 + s(x)",
+  "~ 1 + s(x) + s(z)",
+  "~ 1 + te(x,z)",
+  "~ 1 + d(x) + z",
+  "~ 1 + d(x,z)",
+  "~ 1 + d(x) + s(z)",
+  "~ 1 + x + s(x)",
+  "~ 1 + x + d(x)",
+  "~ 1 + x + s(x) + d(x)",
+  "~ 1 + d(x) + s(z,by=fac)"
+)
+
+for(form in formulae){
+  
+  cat("Formula: ", form, " ... ")
+  suppressWarnings({
+    mod <- try(deepregression(
+      y = y,
+      data = data,
+      # define how parameters should be modeled
+      list_of_formulae = list(loc = as.formula(form), scale = ~1),
+      list_of_deep_models = list(deep_model)
+    ), silent=silent)
+    try(mod %>% fit(epochs=2, verbose = FALSE, view_metrics = FALSE),
+        silent = silent)
+  })
+  # test if model can be fitted
+  if(class(mod)=="try-error")
+  {
+    cat("Failed to initialize and fit the model.\n")
+    next
+  }
+  predicting <- try(
+    res <- mod %>% predict(validation_data),
+    silent=silent
+  )
+  if(class(predicting)=="try-error" | any(is.nan(res))){ 
+    cat("Failed to predict with the model.\n")
+  }else{
+    # print(res$metrics)
+    cat("Success.\n")
+  }
+}
+
+
 #############
 ############# Plotting: #############
 #############
