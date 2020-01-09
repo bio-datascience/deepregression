@@ -196,9 +196,15 @@ layer_spline <- function(object,
                          prior_fun = NULL,
                          ...) {
   
-  bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
+  if(variational)
+    bigP = bdiag(lapply(1:length(Ps), function(j){ 
+      
+      # return vague prior for scalar
+      if(length(Ps[[j]])==1) return(diffuse_scale^2) else
+        return(chol2inv(chol(lambdas[j] * Ps[[j]])))})) else
+      bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
   
-  if(sum(lambdas)==0)
+  if(sum(lambdas)==0 | variational)
     regul <- NULL else
       regul <- function(x)
         k_mean(k_batch_dot(x, k_dot(
@@ -221,7 +227,13 @@ layer_spline <- function(object,
       
       class <- tfprobability:::tfp$layers$DenseVariational 
       args$make_posterior_fn = posterior_fun
-      args$make_prior_fn = prior_fun
+      args$make_prior_fn = function(kernel_size,
+                                    bias_size = 0,
+                                    dtype) prior_pspline(kernel_size = kernel_size,
+                                                         bias_size = bias_size,
+                                                         dtype = 'float32',
+                                                         P = as.matrix(bigP))
+      args$regul <- NULL
       
     }else{
       

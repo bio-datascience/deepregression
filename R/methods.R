@@ -38,7 +38,7 @@ plot.deepregression <- function(
                                        which_param))$get_weights()
   if(length(phi)>1){
     if(use_posterior){
-      phi <- matrix(phi[[1]], ncol=2, byrow=T)
+      phi <- matrix(phi[[1]], ncol=2, byrow=F)
     }else{
       phi <- as.matrix(phi[[2]], ncol=1)
     }
@@ -258,7 +258,8 @@ fit.deepregression <- function(
 #' @rdname methodDR
 #'
 coef.deepregression <- function(
-  object
+  object,
+  variational = FALSE
 )
 {
   nrparams <- length(object$init_params$parsed_formulae_contents)
@@ -281,10 +282,16 @@ coef.deepregression <- function(
       if(slas %in% layer_names)
         object$model$get_layer(slas)$get_weights()[[1]] else
           NULL
-    lret[[i]]$structured_nonlinear <-
-      if(snl %in% layer_names)
-        object$model$get_layer(snl)$get_weights()[[1]] else
-          NULL
+    if(snl %in% layer_names){
+      cf <- object$model$get_layer(snl)$get_weights()
+      if(length(cf)==2 & variational){
+        lret[[i]]$structured_nonlinear <-  cf[[1]]
+      }else{
+        lret[[i]]$structured_nonlinear <- cf[[length(cf)]]
+      }
+    }else{
+      lret[[i]]$structured_nonlinear <- NULL
+    }
 
   }
   return(lret)

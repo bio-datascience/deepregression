@@ -362,7 +362,11 @@ mix_dist_maker <- function(
   
 }
 
-#' Zero-inflated poisson distribution
+#' Implementation of a zero-inflated poisson distribution for TFP
+#' 
+#' @param lambda scalar value for rate of poisson distribution
+#' @param probs vector of probabilites of length 2 (probability for poisson and 
+#' probability for 0s)
 tfd_zip <- function(lambda, probs)
 {
   

@@ -81,7 +81,7 @@ deepregression <- function(
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
     "multinomial", "multinoulli", "negbinom", "pareto", "poisson", 
     "poisson_lograte", "student_t",
-    "student_t_ls", "truncated_normal", "uniform"
+    "student_t_ls", "truncated_normal", "uniform", "zip"
   ),
   train_together = FALSE,
   data,
@@ -108,6 +108,7 @@ deepregression <- function(
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
   prior_fun = prior_trainable,
+  null.space.penalty = variational,
   ...
 )
 {
@@ -153,7 +154,8 @@ deepregression <- function(
                                      df = df,
                                      variable_names = varnames,
                                      network_names = netnames,
-                                     defaultSmoothing = defaultSmoothing)
+                                     defaultSmoothing = defaultSmoothing,
+                                     null.space.penalty = null.space.penalty)
   
   # check for zero ncol linterms
   for(i in 1:nr_params){

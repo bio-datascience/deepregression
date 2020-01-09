@@ -32,7 +32,8 @@ get_contents <- function(lf, data, df,
                          variable_names, 
                          network_names, 
                          intercept = TRUE, 
-                         defaultSmoothing){
+                         defaultSmoothing,
+                         null.space.penalty = FALSE){
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
@@ -135,6 +136,8 @@ get_contents <- function(lf, data, df,
   # get gam terms
   spec <- attr(tf, "specials")
   sTerms <- terms[unlist(spec[names(spec) %in% c("s", "te", "ti")])]
+  if(any(!sapply(spec[c("te","ti")], is.null)))
+    warning("2-dimensional smooths and higher currently not well tested.")
   if(length(sTerms)>0)
   {
     terms_w_s <- lapply(names(sTerms), extract_from_special)
@@ -143,14 +146,15 @@ get_contents <- function(lf, data, df,
                           function(t) 
                             smoothCon(eval(t), 
                                       data=data.frame(data[unlist(terms_w_s)]), 
-                                      knots=NULL, absorb.cons=F))
+                                      knots=NULL, absorb.cons=F,
+                                      null.space.penalty = null.space.penalty))
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
-    if(is.null(df)) df <- min(sapply(smoothterms, "[[", "df"))
+    if(is.null(df)) df <- pmax(min(sapply(smoothterms, "[[", "df")) - null.space.penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
-        st$sp = DRO(st$X, df = df, dmat = st$S[[1]])["lambda"]
+        st$sp = DRO(st$X, df = df, dmat = st$S[[1]])["lambda"] + null.space.penalty
         return(st)
       }
     smoothterms[sapply(smoothterms,function(x) is.null(x$sp))] <-
