@@ -636,7 +636,7 @@ deepregression_init <- function(
                        outputs = out)
 
   # define weights to be equal to 1 if not given
-  if(is.null(weights)) weights <- rep(1, n_obs)
+  if(is.null(weights)) weights <- 1
 
   # the negative log-likelihood is given by the negative weighted
   # log probability of the model
