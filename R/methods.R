@@ -438,7 +438,7 @@ cv <- function(
   
   class(res) <- c("drCV","list")
   
-  if(plot) plot(res)
+  if(plot) try(plot(res))
   
   object$model$set_weights(old_weights)
   

@@ -283,33 +283,20 @@ mod <- deepregression(
   family = "bernoulli",
   validation_split = NULL,
   variational = TRUE,
-  df = 10 # use no penalization for spline
 )
-cvres <- mod %>% cv(epochs=100)
+cvres <- mod %>% cv(cv_folds = 5, epochs=200)
 ```
 
-    ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
-
     ## Fitting Fold  1  ... 
-    ## Done in 11.35368  secs 
+    ## Done in 19.07667  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 9.033123  secs 
+    ## Done in 18.89088  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 8.681913  secs 
+    ## Done in 19.55833  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 8.802747  secs 
+    ## Done in 18.8796  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 9.568506  secs 
-    ## Fitting Fold  6  ... 
-    ## Done in 11.45745  secs 
-    ## Fitting Fold  7  ... 
-    ## Done in 11.26  secs 
-    ## Fitting Fold  8  ... 
-    ## Done in 9.435672  secs 
-    ## Fitting Fold  9  ... 
-    ## Done in 10.11161  secs 
-    ## Fitting Fold  10  ... 
-    ## Done in 10.91927  secs
+    ## Done in 18.9857  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
@@ -317,9 +304,6 @@ cvres <- mod %>% cv(epochs=100)
 bestiter <- stop_iter_cv_result(cvres)
 # fit model
 mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
-# make prediction intervals
-pred_vals <- sapply(1:100, function(i) (mod %>% predict(data.frame(x=x_test)))[,1])
-q_vals <- apply(pred_vals,1,function(x) quantile(x, probs = c(0.025,0.975)))
 # plot model
 mod %>% plot(use_posterior=TRUE)
 points(sin(10*(sort(x))) ~ sort(x), col = "red", type="l", ylim=c(0,1))
@@ -724,16 +708,6 @@ mean((pred-test$LWAGE)^2)
 #### and use distributional regression to compare
 #### with quantile regression
 library(MASS)
-```
-
-    ## 
-    ## Attaching package: 'MASS'
-
-    ## The following object is masked from 'package:deepregression':
-    ## 
-    ##     select
-
-``` r
 data("mcycle")
 set.seed(48)
 
@@ -802,9 +776,9 @@ for(sim_iteration in 1:nrsims){
 apply(res, 2, function(x) c(mean(x, na.rm=T), sd(x, na.rm=T)))
 ```
 
-    ##          RMSE        time
-    ## [1,] 50.22497 0.883597230
-    ## [2,] 17.93658 0.009482691
+    ##          RMSE      time
+    ## [1,] 37.45039 0.9263288
+    ## [2,] 15.50161 0.0353964
 
 ``` r
 library(reshape2)
@@ -817,7 +791,7 @@ fitdf %>%
   geom_line(aes(x=times, y=q40), col="red", linetype = 2) + 
   geom_line(aes(x=times, y=q60), col="red", linetype = 2) + 
   geom_line(aes(x=times, y=q10), col="red", linetype = 3) + 
-  geom_line(aes(x=times, y=q90), col="red", linetype = 4)
+  geom_line(aes(x=times, y=q90), col="red", linetype = 4) + theme_bw()
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
@@ -978,16 +952,6 @@ Northeastern United States.
 ``` r
 # load data
 library("gamlss.data")
-```
-
-    ## 
-    ## Attaching package: 'gamlss.data'
-
-    ## The following object is masked from 'package:datasets':
-    ## 
-    ##     sleep
-
-``` r
 data(acidity)
 
 # softmax function
@@ -1016,15 +980,15 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 25.35681  secs 
+    ## Done in 24.78617  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 24.126  secs 
+    ## Done in 24.13162  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 24.38965  secs 
+    ## Done in 24.53428  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 24.51638  secs 
+    ## Done in 23.95275  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 24.79158  secs
+    ## Done in 23.79912  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
@@ -1035,61 +999,23 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1]  1.1285480 -0.7829522 -0.4585955
+    ## [1]  1.1017616 -0.7828224 -1.4577916
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.5409427 0.3213030 1.5896646
+    ## [1] 0.5477579 0.3200957 0.9883890
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.39367941 0.56590463 0.04041596
+    ## [1] 0.4204461 0.5662173 0.0133366
 
 ``` r
 library(distr)
-```
 
-    ## Loading required package: startupmsg
-
-    ## Utilities for Start-Up Messages (version 0.9.6)
-
-    ## For more information see ?"startupmsg", NEWS("startupmsg")
-
-    ## Loading required package: sfsmisc
-
-    ## 
-    ## Attaching package: 'sfsmisc'
-
-    ## The following object is masked from 'package:deepregression':
-    ## 
-    ##     last
-
-    ## Object Oriented Implementation of Distributions (version 2.8.0)
-
-    ## Attention: Arithmetics on distribution objects are understood as operations on corresponding random variables (r.v.s); see distrARITH().
-    ## Some functions from package 'stats' are intentionally masked ---see distrMASK().
-    ## Note that global options are controlled by distroptions() ---c.f. ?"distroptions".
-
-    ## For more information see ?"distr", NEWS("distr"), as well as
-    ##   http://distr.r-forge.r-project.org/
-    ## Package "distrDoc" provides a vignette to this package as well as to several extension packages; try vignette("distr").
-
-    ## 
-    ## Attaching package: 'distr'
-
-    ## The following objects are masked from 'package:deepregression':
-    ## 
-    ##     location, n, shape
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     df, qqplot, sd
-
-``` r
 mixDist <- UnivarMixingDistribution(Norm(means[1],stds[1]),
                                     Norm(means[2],stds[2]),
                                     Norm(means[3],stds[3]),
