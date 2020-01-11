@@ -288,15 +288,15 @@ cvres <- mod %>% cv(cv_folds = 5, epochs=200)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 19.07667  secs 
+    ## Done in 23.99185  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 18.89088  secs 
+    ## Done in 22.7258  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 19.55833  secs 
+    ## Done in 22.40189  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 18.8796  secs 
+    ## Done in 22.64071  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 18.9857  secs
+    ## Done in 25.60842  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
@@ -980,15 +980,15 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 24.78617  secs 
+    ## Done in 28.86721  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 24.13162  secs 
+    ## Done in 27.3825  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 24.53428  secs 
+    ## Done in 27.53193  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 23.95275  secs 
+    ## Done in 28.02738  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 23.79912  secs
+    ## Done in 27.25356  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
@@ -999,19 +999,19 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1]  1.1017616 -0.7828224 -1.4577916
+    ## [1] -0.9045686 -0.4470975  1.2735463
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.5477579 0.3200957 0.9883890
+    ## [1] 0.2065582 0.5718664 0.4250811
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.4204461 0.5662173 0.0133366
+    ## [1] 0.3258473 0.3298024 0.3443503
 
 ``` r
 library(distr)

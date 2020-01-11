@@ -374,9 +374,7 @@ tfd_zip <- function(lambda, probs)
     tfd_mixture(cat = tfd_categorical(probs = probs),
                 components = 
                   list(tfd_poisson(rate = lambda),
-                       tfd_deterministic(loc = tf$constant(0L, 
-                                                           dtype = "float32",
-                                                           shape = list(1,1)))
+                       tfd_deterministic(loc = lambda * 0L)
                   ),
                 name="zip")
   )
