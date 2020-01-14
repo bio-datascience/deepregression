@@ -1,6 +1,6 @@
 #' @title Generic functions for deepregression models
 #'
-#' @param object deepregression object
+#' @param x deepregression object
 #' @param which which effect to plot, default selects all.
 #' @param which_param integer of length 1.
 #' Corresponds to the distribution parameter for 
@@ -12,12 +12,11 @@
 #' The plot then shows the mean curve +- 2 times sd.
 #' @param ... further arguments, passed to fit, plot or predict function
 #'
-#' @method plot deepregression
 #' @export
 #' @rdname methodDR
 #'
 plot.deepregression <- function(
-  object,
+  x,
   which = NULL,
   # which of the nonlinear structured effects
   which_param = 1, # for which parameter
@@ -26,15 +25,15 @@ plot.deepregression <- function(
   ... # passed to plot function
 )
 {
-  this_ind <- object$init_params$ind_structterms[[which_param]]
+  this_ind <- x$init_params$ind_structterms[[which_param]]
   if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
   if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
   plus_number_lin_eff <- sum(this_ind$type=="lin")
 
   plotData <- vector("list", length(which))
   org_feature_names <- 
-    names(object$init_params$l_names_effets[[which_param]][["smoothterms"]])
-  phi <- object$model$get_layer(paste0("structured_nonlinear_",
+    names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
+  phi <- x$model$get_layer(paste0("structured_nonlinear_",
                                        which_param))$get_weights()
   if(length(phi)>1){
     if(use_posterior){
@@ -53,7 +52,7 @@ plot.deepregression <- function(
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
                                                        c("start","end")])))[[1]]
     BX <- 
-      object$init_params$parsed_formulae_contents[[
+      x$init_params$parsed_formulae_contents[[
         which_param]]$smoothterms[[nam]]$X
     if(use_posterior){
       
@@ -62,7 +61,7 @@ plot.deepregression <- function(
       phi_sd <- log(exp(log(expm1(1)) + phi[this_ind_this_w,2])+1)
       plotData[[w]] <- 
         list(org_feature_names = nam,
-             value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
+             value = unlist(x$init_params$data[strsplit(nam,",")[[1]]]),
              design_mat = BX,
              coef = phi[this_ind_this_w,],
              mean_partial_effect = BX%*%phi_mean,
@@ -70,7 +69,7 @@ plot.deepregression <- function(
     }else{
       plotData[[w]] <-
         list(org_feature_name = nam,
-             value = unlist(object$init_params$data[strsplit(nam,",")[[1]]]),
+             value = unlist(x$init_params$data[strsplit(nam,",")[[1]]]),
              design_mat = BX,
              coef = phi[this_ind_this_w,],
              partial_effect = BX%*%phi[this_ind_this_w,])
@@ -131,24 +130,23 @@ plot.deepregression <- function(
 #' @rdname methodDR
 #'
 prepare_data <- function(
-  object,
+  x,
   data,
   pred=FALSE
 )
 {
   newdata_processed <- prepare_newdata(
-    object$init_params$parsed_formulae_contents,
+    x$init_params$parsed_formulae_contents,
     data, pred=pred)
   return(newdata_processed)
 }
 
 
-#' @method predict deepregression
 #' @export
 #' @rdname methodDR
 #'
 predict.deepregression <- function(
-  object,
+  x,
   newdata = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
@@ -157,12 +155,12 @@ predict.deepregression <- function(
 {
 
   if(is.null(newdata)){
-    yhat <- object$model(unname(object$init_params$input_cov))
+    yhat <- x$model(unname(x$init_params$input_cov))
   }else{
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(object, newdata, pred=TRUE)
-    yhat <- object$model(newdata_processed)
+    newdata_processed <- prepare_data(x, newdata, pred=TRUE)
+    yhat <- x$model(newdata_processed)
   }
 
 
@@ -172,30 +170,33 @@ predict.deepregression <- function(
 
 }
 
-#' @method fitted deepregression
 #' @export
 #' @rdname methodDR
 #'
 fitted.deepregression <- function(
-  object, apply_fun = tfd_mean, ...
+  x, apply_fun = tfd_mean, ...
 )
 {
   return(
-    predict.deepregression(object, apply_fun=apply_fun, ...)
+    predict.deepregression(x, apply_fun=apply_fun, ...)
   )
 }
 
 
 
-#' @method fit deepregression
+#' @param x a deepregresison object.
+#' @param early_stopping logical, whether early stopping should be user.
+#' @param verbose logical, whether to print losses during training.
+#' @param view_metrics logical, whether to trigger the Viewer in RStudio / Browser.
+#' @param patience integer, number of rounds after which early stopping is done.
+#' @param save_weights logical, whether to save weights in each epoch.
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
-#' such as \code{verbose} (logical or 0/1), \code{view_metrics} (logical or )
 #' @export
 #' @rdname methodDR
 #'
 fit.deepregression <- function(
-  object,
+  x,
   early_stopping = FALSE,
   verbose = FALSE, 
   view_metrics = TRUE,
@@ -228,13 +229,13 @@ fit.deepregression <- function(
   
   args <- list(...)
   input_list_model <- 
-    list(object = object$model,
-         x = prepare_newdata(object$init_params$parsed_formulae_contents,
-                             object$init_params$data,
+    list(object = x$model,
+         x = prepare_newdata(x$init_params$parsed_formulae_contents,
+                             x$init_params$data,
                              pred = FALSE),
-         y = object$init_params$y,
-         validation_split = object$init_params$validation_split,
-         validation_data = object$init_params$validation_data,
+         y = x$init_params$y,
+         validation_split = x$init_params$validation_split,
+         validation_data = x$init_params$validation_data,
          callbacks = this_callbacks,
          verbose = verbose,
          view_metrics = view_metrics
@@ -242,10 +243,10 @@ fit.deepregression <- function(
   args <- append(args, 
                  input_list_model[!names(input_list_model) %in% 
                                     names(args)])
-  if(length(object$init_params$ellipsis)>0)
+  if(length(x$init_params$ellipsis)>0)
     args <- append(args, 
-                   object$init_params$ellipsis[
-                     !names(object$init_params$ellipsis) %in% names(args)])
+                   x$init_params$ellipsis[
+                     !names(x$init_params$ellipsis) %in% names(args)])
 
   ret <- do.call(fit_fun,
                  args)
@@ -253,19 +254,18 @@ fit.deepregression <- function(
   invisible(ret)
 }
 
-#' @method coef deepregression
 #' @export
 #' @rdname methodDR
 #'
 coef.deepregression <- function(
-  object,
+  x,
   variational = FALSE
 )
 {
-  nrparams <- length(object$init_params$parsed_formulae_contents)
-  layer_names <- sapply(object$model$layers, "[[", "name")
+  nrparams <- length(x$init_params$parsed_formulae_contents)
+  layer_names <- sapply(x$model$layers, "[[", "name")
   lret <- vector("list", nrparams)
-  names(lret) <- object$init_params$param_names
+  names(lret) <- x$init_params$param_names
   for(i in 1:nrparams){
     sl <- paste0("structured_linear_",i)
     slas <- paste0("structured_lasso_",i)
@@ -276,14 +276,14 @@ coef.deepregression <- function(
 
     lret[[i]]$structured_linear <-
       if(sl %in% layer_names)
-        object$model$get_layer(sl)$get_weights()[[1]] else
+        x$model$get_layer(sl)$get_weights()[[1]] else
           NULL
     lret[[i]]$structured_lasso <-
       if(slas %in% layer_names)
-        object$model$get_layer(slas)$get_weights()[[1]] else
+        x$model$get_layer(slas)$get_weights()[[1]] else
           NULL
     if(snl %in% layer_names){
-      cf <- object$model$get_layer(snl)$get_weights()
+      cf <- x$model$get_layer(snl)$get_weights()
       if(length(cf)==2 & variational){
         lret[[i]]$structured_nonlinear <-  cf[[1]]
       }else{
@@ -298,21 +298,20 @@ coef.deepregression <- function(
 
 }
 
-#' @method print deepregression
 #' @export
 #' @rdname methodDR
 #'
 print.deepregression <- function(
-  object
+  x
 )
 {
-  print(object$model)
+  print(x$model)
 }
 
 #' @title Cross-validation for deepgression objects
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
-#' @param object deepregression object
+#' @param x deepregression object
 #' @param verbose whether to print training in each fold
 #' @param patience number of patience for early stopping
 #' @param plot whether to plot the resulting losses in each fold
@@ -329,7 +328,7 @@ print.deepregression <- function(
 #'
 #' 
 cv <- function(
-  object,
+  x,
   verbose = FALSE, 
   patience = 20,
   plot = TRUE,
@@ -342,10 +341,10 @@ cv <- function(
 {
   
   if(is.null(cv_folds)){ 
-    cv_folds <- object$init_params$cv_folds
+    cv_folds <- x$init_params$cv_folds
   }else if(!is.list(cv_folds) & is.numeric(cv_folds)){
     cv_folds <- make_cv_list_simple(
-      data_size = NROW(object$init_params$data[[1]]), 
+      data_size = NROW(x$init_params$data[[1]]), 
       cv_folds)
   }else{
     stop("Wrong format for cv_folds.")
@@ -353,15 +352,15 @@ cv <- function(
   if(is.null(cv_folds)){
     warning("No folds for CV given, using k = 10.\n")
     cv_folds <- make_cv_list_simple(
-      data_size = NROW(object$init_params$data[[1]]), 10)
+      data_size = NROW(x$init_params$data[[1]]), 10)
   }
   nrfolds <- length(cv_folds)
-  old_weights <- object$model$get_weights()
+  old_weights <- x$model$get_weights()
   
   if(print_folds) folds_iter <- 1
   
   # subset fun
-  if(NCOL(object$init_params$y)==1)
+  if(NCOL(x$init_params$y)==1)
     subset_fun <- function(y,ind) y[ind] else
       subset_fun <- function(y,ind) subset_array(y,ind)
   
@@ -371,20 +370,20 @@ cv <- function(
     st1 <- Sys.time()
     
     # does not work?
-    # this_mod <- clone_model(object$model)
-    this_mod <- object$model
+    # this_mod <- clone_model(x$model)
+    this_mod <- x$model
     
     train_ind <- this_fold[[1]]
     test_ind <- this_fold[[2]]
     
     # data
-    if(is.data.frame(object$init_params$data)){
-      train_data <- object$init_params$data[train_ind,, drop=FALSE] 
-      test_data <- object$init_params$data[test_ind,,drop=FALSE]
-    }else if(class(object$init_params$data)=="list"){
-      train_data <- lapply(object$init_params$data, function(x) 
+    if(is.data.frame(x$init_params$data)){
+      train_data <- x$init_params$data[train_ind,, drop=FALSE] 
+      test_data <- x$init_params$data[test_ind,,drop=FALSE]
+    }else if(class(x$init_params$data)=="list"){
+      train_data <- lapply(x$init_params$data, function(x) 
         subset_array(x, train_ind))
-      test_data <- lapply(object$init_params$data, function(x) 
+      test_data <- lapply(x$init_params$data, function(x) 
         subset_array(x, test_ind))
     }else{
       stop("Invalid input format for CV.")
@@ -399,26 +398,26 @@ cv <- function(
     args <- append(args,
                    list(object = this_mod,
                         x = prepare_newdata(
-                          object$init_params$parsed_formulae_contents,
+                          x$init_params$parsed_formulae_contents,
                           train_data,
                           pred = FALSE,
                           index = train_ind),
-                        y = subset_fun(object$init_params$y,train_ind),
+                        y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
                           prepare_newdata(
-                            object$init_params$parsed_formulae_contents,
+                            x$init_params$parsed_formulae_contents,
                             test_data,
                             pred = FALSE,
                             index = test_ind),
-                          subset_fun(object$init_params$y,test_ind)
+                          subset_fun(x$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,
                         verbose = verbose,
                         view_metrics = FALSE
                    )
     )
-    args <- append(args, object$init_params$ellipsis)
+    args <- append(args, x$init_params$ellipsis)
     
     ret <- do.call(fit_fun, args)
     ret$weighthistory <- weighthistory$weights_last_layer
@@ -440,7 +439,7 @@ cv <- function(
   
   if(plot) try(plot(res))
   
-  object$model$set_weights(old_weights)
+  x$model$set_weights(old_weights)
   
   invisible(return(res))
   
@@ -448,49 +447,92 @@ cv <- function(
 
 #' mean of model fit
 #' 
-#' @method mean deepregression
 #' @export
 #' @rdname methodDR
 #'
 mean.deepregression <- function(
-  object,
+  x,
   data,
   ...
 )
 {
-  predict.deepregression(object, newdata = data, apply_fun = tfd_mean, ...)
+  predict.deepregression(x, newdata = data, apply_fun = tfd_mean, ...)
 }
 
 #' standard deviation of model fit
 #' 
-#' @method sd deepregression
 #' @export
 #' @rdname methodDR
 #'
 sd.deepregression <- function(
-  object,
+  x,
   data,
   ...
 )
 {
-  predict.deepregression(object, newdata = data, apply_fun = tfd_stddev, ...)
+  predict.deepregression(x, newdata = data, apply_fun = tfd_stddev, ...)
 }
 
 #' quantile of fitted values
 #' 
-#' @method quantile deepregression
 #' @export
 #' @rdname methodDR
 #'
 quantile.deepregression <- function(
-  object,
+  x,
   data,
   value,
   ...
 )
 {
-  predict.deepregression(object, 
+  predict.deepregression(x, 
                          newdata = data, 
                          apply_fun = function(x) tfd_quantile(x, value=value),
                          ...)
+}
+
+#' Function to return the fitted distribution
+#' 
+#' @param x the fitted deepregression object
+#' @param data an optional data set
+#' 
+get_distribution <- function(
+  x,
+  data=NULL
+)
+{
+  if(is.null(data)){
+    disthat <- x$model(unname(x$init_params$input_cov))
+  }else{
+    # preprocess data
+    if(is.data.frame(data)) data <- as.list(data)
+    newdata_processed <- prepare_data(x, data, pred=TRUE)
+    disthat <- x$model(newdata_processed)
+  }
+  return(disthat)
+}
+
+
+log_score <- function(
+  x,
+  data=NULL,
+  this_y=NULL,
+  ind_fun = function(x) tfd_independent(x,1),
+  convert_fun = as.matrix
+)
+{
+  if(is.null(data)){
+    disthat <- x$model(unname(x$init_params$input_cov))
+  }else{
+    # preprocess data
+    if(is.data.frame(data)) data <- as.list(data)
+    newdata_processed <- prepare_data(x, data, pred=TRUE)
+    disthat <- x$model(newdata_processed)
+  }
+  if(is.null(this_y)){
+    this_y <- x$init_params$y
+  }
+  return(convert_fun(
+    disthat %>% ind_fun() %>% tfd_log_prob(this_y)
+    ))
 }

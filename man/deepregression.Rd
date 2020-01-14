@@ -13,7 +13,7 @@ deepregression(
     "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian", "laplace",
     "log_normal", "logistic", "multinomial", "multinoulli", "negbinom", "pareto",
     "poisson", "poisson_lograte", "student_t", "student_t_ls", "truncated_normal",
-    "uniform"),
+    "uniform", "zip"),
   train_together = FALSE,
   data,
   df = NULL,
@@ -30,6 +30,9 @@ deepregression(
   seed = 1991 - 5 - 4,
   mixture_dist = 0,
   split_fun = split_model,
+  posterior_fun = posterior_mean_field,
+  prior_fun = prior_trainable,
+  null.space.penalty = variational,
   ...
 )
 }
@@ -97,17 +100,15 @@ Fitting Deep Distributional Regression
 }
 \examples{
 library(deepregression)
+library(dplyr)
 
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
 formula <- ~ 1 + d(x1,x2,x3) +
-s(xa, sp = 1) + te(xe,xf) + x1
+s(xa, sp = 1) + x1
 
 deep_model <- function(x) x \%>\%
-layer_dense(units = 128, activation = "relu", use_bias = FALSE) \%>\%
-layer_dense(units = 64, activation = "relu") \%>\%
-layer_dropout(rate = 0.2) \%>\%
-layer_dense(units = 32, activation = "relu") \%>\%
+layer_dense(units = 32, activation = "relu", use_bias = FALSE) \%>\%
 layer_dropout(rate = 0.2) \%>\%
 layer_dense(units = 8, activation = "relu") \%>\%
 layer_dense(units = 1, activation = "linear")

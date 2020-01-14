@@ -185,7 +185,7 @@ get_contents <- function(lf, data, df,
   if(all(sapply(dterms,length)==0)){ 
     deepterms <- NULL 
   }else{
-    deepterms <- lapply(dterms, function(dt){
+    deepterms <- lapply(dterms[sapply(dterms,length)>0], function(dt){
       if(is.data.frame(data)){
         deepterms <- data[,extract_from_special(dt),drop=FALSE]
         attr(deepterms, "names") <- names(deepterms)
@@ -201,7 +201,7 @@ get_contents <- function(lf, data, df,
     })
     if(length(network_names)==1)
       names(deepterms) <- rep(network_names, length(deepterms)) else
-        names(deepterms) <- network_names
+        names(deepterms) <- network_names[sapply(dterms,length)>0]
   }
   
   ret <- list(linterms = linterms,

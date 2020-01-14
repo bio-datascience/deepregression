@@ -22,7 +22,7 @@ deepregression_init(
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
   monitor_metric = list(),
-  mean_field = posterior_mean_field,
+  posterior = posterior_mean_field,
   prior = prior_trainable,
   orthog_fun = orthog,
   orthogX = NULL,

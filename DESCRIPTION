@@ -11,6 +11,13 @@ Description:
     which are fitted within a large neural network. Potential predictors can be modeled using 
     structured linear effects, structured non-linear effects or modeled using an unstructured deep
     network model.
+Config/reticulate:
+  list(
+    packages = list(
+      list(package = "tensorflow_probability", version = "0.7.0", pip = TRUE),
+      list(package = "tensorflow", version = "1.14.0", pip = TRUE)
+    )
+  )
 Suggests: 
     rsvd,
     testthat

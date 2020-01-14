@@ -247,10 +247,15 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
       # rate = 1/((sigma^2)*mu)
       # con = (1/sigma^2)
       
-      mu = add_const + tfe(x[,1,drop=FALSE])
-      sig = add_const + tfe(x[,2,drop=FALSE])
-      con = tf$compat$v2$maximum(tfrec(tfsq(sig)),0 + add_const)
-      rate = tf$compat$v2$maximum(tfrec(tfmult(tfsq(sig),mu)),0 + add_const)
+      mu = tfe(x[,1,drop=FALSE])
+      sig = tfe(x[,2,drop=FALSE])
+      # con = #tf$compat$v2$maximum(
+      #   tfrec(tfsq(sig))#,0 + add_const)
+      # rate = #tf$compat$v2$maximum(
+      #   tfrec(tfmult(tfsq(sig),mu))#,0 + add_const)
+      sigsq = tfsq(sig)
+      con = tfdiv(tfsq(mu), sigsq)
+      rate = tfdiv(mu, sigsq)
       
       return(list(con,rate))
     },

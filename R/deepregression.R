@@ -46,17 +46,15 @@
 #'
 #' @examples
 #' library(deepregression)
+#' library(dplyr)
 #'
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
 #' formula <- ~ 1 + d(x1,x2,x3) +
-#' s(xa, sp = 1) + te(xe,xf) + x1
+#' s(xa, sp = 1) + x1
 #'
 #' deep_model <- function(x) x %>%
-#' layer_dense(units = 128, activation = "relu", use_bias = FALSE) %>%
-#' layer_dense(units = 64, activation = "relu") %>%
-#' layer_dropout(rate = 0.2) %>%
-#' layer_dense(units = 32, activation = "relu") %>%
+#' layer_dense(units = 32, activation = "relu", use_bias = FALSE) %>%
 #' layer_dropout(rate = 0.2) %>%
 #' layer_dense(units = 8, activation = "relu") %>%
 #' layer_dense(units = 1, activation = "linear")
@@ -109,6 +107,7 @@ deepregression <- function(
   posterior_fun = posterior_mean_field,
   prior_fun = prior_trainable,
   null.space.penalty = variational,
+  ind_fun = function(x) tfd_independent(x),
   ...
 )
 {
@@ -240,6 +239,7 @@ deepregression <- function(
     split_fun = split_fun,
     posterior = posterior_fun,
     prior = prior_fun,
+    ind_fun = ind_fun,
     ...
     )
 
@@ -366,7 +366,8 @@ deepregression_init <- function(
   kl_weight = 1 / n_obs,
   output_dim = 1,
   mixture_dist = FALSE,
-  split_fun = split_model
+  split_fun = split_model,
+  ind_fun = function(x) x
   )
 {
 
@@ -604,7 +605,7 @@ deepregression_init <- function(
     # }else{
 
       out <- preds %>%
-        layer_distribution_lambda(dist_fun)
+        layer_distribution_lambda(dist_fun) 
 
     # }
 
@@ -640,7 +641,8 @@ deepregression_init <- function(
   
   # the negative log-likelihood is given by the negative weighted
   # log probability of the model
-  negloglik <- function(y, model) - weights * (model %>% tfd_log_prob(y))
+  negloglik <- function(y, model) 
+    - weights * (model %>% ind_fun() %>% tfd_log_prob(y))
 
   # compile the model using the defined optimizer,
   # the negative log-likelihood as loss funciton

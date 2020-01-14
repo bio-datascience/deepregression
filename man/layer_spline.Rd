@@ -9,12 +9,14 @@ layer_spline(
   name = NULL,
   trainable = TRUE,
   input_shape,
-  shared_weights = FALSE,
   lambdas,
   Ps,
   use_bias = FALSE,
   kernel_initializer = "glorot_uniform",
   bias_initializer = "zeros",
+  variational = FALSE,
+  posterior_fun = NULL,
+  prior_fun = NULL,
   ...
 )
 }

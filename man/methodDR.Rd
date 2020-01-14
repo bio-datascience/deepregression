@@ -14,22 +14,16 @@
 \alias{quantile.deepregression}
 \title{Generic functions for deepregression models}
 \usage{
-\method{plot}{deepregression}(object, which = NULL, which_param = 1, plot = TRUE, ...)
+\method{plot}{deepregression}(x, which = NULL, which_param = 1, plot = TRUE, use_posterior = FALSE, ...)
 
-prepare_data(object, data)
+prepare_data(x, data, pred = FALSE)
 
-\method{predict}{deepregression}(
-  object,
-  newdata = NULL,
-  apply_fun = tfd_mean,
-  convert_fun = as.matrix,
-  ...
-)
+\method{predict}{deepregression}(x, newdata = NULL, apply_fun = tfd_mean, convert_fun = as.matrix, ...)
 
-\method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
+\method{fitted}{deepregression}(x, apply_fun = tfd_mean, ...)
 
 \method{fit}{deepregression}(
-  object,
+  x,
   early_stopping = FALSE,
   verbose = FALSE,
   view_metrics = TRUE,
@@ -38,12 +32,12 @@ prepare_data(object, data)
   ...
 )
 
-\method{coef}{deepregression}(object)
+\method{coef}{deepregression}(x, variational = FALSE)
 
-\method{print}{deepregression}(object)
+\method{print}{deepregression}(x)
 
 cv(
-  object,
+  x,
   verbose = FALSE,
   patience = 20,
   plot = TRUE,
@@ -54,14 +48,14 @@ cv(
   ...
 )
 
-\method{mean}{deepregression}(object, data, ...)
+\method{mean}{deepregression}(x, data, ...)
 
-\method{sd}{deepregression}(object, data, ...)
+\method{sd}{deepregression}(x, data, ...)
 
-\method{quantile}{deepregression}(object, data, value, ...)
+\method{quantile}{deepregression}(x, data, value, ...)
 }
 \arguments{
-\item{object}{deepregression object}
+\item{x}{deepregression object}
 
 \item{which}{which effect to plot, default selects all.}
 
@@ -71,19 +65,24 @@ which the effects should be plotted.}
 
 \item{plot}{whether to plot the resulting losses in each fold}
 
+\item{use_posterior}{logical; if \code{TRUE} it is assumed that
+the strucuted_nonlinear layer has stored a list of length two
+as weights, where the first entry is a vector of mean and sd
+for each network weight. The sd is transformed using the \code{exp} function.
+The plot then shows the mean curve +- 2 times sd.}
+
 \item{...}{further arguments passed to 
 \code{keras:::fit.keras.engine.training.Model}}
 
-\item{newdata}{new data for prediction, defaults to \code{NULL}}
-
-\item{apply_fun}{function to apply to distribution, default is \code{tfd_mean}.}
-
-\item{convert_fun}{function which converts the tensor 
-outputted by predict function}
+\item{early_stopping}{logical, whether early stopping should be user.}
 
 \item{verbose}{whether to print training in each fold}
 
+\item{view_metrics}{logical, whether to trigger the Viewer in RStudio / Browser.}
+
 \item{patience}{number of patience for early stopping}
+
+\item{save_weights}{logical, whether to save weights in each epoch.}
 
 \item{cv_folds}{see \code{deepregression}}
 
