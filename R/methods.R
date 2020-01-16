@@ -159,7 +159,7 @@ predict.deepregression <- function(
   }else{
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(x, newdata, pred=TRUE)
+    newdata_processed <- prepare_data(x, newdata, pred=FALSE)
     yhat <- x$model(newdata_processed)
   }
 
@@ -506,7 +506,7 @@ get_distribution <- function(
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
-    newdata_processed <- prepare_data(x, data, pred=TRUE)
+    newdata_processed <- prepare_data(x, data, pred=FALSE)
     disthat <- x$model(newdata_processed)
   }
   return(disthat)
@@ -526,7 +526,7 @@ log_score <- function(
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
-    newdata_processed <- prepare_data(x, data, pred=TRUE)
+    newdata_processed <- prepare_data(x, data, pred=FALSE)
     disthat <- x$model(newdata_processed)
   }
   if(is.null(this_y)){
