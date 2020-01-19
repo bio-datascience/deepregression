@@ -271,9 +271,9 @@ deepregression <- function(
   ind_structterms <- lapply(parsed_formulae_contents, get_indices)
 
   if(!is.null(validation_data)){
-    if(!is.list(validation_data) && length(validation_data)==2)
+    if(!is.list(validation_data) && length(validation_data)!=2 | is.data.frame(validation_data))
       stop("Validation data must be a list of length two ",
-           "with first entry for y and second entry for data.")
+           "with first entry for the data (features) and second entry for response.")
     if(is.data.frame(validation_data[[1]])) 
       validation_data[[1]] <- as.list(validation_data[[1]])
     validation_data[[1]] <- prepare_newdata(parsed_formulae_contents,

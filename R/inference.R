@@ -1,9 +1,8 @@
-diffuse_scale <- 1000
-
 prior_trainable <-
   function(kernel_size,
            bias_size = 0,
-           dtype = NULL) {
+           dtype = NULL,
+           diffuse_scale = 1000) {
     n <- kernel_size + bias_size
     keras_model_sequential() %>%
       layer_variable(n, dtype = dtype, trainable = TRUE) %>%

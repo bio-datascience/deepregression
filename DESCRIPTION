@@ -28,7 +28,7 @@ Imports:
     mgcv, 
     dplyr, 
     R6, 
-    reticulate, 
+    reticulate (>= 1.14), 
     Matrix
 License: GPL-3
 Encoding: UTF-8

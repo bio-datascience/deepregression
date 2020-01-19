@@ -194,6 +194,7 @@ layer_spline <- function(object,
                          variational = FALSE,
                          posterior_fun = NULL,
                          prior_fun = NULL,
+                         diffuse_scale = 1000,
                          ...) {
   
   if(variational)
