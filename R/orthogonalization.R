@@ -44,6 +44,11 @@ make_orthog <- function(
 
   if(is.null(pcf$deepterms)) return(NULL)
   n_obs <- nROW(pcf)
+  if(n_obs==0){
+    if(!is.null(pcf$smoothterms))
+      n_obs <- NROW(pcf$smoothterms[[1]]$X) else
+        n_obs <- nROW(pcf$deepterms[[1]])
+  }
   nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))
   nmsd <- lapply(pcf$deepterms, function(x) attr(x,"names"))
   if(!is.null(nms$smoothterms))
@@ -53,7 +58,7 @@ make_orthog <- function(
     return(NULL)
   qList <- lapply(nmsd, function(nn){
       
-      # if there is any smooth or 
+      # if there is any smooth 
       X <- matrix(rep(1,n_obs), ncol=1) 
       # Ps <- list()
       # lambdas <- c()
@@ -76,6 +81,8 @@ make_orthog <- function(
           }
         }
         
+      }else{
+        return(NULL)
       }
       
       qrX <- qr(X)
@@ -228,8 +235,14 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
       
       return(
         layer_add( append(lapply(1:length(deep), 
-                                 function(j) deep_top[[j]](
-                                   orthog_fun(deep[[j]], ox[[j]]))), struct) )
+                                 function(j){
+                                   
+                                   if(is.null(ox[[j]]))
+                                     return(deep_top[[j]](deep[[j]])) else
+                                       deep_top[[j]](orthog_fun(deep[[j]], 
+                                                                ox[[j]]))
+                                   }), 
+                          struct))
       )
     }
   }

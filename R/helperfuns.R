@@ -360,20 +360,20 @@ get_indices <- function(x)
 prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
 {
   n_obs <- nROW(data)
-  input_cov_new <- make_cov(pfc, data, pred = pred)
+  input_cov_new <- make_cov(pfc, data, pred = FALSE)
   if(pred & !is.null(data))
     pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){
-    ox <- unlist(lapply(ox, function(x_per_param) 
+    ox <- unlist(lapply(ox, function(x_per_param)
       if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param, function(x)
+        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
           tf$constant(x*0, dtype="float32")))), recursive=F)
   }
-  if(!is.null(index) & !pred){
+  if(!is.null(index)){
     ox <- unlist(lapply(ox, function(x_per_param) 
       if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param, function(xox)
+        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
           tf$constant(as.matrix(xox)[index,,drop=FALSE], 
                       dtype="float32")))), 
       recursive=F)
@@ -381,7 +381,7 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
   if(is.null(index) & !pred){
     ox <- unlist(lapply(ox, function(x_per_param) 
       if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param, function(x)
+        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
           tf$constant(x, dtype="float32")))), recursive=F)
   }
   newdata_processed <- append(

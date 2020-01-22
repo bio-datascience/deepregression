@@ -261,7 +261,7 @@ deepregression <- function(
   input_cov <- unname(c(input_cov, 
                  unlist(lapply(ox[!sapply(ox,is.null)],
                                function(x_per_param) 
-                                 unlist(lapply(x_per_param, function(x)
+                                 unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
                                    tf$constant(x, dtype="float32")))), 
                         recursive = F)
   ))
@@ -414,7 +414,7 @@ deepregression_init <- function(
   if(!is.null(orthogX)){
     ox <- lapply(orthogX, function(x) if(is.null(x)) return(NULL) else{
       lapply(x, function(y){
-        if(y==0) return(NULL) else return(layer_input(shape = list(y)))})
+        if(is.null(y) || y==0) return(NULL) else return(layer_input(shape = list(y)))})
     })
   }
 
