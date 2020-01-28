@@ -437,7 +437,7 @@ extract_cv_result <- function(res){
 #' 
 plot.drCV <- function(x, what=c("loss","weight"), ...){
   
-  
+  .pardefault <- par()
   cres <- extract_cv_result(x)
   
   what <- match.arg(what)
@@ -457,12 +457,15 @@ plot.drCV <- function(x, what=c("loss","weight"), ...){
             ylab="validation loss", xlab="epoch")
     points(1:(nrow(vloss)), mean_vloss, type="l", col="red", lwd=2)
     abline(v=which.min(mean_vloss), lty=2)
+    par(.pardefault)
     
   }else{
     
-    
+    stop("Not implemented yet.")
     
   }
+  
+  invisible(NULL)
   
 }
 
@@ -545,9 +548,9 @@ unlist_order_preserving <- function(x)
         x[(w+1):length(x)] else list()
       
       is_data_frame <- is.data.frame(x[[w]])
-      if(is_data_frame) x[[w]] <- as.matrix(x[[w]])
-      len_bigger_one <- length(x[[w]])>1 & is.list(x[[w]])
-      if(is_data_frame) x <- append(beginning, x) else
+      if(is_data_frame) dfxw <- as.matrix(x[[w]])
+      len_bigger_one <- !is_data_frame & length(x[[w]])>1 & is.list(x[[w]])
+      if(is_data_frame) x <- append(beginning, list(dfxw)) else
         x <- append(beginning, x[[w]]) 
       x <- append(x, end)
       if(len_bigger_one) return(unlist_order_preserving(x))

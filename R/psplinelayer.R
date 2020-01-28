@@ -197,13 +197,14 @@ layer_spline <- function(object,
                          diffuse_scale = 1000,
                          ...) {
   
-  if(variational)
+  if(variational){
     bigP = bdiag(lapply(1:length(Ps), function(j){ 
-      
       # return vague prior for scalar
       if(length(Ps[[j]])==1) return(diffuse_scale^2) else
-        return(chol2inv(chol(lambdas[j] * Ps[[j]])))})) else
+        return(chol2inv(chol(lambdas[j] * Ps[[j]])))})) 
+  }else{
       bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
+  }
   
   if(sum(lambdas)==0 | variational)
     regul <- NULL else

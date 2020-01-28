@@ -19,7 +19,10 @@
 #' one deep network.
 #' @param data data.frame or named list with input features
 #' @param df degrees of freedom for all non-linear structural terms
-#' @param lambda_lasso smoothing parameter for lasso regression
+#' @param lambda_lasso smoothing parameter for lasso regression; 
+#' can be combined with ridge
+#' @param lambda_ridge smoothing parameter for ridge regression; 
+#' can be combined with lasso
 #' @param defaultSmoothing function applied to all s-terms, per default (NULL)
 #' the minimum df of all possible terms is used.
 #' @param cv_folds a list of lists, each list element has two elements, one for
@@ -87,6 +90,7 @@ deepregression <- function(
   # epochs = 10L,
   df = NULL,
   lambda_lasso = NULL,
+  lambda_ridge = NULL,
   # defaultSp = 1,
   # defaultSmoothing = function(smoothTerm){
   #   smoothTerm$sp = defaultSp
@@ -232,6 +236,7 @@ deepregression <- function(
     kl_weight = 1 / n_obs,
     orthogX = this_OX,
     lambda_lasso = lambda_lasso,
+    lambda_ridge = lambda_ridge,
     monitor_metric = monitor_metric,
     optimizer = optimizer,
     output_dim = output_dim,
@@ -351,6 +356,7 @@ deepregression_init <- function(
   lss = TRUE,
   train_together = FALSE,
   lambda_lasso=NULL,
+  lambda_ridge=NULL,
   family,
   dist_fun = NULL,
   variational = TRUE,
@@ -427,7 +433,7 @@ deepregression_init <- function(
                                }else{
                                  if(is.null(list_structured[[i]]))
                                  {
-                                   if(!is.null(lambda_lasso)){
+                                   if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
@@ -436,6 +442,29 @@ deepregression_init <- function(
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l1,
                                                 name = paste0("structured_lasso_",
+                                                              i))
+                                     )
+                                   }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
+                                     l2 = tf$keras$regularizers$l2(l=lambda_ridge)
+                                     return(inputs_struct[[i]] %>%
+                                              dense_layer(
+                                                units = output_dim, 
+                                                activation = "linear",
+                                                use_bias = use_bias_in_structured,
+                                                kernel_regularizer = l2,
+                                                name = paste0("structured_ridge_",
+                                                              i))
+                                     )
+                                   }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
+                                     l12 = tf$keras$regularizers$l1_l2(l1=lambda_lasso,
+                                                                       l2=lambda_ridge)
+                                     return(inputs_struct[[i]] %>%
+                                              dense_layer(
+                                                units = output_dim, 
+                                                activation = "linear",
+                                                use_bias = use_bias_in_structured,
+                                                kernel_regularizer = l12,
+                                                name = paste0("structured_elastnet_",
                                                               i))
                                      )
                                    }else{
