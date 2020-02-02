@@ -252,6 +252,10 @@ make_cov <- function(pcf, newdata=NULL,
           }
         })
         
+      }else if(is.list(x$deepterms) & all(sapply(x$deepterms, class)=="data.frame")){ 
+        
+        return(lapply(x$deepterms, function(y) data.frame(newdata[names(y)])))
+        
       }else{ return(NULL) }
     })
   }
@@ -457,7 +461,7 @@ plot.drCV <- function(x, what=c("loss","weight"), ...){
             ylab="validation loss", xlab="epoch")
     points(1:(nrow(vloss)), mean_vloss, type="l", col="red", lwd=2)
     abline(v=which.min(mean_vloss), lty=2)
-    par(.pardefault)
+    suppressWarnings(par(.pardefault))
     
   }else{
     
