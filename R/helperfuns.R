@@ -181,7 +181,7 @@ get_contents <- function(lf, data, df,
   }
   
   # get deep terms
-  dterms <- sapply(network_names, function(x) trmstrings[grepl(x,trmstrings)])
+  dterms <- sapply(paste0(network_names,"\\("), function(x) trmstrings[grepl(x,trmstrings)])
   if(all(sapply(dterms,length)==0)){ 
     deepterms <- NULL 
   }else{
