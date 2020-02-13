@@ -17,6 +17,7 @@ layer_spline(
   variational = FALSE,
   posterior_fun = NULL,
   prior_fun = NULL,
+  diffuse_scale = 1000,
   ...
 )
 }

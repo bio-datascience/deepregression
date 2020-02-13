@@ -34,7 +34,7 @@ prepare_data(x, data, pred = FALSE)
 
 \method{coef}{deepregression}(x, variational = FALSE)
 
-\method{print}{deepregression}(x)
+print.deepregression(x)
 
 cv(
   x,
@@ -48,9 +48,9 @@ cv(
   ...
 )
 
-\method{mean}{deepregression}(x, data, ...)
+mean.deepregression(x, data, ...)
 
-\method{sd}{deepregression}(x, data, ...)
+sd.deepregression(x, data, ...)
 
 \method{quantile}{deepregression}(x, data, value, ...)
 }

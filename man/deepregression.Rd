@@ -18,6 +18,7 @@ deepregression(
   data,
   df = NULL,
   lambda_lasso = NULL,
+  lambda_ridge = NULL,
   defaultSmoothing = NULL,
   cv_folds = NULL,
   validation_data = NULL,
@@ -33,6 +34,7 @@ deepregression(
   posterior_fun = posterior_mean_field,
   prior_fun = prior_trainable,
   null.space.penalty = variational,
+  ind_fun = function(x) tfd_independent(x),
   ...
 )
 }
@@ -43,14 +45,16 @@ deepregression(
 one for each parameter of the distribution specified in \code{family};
 set to \code{~ 1} if the parameter should be treated as constant.
 Use the \code{s()}-notation from \code{mgcv} for specification of
-non-linear structured effects and \code{d(..., model = ...)} for
-deep learning predictors (separated by commas),
-where \code{model} is the an integer
-giving the index of the deep model in \code{list_of_deep_models} to
-be used for the predictors}
+non-linear structured effects and \code{d(...)} for
+deep learning predictors (predictors in brackets are separated by commas),
+where \code{d} can be replaced by an name name of the names in 
+\code{list_of_deep_models}, e.g., \code{~ 1 + s(x) + my_deep_mod(a,b,c)},
+where my_deep_mod is the name of the neural net specified in 
+\code{list_of_deep_models} and \code{a,b,c} are features modeled via
+this network.}
 
-\item{list_of_deep_models}{a list of (lists of) functions
-specifying a keras model for each parameter of interest.
+\item{list_of_deep_models}{a named list of functions
+specifying a keras model.
 See the examples for more details.}
 
 \item{family}{a character specifying the distribution. For information on 
@@ -63,7 +67,11 @@ one deep network.}
 
 \item{df}{degrees of freedom for all non-linear structural terms}
 
-\item{lambda_lasso}{smoothing parameter for lasso regression}
+\item{lambda_lasso}{smoothing parameter for lasso regression; 
+can be combined with ridge}
+
+\item{lambda_ridge}{smoothing parameter for ridge regression; 
+can be combined with lasso}
 
 \item{defaultSmoothing}{function applied to all s-terms, per default (NULL)
 the minimum df of all possible terms is used.}
@@ -90,6 +98,12 @@ the via the ellipsis to the initialization function
 
 \item{monitor_metric}{Further metrics to monitor}
 
+\item{posterior_fun}{function defining the posterior function for the variational
+verison of the network}
+
+\item{prior_fun}{function defining the prior function for the variational
+verison of the network}
+
 \item{...}{further arguments passed to the \code{deepRegression_init} function}
 
 \item{validation_spit}{percentage of training data used for validation. 
@@ -100,7 +114,6 @@ Fitting Deep Distributional Regression
 }
 \examples{
 library(deepregression)
-library(dplyr)
 
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")

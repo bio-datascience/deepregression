@@ -15,6 +15,7 @@ deepregression_init(
   lss = TRUE,
   train_together = FALSE,
   lambda_lasso = NULL,
+  lambda_ridge = NULL,
   family,
   dist_fun = NULL,
   variational = TRUE,
@@ -30,7 +31,8 @@ deepregression_init(
   kl_weight = 1/n_obs,
   output_dim = 1,
   mixture_dist = FALSE,
-  split_fun = split_model
+  split_fun = split_model,
+  ind_fun = function(x) x
 )
 }
 \arguments{
