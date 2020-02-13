@@ -5,13 +5,15 @@
 #' one for each parameter of the distribution specified in \code{family};
 #' set to \code{~ 1} if the parameter should be treated as constant.
 #' Use the \code{s()}-notation from \code{mgcv} for specification of
-#' non-linear structured effects and \code{d(..., model = ...)} for
-#' deep learning predictors (separated by commas),
-#' where \code{model} is the an integer
-#' giving the index of the deep model in \code{list_of_deep_models} to
-#' be used for the predictors
-#' @param list_of_deep_models a list of (lists of) functions
-#' specifying a keras model for each parameter of interest.
+#' non-linear structured effects and \code{d(...)} for
+#' deep learning predictors (predictors in brackets are separated by commas),
+#' where \code{d} can be replaced by an name name of the names in 
+#' \code{list_of_deep_models}, e.g., \code{~ 1 + s(x) + my_deep_mod(a,b,c)},
+#' where my_deep_mod is the name of the neural net specified in 
+#' \code{list_of_deep_models} and \code{a,b,c} are features modeled via
+#' this network.
+#' @param list_of_deep_models a named list of functions
+#' specifying a keras model.
 #' See the examples for more details.
 #' @param family a character specifying the distribution. For information on 
 #' possible distribution and parameters, see \code{\link{make_tfd_dist}} 
@@ -42,6 +44,10 @@
 #' the via the ellipsis to the initialization function
 #' (see \code{\link{deepregression_init}})
 #' @param monitor_metric Further metrics to monitor
+#' @param posterior_fun function defining the posterior function for the variational
+#' verison of the network
+#' @param prior_fun function defining the prior function for the variational
+#' verison of the network
 #' @param ... further arguments passed to the \code{deepRegression_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -49,8 +55,7 @@
 #'
 #' @examples
 #' library(deepregression)
-#' library(dplyr)
-#'
+#' 
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
 #' formula <- ~ 1 + d(x1,x2,x3) +
