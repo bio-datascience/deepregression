@@ -317,6 +317,8 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
 #' @param trafos_each_param list of transformaiton applied before plugging
 #' the linear predictor into the parameters of the distributions.
 #' Should be of length #parameters of \code{dist}
+#' @return returns function than can be used as argument \code{dist\_fun} for 
+#' \code{deepregression}
 mix_dist_maker <- function(
   dist = tfd_normal, 
   nr_comps = 3,
@@ -384,3 +386,78 @@ tfd_zip <- function(lambda, probs)
                 name="zip")
   )
 }
+
+
+#' Implementation of a multivariate normal distribution 
+#' 
+#' @param dim dimension of the multivariate normal distribution
+#' @param with_cov logical; whether or not to have a full covariance
+#' @param trafo_scale transformation function for the scale
+multinorm_maker <- function(dim = 2, 
+                            with_cov = TRUE,
+                            trafos_scale = exp,
+                            add_const = 1e-8)
+{
+  
+  nr_cov_low_tril <- dim * (dim - 1) / 2 + dim
+
+  dims_to_cov <- function(ind)
+  {
+    
+    temp <- matrix(1:dim^2,ncol=dim,byrow = T)
+    res <- ind[order(c(diag(temp),temp[upper.tri(temp,diag=F)],temp[lower.tri(temp,diag=F)]))]
+    res[is.na(res)] <- ind[1] # will be ignored anyway
+    return(res)
+    
+  }
+  
+  ind_diag <- seq(1,dim^2,by=dim+1)
+  
+  scale_tr <- function(x) add_const + tfe(x)
+  
+  if(with_cov){
+    
+    trafo_fun <- function(x){
+      
+      ind_cov <- dims_to_cov((dim+1):(dim+nr_cov_low_tril))
+      
+      p1 <- scale_tr(x[,(dim+1):(2*dim),drop=FALSE])
+      p2 <- x[,(2*dim+1):(dim+nr_cov_low_tril),drop=FALSE]
+      mat <- tf$concat(list(p1,p2),1L)
+      mat <- tf$concat(lapply(ind_cov-dim, function(i) mat[,i,drop=FALSE]),1L)
+      # mat[,ind_cov-dim,drop=FALSE]
+      expmat <- tf$expand_dims(mat, 2L)
+      resexpmat <- tf$reshape(expmat, shape = list(tf$shape(expmat)[1],
+                                                   as.integer(dim), 
+                                                   as.integer(dim)))
+      
+      c(loc = list(x[,1:dim,drop=FALSE]),
+        scale_tril = resexpmat
+      )
+
+    }    
+    
+    return(
+      function(x) do.call(tfd_multivariate_normal_tri_l, 
+                          trafo_fun(x))
+    )
+    
+  }else{
+    
+    trafo_fun <- function(x){
+      
+      c(loc = x[,1:dim,drop=FALSE],
+        scale_diag = add_const + tfe(x[,(dim+1):(dim*2),drop=FALSE])
+      )
+    
+    }
+    
+    return(
+      function(x) do.call(tfd_multivariate_normal_diag, 
+                          trafo_fun(x))
+    )
+     
+  }
+  
+}
+

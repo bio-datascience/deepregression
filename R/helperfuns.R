@@ -274,12 +274,21 @@ make_cov <- function(pcf, newdata=NULL,
                    x = pcf[[i]]
                    ret <- NULL
                    if(!is.null(x$linterms))
-                     if(is.null(newdata))
-                       ret <- model.matrix(~ 0 + ., data = x$linterms) else{
-                         if("(Intercept)" %in% names(x$linterms))
-                           newdata$`(Intercept)` <- rep(1, nROW(newdata))
+                     if(is.null(newdata)){
+                       if(any(sapply(x$linterms,is.factor))){
+                         ret <- model.matrix(~ 1 + ., data = x$linterms)[,-1]
+                       }else{
+                         ret <- model.matrix(~ 0 + ., data = x$linterms)
+                       }
+                     }else{
+                       if("(Intercept)" %in% names(x$linterms))
+                         newdata$`(Intercept)` <- rep(1, nROW(newdata))
+                       if(any(sapply(x$linterms,is.factor))){
+                         ret <- model.matrix(~ 1 + ., data = newdata[names(x$linterms)])[,-1]
+                       }else{
                          ret <- model.matrix(~ 0 + ., data = newdata[names(x$linterms)])
                        }
+                     }
                      if(!is.null(x$smoothterms))
                      {
                        if(!is.null(newdata) & !pred){
@@ -534,7 +543,7 @@ ncol_lint <- function(z)
   facs <- sapply(z,is.factor)
   if(length(facs)>0) z_fac <- sapply(z[,facs,drop=F], nlevels) else
     z_fac <- 0
-  if(length(z_fac)==0) z_fac <- 0
+  if(length(z_fac)==0) z_fac <- 0 else z_fac <- z_fac-1
   return(sum(c(z_num, z_fac)))
   
 }
@@ -566,3 +575,5 @@ unlist_order_preserving <- function(x)
   return(x)
   
 }
+
+get_family_name <- function(dist) gsub(".*(^|/)(.*)/$", "\\2", dist$name)

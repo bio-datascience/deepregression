@@ -117,6 +117,7 @@ deepregression <- function(
   prior_fun = prior_trainable,
   null.space.penalty = variational,
   ind_fun = function(x) tfd_independent(x),
+  extend_output_dim = 0,
   ...
 )
 {
@@ -250,6 +251,7 @@ deepregression <- function(
     posterior = posterior_fun,
     prior = prior_fun,
     ind_fun = ind_fun,
+    extend_output_dim = extend_output_dim,
     ...
     )
 
@@ -378,7 +380,8 @@ deepregression_init <- function(
   output_dim = 1,
   mixture_dist = FALSE,
   split_fun = split_model,
-  ind_fun = function(x) x
+  ind_fun = function(x) x,
+  extend_output_dim = 0
   )
 {
 
@@ -428,6 +431,13 @@ deepregression_init <- function(
         if(is.null(y) || y==0) return(NULL) else return(layer_input(shape = list(y)))})
     })
   }
+  
+  # extend one or more layers' output dimension
+  if(length(extend_output_dim) > 1 || extend_output_dim!=0){
+    output_dim <- output_dim + extend_output_dim
+  }else{
+    output_dim <- rep(output_dim, length(inputs_struct))
+  }
 
   # define structured predictor
   structured_parts <- lapply(1:length(inputs_struct),
@@ -442,7 +452,7 @@ deepregression_init <- function(
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim, 
+                                                units = output_dim[i], 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l1,
@@ -453,7 +463,7 @@ deepregression_init <- function(
                                      l2 = tf$keras$regularizers$l2(l=lambda_ridge)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim, 
+                                                units = output_dim[i], 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l2,
@@ -465,7 +475,7 @@ deepregression_init <- function(
                                                                        l2=lambda_ridge)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim, 
+                                                units = output_dim[i], 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l12,
@@ -475,7 +485,7 @@ deepregression_init <- function(
                                    }else{
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim, 
+                                                units = output_dim[i], 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 name = paste0("structured_linear_",
