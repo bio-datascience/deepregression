@@ -8,25 +8,6 @@ Fitting Semistructured Deep Distributional Models in R
 Since the repository is still private, clone the repository to your
 local machine and run the following
 
-    ## Loading required package: usethis
-
-    ## Loading deepregression
-
-    ## 
-
-    ## Done!
-
-    ## 
-    ## Attaching package: 'testthat'
-
-    ## The following object is masked from 'package:devtools':
-    ## 
-    ##     test_file
-
-    ## Configuring package 'deepregression': please wait ...
-
-    ## Done!
-
 Also make sure you have installed all the dependencies:
 
   - Matrix
@@ -295,15 +276,15 @@ cvres <- mod %>% cv(cv_folds = 5, epochs=500)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 45.24328  secs 
+    ## Done in 45.69749  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 43.29304  secs 
+    ## Done in 50.8527  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 43.59649  secs 
+    ## Done in 41.25519  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 44.08932  secs 
+    ## Done in 41.73623  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 51.90815  secs
+    ## Done in 42.203  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
@@ -987,15 +968,15 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 25.24153  secs 
+    ## Done in 23.54682  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 23.01146  secs 
+    ## Done in 21.99863  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 22.45995  secs 
+    ## Done in 22.01613  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 22.52778  secs 
+    ## Done in 22.22511  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 22.84135  secs
+    ## Done in 21.6333  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
@@ -1006,19 +987,19 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1] -0.8807158  1.3250959 -0.1820126
+    ## [1]  1.3223999 -0.2643319 -0.8822053
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.2337661 0.3969661 0.7143496
+    ## [1] 0.4065753 0.6694206 0.2298349
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.4059310 0.3063351 0.2877339
+    ## [1] 0.3202897 0.2884942 0.3912162
 
 ``` r
 library(distr)
@@ -1259,13 +1240,13 @@ mydist$components[[1]]$rate
 ```
 
     ## tf.Tensor(
-    ## [[1.9182708]
-    ##  [1.9782604]
-    ##  [2.000047 ]
+    ## [[1.9780103]
+    ##  [1.9671108]
+    ##  [1.9632484]
     ##  ...
-    ##  [2.0756662]
-    ##  [1.9315189]
-    ##  [1.9416286]], shape=(5000, 1), dtype=float32)
+    ##  [1.950218 ]
+    ##  [1.9755689]
+    ##  [1.9737191]], shape=(5000, 1), dtype=float32)
 
 ``` r
 # probability for inflation / non-inflation
@@ -1273,16 +1254,16 @@ mydist$cat$probs
 ```
 
     ## tf.Tensor(
-    ## [[[0.6805297 0.3194703]]
+    ## [[[0.67865795 0.32134205]]
     ## 
-    ##  [[0.6805297 0.3194703]]
+    ##  [[0.67865795 0.32134205]]
     ## 
-    ##  [[0.6805297 0.3194703]]
+    ##  [[0.67865795 0.32134205]]
     ## 
     ##  ...
     ## 
-    ##  [[0.6805297 0.3194703]]
+    ##  [[0.67865795 0.32134205]]
     ## 
-    ##  [[0.6805297 0.3194703]]
+    ##  [[0.67865795 0.32134205]]
     ## 
-    ##  [[0.6805297 0.3194703]]], shape=(5000, 1, 2), dtype=float32)
+    ##  [[0.67865795 0.32134205]]], shape=(5000, 1, 2), dtype=float32)
