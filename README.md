@@ -8,17 +8,13 @@ Fitting Semistructured Deep Distributional Models in R
 Since the repository is still private, clone the repository to your
 local machine and run the following
 
-``` r
-library(devtools)
-```
-
     ## Loading required package: usethis
 
-``` r
-load_all("R")
-```
-
     ## Loading deepregression
+
+    ## 
+
+    ## Done!
 
     ## 
     ## Attaching package: 'testthat'
@@ -26,6 +22,10 @@ load_all("R")
     ## The following object is masked from 'package:devtools':
     ## 
     ##     test_file
+
+    ## Configuring package 'deepregression': please wait ...
+
+    ## Done!
 
 Also make sure you have installed all the dependencies:
 
@@ -66,6 +66,8 @@ install_github("davidruegamer/deepregression")
     1.  [MNIST Pictures with Binarized Response](#mnist-zeros)
     2.  [MNIST Pictures with Multinomial Response](#mnist-multinomial)
     3.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
+9.  [Zero-inflated Poisson
+    Distribution](#zero-inflated-poisson-distribution)
 
 ## Deep Additive Regression
 
@@ -125,15 +127,19 @@ mod <- deepregression(
 mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% fitted()
-true_mean <- true_mean_fun(x)
+true_mean <- true_mean_fun(x) - b0
 
 # compare means
-plot(true_mean ~ x, ylab="partial effect")
+plot(true_mean + b0 ~ x, ylab="partial effect")
 points(c(as.matrix(mean)) ~ x, col = "red")
 legend("bottomright", col=1:2, pch = 1, legend=c("true mean", "deep prediction"))
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+This is just for demonstration that a neural network can also capture
+non-linearities, but often requires a lot of effort to get proper smooth
+estimates.
 
 ## Deep GAM
 
@@ -283,27 +289,28 @@ mod <- deepregression(
   family = "bernoulli",
   validation_split = NULL,
   variational = TRUE,
+  df = 10
 )
-cvres <- mod %>% cv(cv_folds = 5, epochs=200)
+cvres <- mod %>% cv(cv_folds = 5, epochs=500)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 23.99185  secs 
+    ## Done in 45.24328  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 22.7258  secs 
+    ## Done in 43.29304  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 22.40189  secs 
+    ## Done in 43.59649  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 22.64071  secs 
+    ## Done in 44.08932  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 25.60842  secs
+    ## Done in 51.90815  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ``` r
 bestiter <- stop_iter_cv_result(cvres)
 # fit model
-mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=10000, verbose = FALSE, view_metrics = FALSE)
 # plot model
 mod %>% plot(use_posterior=TRUE)
 points(sin(10*(sort(x))) ~ sort(x), col = "red", type="l", ylim=c(0,1))
@@ -980,15 +987,15 @@ cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 28.86721  secs 
+    ## Done in 25.24153  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 27.3825  secs 
+    ## Done in 23.01146  secs 
     ## Fitting Fold  3  ... 
-    ## Done in 27.53193  secs 
+    ## Done in 22.45995  secs 
     ## Fitting Fold  4  ... 
-    ## Done in 28.02738  secs 
+    ## Done in 22.52778  secs 
     ## Fitting Fold  5  ... 
-    ## Done in 27.25356  secs
+    ## Done in 22.84135  secs
 
 ![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
@@ -999,19 +1006,19 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1] -0.9045686 -0.4470975  1.2735463
+    ## [1] -0.8807158  1.3250959 -0.1820126
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.2065582 0.5718664 0.4250811
+    ## [1] 0.2337661 0.3969661 0.7143496
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.3258473 0.3298024 0.3443503
+    ## [1] 0.4059310 0.3063351 0.2877339
 
 ``` r
 library(distr)
@@ -1215,3 +1222,67 @@ boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+## Zero-inflated Poisson Distribution
+
+An example how to fit an access the ZIP distribution. We first create
+data and add some dummy covariates.
+
+``` r
+# create data
+n <- 5000
+prob = 0.3
+lambda = 2
+  
+bino <- rbinom(n, size = 1, prob = prob)
+y <- 0 * bino + (1-bino) * rpois(n, lambda)
+data = data.frame(y=y, x = rnorm(n))
+```
+
+Now we fit the distribution and access the fitted parameters
+
+``` r
+mod <- deepregression(y, 
+                      list_of_formulae = list(rate = ~ 1 + x, 
+                                              prob = ~1),
+                      data = data,
+                      list_of_deep_models = NULL, 
+                      family = "zip")
+# fit the model
+mod %>% fit(epochs = 50, view_metrics=FALSE)
+
+# get distribution
+mydist <- mod %>% get_distribution(data = data)
+
+# rate for Poisson
+mydist$components[[1]]$rate
+```
+
+    ## tf.Tensor(
+    ## [[1.9182708]
+    ##  [1.9782604]
+    ##  [2.000047 ]
+    ##  ...
+    ##  [2.0756662]
+    ##  [1.9315189]
+    ##  [1.9416286]], shape=(5000, 1), dtype=float32)
+
+``` r
+# probability for inflation / non-inflation
+mydist$cat$probs
+```
+
+    ## tf.Tensor(
+    ## [[[0.6805297 0.3194703]]
+    ## 
+    ##  [[0.6805297 0.3194703]]
+    ## 
+    ##  [[0.6805297 0.3194703]]
+    ## 
+    ##  ...
+    ## 
+    ##  [[0.6805297 0.3194703]]
+    ## 
+    ##  [[0.6805297 0.3194703]]
+    ## 
+    ##  [[0.6805297 0.3194703]]], shape=(5000, 1, 2), dtype=float32)
