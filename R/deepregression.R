@@ -155,7 +155,11 @@ deepregression <- function(
     nr_params <- nrparams_dist
     list_of_formulae <- list_of_formulae[1:nr_params]
   }
-
+  # check list of formulae is always one-sided
+  if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
+    stop("Only one-sided formulas are allowed in list_of_formulae.")
+  }
+  
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
                                      get_contents,
