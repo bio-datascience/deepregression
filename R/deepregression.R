@@ -277,7 +277,8 @@ deepregression <- function(
   input_cov <- unname(c(input_cov, 
                  unlist(lapply(ox[!sapply(ox,is.null)],
                                function(x_per_param) 
-                                 unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
+                                 unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], 
+                                               function(x)
                                    tf$constant(x, dtype="float32")))), 
                         recursive = F)
   ))
@@ -287,7 +288,8 @@ deepregression <- function(
   ind_structterms <- lapply(parsed_formulae_contents, get_indices)
 
   if(!is.null(validation_data)){
-    if(!is.list(validation_data) && length(validation_data)!=2 | is.data.frame(validation_data))
+    if(!is.list(validation_data) && length(validation_data)!=2 | 
+       is.data.frame(validation_data))
       stop("Validation data must be a list of length two ",
            "with first entry for the data (features) and second entry for response.")
     if(is.data.frame(validation_data[[1]])) 

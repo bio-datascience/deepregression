@@ -317,6 +317,7 @@ print.deepregression <- function(
 #' @param plot whether to plot the resulting losses in each fold
 #' @param printfolds whether to print the current fold
 #' @param mylapply lapply function to be used; defaults to \code{lapply}
+#' @param save_weights logical, whether to save weights in each epoch.
 #' @param cv_folds see \code{deepregression}
 #' @param stop_if_nan logical; whether to stop CV if NaN values occur
 #' @export
@@ -336,6 +337,7 @@ cv <- function(
   cv_folds = NULL,
   stop_if_nan = TRUE,
   mylapply = lapply,
+  save_weights = FALSE,
   ...
 )
 {
@@ -391,8 +393,10 @@ cv <- function(
     
     # make callbacks 
     this_callbacks <- list()
-    weighthistory <- WeightHistory$new()
-    this_callbacks <- append(this_callbacks, weighthistory)
+    if(save_weights){
+      weighthistory <- WeightHistory$new()
+      this_callbacks <- append(this_callbacks, weighthistory)
+    }
     
     args <- list(...)
     args <- append(args,
