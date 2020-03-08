@@ -257,6 +257,9 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
       con = tfdiv(tfsq(mu), sigsq) + add_const
       rate = tfdiv(mu, sigsq) + add_const
       
+      # rate = tfrec(tfe(x[,2,drop=FALSE]))
+      # con = tfdiv(tfe(x[,1,drop=FALSE]), tfe(x[,1,drop=FALSE]))
+      
       return(list(con,rate))
     },
     betar = function(x){

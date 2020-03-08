@@ -159,6 +159,8 @@ deepregression <- function(
   if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
+  # for convenience transform NULL to list(NULL) for list_of_deep_models
+  if(is.null(list_of_deep_models)) list_of_deep_models <- list(NULL)
   
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
