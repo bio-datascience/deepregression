@@ -424,7 +424,7 @@ cv <- function(
     args <- append(args, x$init_params$ellipsis)
     
     ret <- do.call(fit_fun, args)
-    ret$weighthistory <- weighthistory$weights_last_layer
+    if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
     
     if(stop_if_nan && any(is.nan(ret$metrics$validloss)))
       stop("Fold ", folds_iter, " with NaN's in ")

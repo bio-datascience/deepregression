@@ -11,6 +11,9 @@ orthog_smooth <- function(pcf){
   
   nml <- attr(pcf$linterms, "names")
   nms <- attr(pcf$smoothterms, "names")
+  if(!is.null(nms) && grepl(",by_",nms)){
+    warning("Orthogonalization for s-terms with by-Term currently not supported.")
+  }
   L <- NULL
   for(nm in nms){
     
@@ -26,8 +29,8 @@ orthog_smooth <- function(pcf){
     }
     
     if(!is.null(L))
-      pcf$smoothterms[[nm]]$X <- 
-        orthog_structured(pcf$smoothterms[[nm]]$X, L) 
+      pcf$smoothterms[[nm]][[1]]$X <- 
+        orthog_structured(pcf$smoothterms[[nm]][[1]]$X, L) 
     
   }
   
@@ -46,7 +49,7 @@ make_orthog <- function(
   n_obs <- nROW(pcf)
   if(n_obs==0){
     if(!is.null(pcf$smoothterms))
-      n_obs <- NROW(pcf$smoothterms[[1]]$X) else
+      n_obs <- NROW(pcf$smoothterms[[1]][[1]]$X) else
         n_obs <- nROW(pcf$deepterms[[1]])
   }
   nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))

@@ -140,33 +140,51 @@ get_contents <- function(lf, data, df,
     warning("2-dimensional smooths and higher currently not well tested.")
   if(length(sTerms)>0)
   {
+    names_sTerms <- names(sTerms)
     terms_w_s <- lapply(names(sTerms), extract_from_special)
+    by_vars <- lapply(terms_w_s, function(x) sapply(x, function(y){ 
+      if(grepl("by.*\\=",y)) return(trimws(gsub("by.*\\=(.*)","\\1",y))) else return(y)}))
+    terms_w_s <- lapply(terms_w_s, function(x) sapply(x, function(y){ 
+      if(grepl("by.*\\=",y)) return(trimws(gsub("by.*\\=(.*)","\\1",y))) else return(y)}))
     terms_w_s <- lapply(terms_w_s, function(x) x[!grepl("=", x, fixed=T)])
-    smoothterms <- sapply(sTerms,
-                          function(t)
-                            smoothCon(eval(t),
-                                      data=data.frame(data[unlist(terms_w_s)]),
-                                      knots=NULL, absorb.cons=F,
-                                      null.space.penalty = null.space.penalty))
+    smoothterms <- 
+      lapply(sTerms,
+             function(t)
+               smoothCon(eval(t),
+                         data=data.frame(data[unname(unlist(terms_w_s))]),
+                         knots=NULL, absorb.cons=F,
+                         null.space.penalty = null.space.penalty))
+    
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
-    if(is.null(df)) df <- pmax(min(sapply(smoothterms, "[[", "df")) - null.space.penalty, 1)
+    if(is.null(df)) df <- pmax(min(sapply(smoothterms, function(x) x[[1]]$df)) - 
+                                 null.space.penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
-        st$sp = DRO(st$X, df = df, dmat = st$S[[1]])["lambda"] + null.space.penalty
+        if(length(st[[1]]$S)==1) S <- st[[1]]$S[[1]] else
+          S <- do.call("+", st[[1]]$S)
+        st[[1]]$sp = DRO(st[[1]]$X, df = df, dmat = S)["lambda"] + null.space.penalty
         return(st)
       }
-    smoothterms[sapply(smoothterms,function(x) is.null(x$sp))] <-
-      lapply(smoothterms[sapply(smoothterms,function(x) is.null(x$sp))],
+    smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))] <-
+      lapply(smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))],
              defaultSmoothing)
     attr(smoothterms, "names") <-
-      sapply(names(smoothterms),
+      unlist(lapply(names_sTerms,
              function(x){
                vars <- extract_from_special(x)
-               vars <- vars[!grepl("=", vars, fixed=T)]
-               paste(vars, collapse=",")
-             })
+               vars <- vars[!grepl("=", vars, fixed=T) | grepl("by.*\\=",vars)]
+               # rep <- FALSE
+               # if(any(grepl("by.*\\=",vars))){
+               #   fac <- trimws(gsub("by.*\\=(.*)","\\1",vars[grepl("by.*\\=",vars)]))
+               #   rep <- TRUE
+               #   }
+               # vars[grepl("by.*\\=",vars)] <- gsub("(\\s+)\\=(\\s+)","_",vars[grepl("by.*\\=",vars)])
+               #ret <- 
+                 paste(vars, collapse=",")
+               # if(rep) paste0(ret, 1:nlevels(data[[fac]])) else ret
+             }))
     # values in smooth construct list have the following items
     # (see also ?mgcv::smooth.construct)
     #
@@ -291,14 +309,51 @@ make_cov <- function(pcf, newdata=NULL,
                      }
                      if(!is.null(x$smoothterms))
                      {
+                       # put all terms that 
+                       # names_sTerms <- names(x$smoothterms)
+                       # byfac <- intersect(names(newdata),
+                       #                    unique(gsub(".*,by_(.*)([0-9]+)$","\\1", names_sTerms)))
+                       # if(length(byfac)>0){
+                       #   tog_list <- vector("list", length(byfac))
+                       #   for(j in 1:length(byfac)){
+                       #     bf <- byfac[j]
+                       #     byf <- paste0(",by_", bf)
+                       #     these_s <- grepl(byf, names(x$smoothterms))
+                       #     var_before <- unique(gsub(paste0("(.*)",byf,".*"),"\\1",
+                       #                               names(x$smoothterms)))
+                       #     tog_list[[j]] <- vector("list", length(var_before))
+                       #     for(k in 1:length(var_before)){
+                       #       vb <- var_before[k]
+                       #       these_s_v <- grepl(paste0(vb,",by_",bf), names(x$smoothterms))
+                       #       tog_list[[j]][[k]] <- which(these_s & these_s_v)
+                       #     }
+                       #   }
+                       #   tog_list <- unlist(tog_list, recursive = F)
+                       #   xsm <- x$smoothterms[!these_s]
+                       #   for(tl in tog_list){
+                       #     xsm <- c(xsm, list(x$smoothterms[tl]))
+                       #   }
+                       # }
                        if(!is.null(newdata) & !pred){
                          Xp <- lapply(x$smoothterms, function(sm)
-                           PredictMat(sm,as.data.frame(
-                             newdata[sm$term])))
+                         {
+                           if(length(sm)==1){ 
+                             sm <- sm[[1]]
+                             sterms <- sm$term
+                             PredictMat(sm,as.data.frame(newdata[sterms]))
+                           }else{
+                             sterms <- c(sm[[1]]$term, sm[[1]]$by)
+                             do.call("cbind", lapply(sm, function(smm)
+                               PredictMat(smm,as.data.frame(newdata[sterms]))))
+                           }
+
+                         })
                        }else if(!is.null(newdata) & pred){
-                         Xp <- lapply(pcfnew[[i]]$smoothterms, "[[", "X")
+                         Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
+                           do.call("cbind", lapply(x, "[[", "X")))
                        }else{
-                         Xp <- lapply(x$smoothterms, "[[", "X")
+                         Xp <- lapply(x$smoothterms, function(x)  
+                           do.call("cbind", lapply(x, "[[", "X")))
                        }
                        st <- do.call("cbind", Xp)
                        if(!is.null(ret)){
@@ -341,7 +396,7 @@ get_names <- function(x)
                deepterms = NULL)
   if(!is.null(x$linterms)) lret$linterms <- names(x$linterms)
   if(!is.null(x$smoothterms)) lret$smoothterms <-
-      sapply(x$smoothterms,"[[","label")
+      sapply(x$smoothterms,function(x)x[[1]]$label)
   if(!is.null(x$deepterms)) lret$deepterms <- names(x$deepterms)
   return(lret)
 }
@@ -352,11 +407,13 @@ get_indices <- function(x)
      !(length(x$linterms)==1 & is.null(x$linterms[[1]])))
     ncollin <- ncol(x$linterms) else ncollin <- 0
     if(!is.null(x$smoothterms))
-      bsdims <- sapply(x$smoothterms, function(y){
-        if(is.null(y$margin)) return(y$bs.dim) else
-          # Tensorprod
-          return(prod(sapply(y$margin,"[[", "bs.dim")))
-      }) else bsdims <- c()
+      bsdims <- unlist(lapply(x$smoothterms, function(y){
+        if(is.null(y[[1]]$margin) & y[[1]]$by=="NA") 
+          return(y[[1]]$bs.dim) else if(is.null(y[[1]]$margin) & y[[1]]$by!="NA")
+            return(sapply(y, "[[", "bs.dim")) else
+              # Tensorprod
+              return(prod(sapply(y[[1]]$margin,"[[", "bs.dim")))
+      })) else bsdims <- c()
       ind <- if(ncollin > 0) seq(1, ncollin, by = 1) else c()
       end <- if(ncollin > 0) ind else c()
       if(length(bsdims) > 0) ind <- c(ind, max(c(ind,0))+1, max(c(ind+1,1)) +

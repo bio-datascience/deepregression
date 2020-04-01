@@ -213,7 +213,8 @@ deepregression <- function(
     function(x){
       ncolsmooth <- 0
       if(!is.null(x[['smoothterms']]))
-        ncolsmooth <- sum(sapply(x[['smoothterms']], function(st) NCOL(st$X)))
+        ncolsmooth <- sum(sapply(x[['smoothterms']], function(st) if(length(st)>1)
+          sum(sapply(st, function(y) NCOL(y$X))) else NCOL(st[[1]]$X)))
 
       return(ncol_lint(x[['linterms']]) + ncolsmooth)
 

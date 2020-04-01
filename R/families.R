@@ -60,6 +60,7 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"zip":  }{Zero-inflated poisson distribution with }
 #' }
 #' 
+#' @export
 #' @rdname dr_families
 make_tfd_dist <- function(family, add_const = 1e-8, 
                           return_nrparams = FALSE, trafo_list = NULL)
@@ -321,6 +322,7 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
 #' the linear predictor into the parameters of the distributions.
 #' Should be of length #parameters of \code{dist}
 #' @return returns function than can be used as argument \code{dist\_fun} for 
+#' @export
 #' \code{deepregression}
 mix_dist_maker <- function(
   dist = tfd_normal, 

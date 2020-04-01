@@ -1,3 +1,8 @@
+# reticulate::use_python("/usr/bin/python2", required = T)
+# reticulate::virtualenv_create(envname = "venv27", python = "/usr/bin/python2")
+# reticulate::use_virtualenv(virtualenv = "venv27", required = T)
+devtools::load_all(".")
+try(a <- tfd_normal(1,1))
 ################################## Tests #####################################
 silent = TRUE
 #####################################################################
