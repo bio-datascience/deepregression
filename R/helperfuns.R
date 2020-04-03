@@ -163,7 +163,7 @@ get_contents <- function(lf, data, df,
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
         if(length(st[[1]]$S)==1) S <- st[[1]]$S[[1]] else
-          S <- do.call("+", st[[1]]$S)
+          S <- Reduce("+", st[[1]]$S)
         st[[1]]$sp = DRO(st[[1]]$X, df = df, dmat = S)["lambda"] + null.space.penalty
         return(st)
       }
