@@ -55,7 +55,8 @@ make_orthog <- function(
   nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))
   nmsd <- lapply(pcf$deepterms, function(x) attr(x,"names"))
   if(!is.null(nms$smoothterms))
-    struct_nms <- c(nms$linterms, unlist(strsplit(nms$smoothterms,","))) else
+    struct_nms <- c(nms$linterms, unlist(strsplit(nms$smoothterms,",")),
+                    nms$smoothterms) else
       struct_nms <- nms$linterms
   if(is.null(pcf$linterms) & is.null(pcf$smoothterms))
     return(NULL)
@@ -69,19 +70,26 @@ make_orthog <- function(
         
         for(nm in nn){
           
-          if(nm %in% nms$linterms){
+          if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
+          if(nm %in% nms$smoothterms){ 
             
-            X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
-            # Ps <- append(Ps, list(0))
-            # lambdas <- c(lambdas, 0)
-            
-          }
-          if(nm %in% nms$smoothterms){
-  
-              X <- cbind(X, pcf$smoothterms[[
-                grep(paste0("\\b",nm,"\\b"),nms$smoothterms)]]$X)
+            X <- cbind(X, pcf$smoothterms[[
+                grep(paste0("\\b",nm,"\\b"),nms$smoothterms)]][[1]]$X)
+          
+            # check for TP
+            if(length(nn)>1 &  grepl(",", nms$smoothterms)){ 
               
-          }
+              tps_index <- grep(",", nms$smoothterms)
+              for(tpi in tps_index){
+               
+                if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
+                 
+                  X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
+                   
+                }
+              }
+            }
+          }  
         }
         
       }else{
