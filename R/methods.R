@@ -22,6 +22,7 @@ plot.deepregression <- function(
   which_param = 1, # for which parameter
   plot = TRUE,
   use_posterior = FALSE,
+  grid_length = 40,
   ... # passed to plot function
 )
 {
@@ -53,7 +54,7 @@ plot.deepregression <- function(
                                                        c("start","end")])))[[1]]
     BX <- 
       x$init_params$parsed_formulae_contents[[
-        which_param]]$smoothterms[[nam]]$X
+        which_param]]$smoothterms[[nam]][[1]]$X
     if(use_posterior){
       
       # get the correct index as each coefficient has now mean and sd
@@ -69,13 +70,14 @@ plot.deepregression <- function(
     }else{
       plotData[[w]] <-
         list(org_feature_name = nam,
-             value = unlist(x$init_params$data[strsplit(nam,",")[[1]]]),
+             value = sapply(strsplit(nam,",")[[1]], function(xx)
+               x$init_params$data[[xx]]),
              design_mat = BX,
              coef = phi[this_ind_this_w,],
              partial_effect = BX%*%phi[this_ind_this_w,])
     }
     if(plot){
-      nrcols <- NCOL(plotData[[w]]$value)
+      nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
       if(nrcols==1)
       {
         if(use_posterior){
@@ -102,19 +104,28 @@ plot.deepregression <- function(
                ...)
         }
       }else if(nrcols==2){
-        # this_data = cbind(plotData[[w]]$value,partial_effect=plotData[[w]]
-        # $partial_effect)
-        # image(plotData[[w]]$value[,1],
-        #               plotData[[w]]$value[,2],
-        #               plotData[[w]]$partial_effect,
-        #               ...,
-        #               xlab = names(plotData[[w]]$value)[1],
-        #               ylab = names(plotData[[w]]$value)[2],
-        #               zlab = "partial effect",
-        #               main = paste0("te(", nam, ")")
-        # )
-        warning("Plotting of effects with ", nrcols, " 
-                covariate inputs not supported yet.")
+        sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
+        this_x <- do.call(seq, c(as.list(range(plotData[[w]]$value[,1])),
+                                 list(l=grid_length)))
+        this_y <- do.call(seq, c(as.list(range(plotData[[w]]$value[,2])),
+                                 list(l=grid_length)))
+        df <- as.data.frame(expand.grid(this_x,
+                                        this_y))
+        colnames(df) <- sTerm$term
+        pred <- PredictMat(sTerm, data = df)%*%phi[this_ind_this_w,]
+        #this_z <- plotData[[w]]$partial_effect
+        filled.contour(
+          this_x,
+          this_y,
+          matrix(pred, ncol=length(this_y)),
+          ...,
+          xlab = colnames(df)[1],
+          ylab = colnames(df)[2],
+          # zlab = "partial effect",
+          main = sTerm$label
+        )
+        # warning("Plotting of effects with ", nrcols, " 
+        #         covariate inputs not supported yet.")
       }else{
         warning("Plotting of effects with ", nrcols, 
                 " covariate inputs not supported.")

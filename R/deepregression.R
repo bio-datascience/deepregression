@@ -133,6 +133,11 @@ deepregression <- function(
   varnames <- names(data)
   if(is.null(varnames) | any(varnames==""))
     stop("If data is a list, names must be given.")
+  # for convenience transform NULL to list(NULL) for list_of_deep_models
+  if(missing(list_of_deep_models) | is.null(list_of_deep_models)){ 
+    list_of_deep_models <- list(NULL)
+    warning("No deep model specified")
+  }else if(!is.list(list_of_deep_models)) stop("list_of_deep_models must be a list.")
   # get names of networks
   netnames <- names(list_of_deep_models)
   if(is.null(netnames) & length(list_of_deep_models) > 0)
@@ -159,8 +164,6 @@ deepregression <- function(
   if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
-  # for convenience transform NULL to list(NULL) for list_of_deep_models
-  if(is.null(list_of_deep_models)) list_of_deep_models <- list(NULL)
   
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,

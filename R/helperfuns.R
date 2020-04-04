@@ -38,6 +38,7 @@ get_contents <- function(lf, data, df,
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
   tf <- terms.formula(lf, specials=specials)
+  
   if(length(attr(tf, "term.labels"))==0){
     if(intercept & attr(tf,"intercept")){
       if(is.data.frame(data)) linterms <- data.frame(a=rep(1,nrow(data))) else
@@ -60,6 +61,12 @@ get_contents <- function(lf, data, df,
     }else{ return(NULL) }
   }
   trmstrings <- attr(tf, "term.labels")
+  # if(length(setdiff(c(gsub("(.*)\\(.*\\)","\\1",trmstrings),
+  #                     variable_names),
+  #                   specials))>0)
+  #   stop("It seems that you are using non-valid terms in the formula ",
+  #        "or specified a list_of_deep_models without names.")
+  
   # check for weird line break behaviour produced by terms.formula
   trmstrings <- unname(sapply(trmstrings, function(x)
     gsub("\\\n\\s+", "", x, fixed=F)))
