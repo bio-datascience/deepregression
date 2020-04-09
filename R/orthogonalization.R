@@ -76,22 +76,23 @@ make_orthog <- function(
             X <- cbind(X, pcf$smoothterms[[
                 grep(paste0("\\b",nm,"\\b"),nms$smoothterms)]][[1]]$X)
           
-            # check for TP
-            if(length(nn)>1 &  grepl(",", nms$smoothterms)){ 
-              
-              tps_index <- grep(",", nms$smoothterms)
-              for(tpi in tps_index){
-               
-                if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
-                 
-                  X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
-                   
-                }
-              }
-            }
           }  
         }
-        
+       
+        # check for TP
+        if(any(length(nn)>1 &  grepl(",", nms$smoothterms))){ 
+          
+          tps_index <- grep(",", nms$smoothterms)
+          for(tpi in tps_index){
+            
+            if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
+              
+              X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
+              
+            }
+          }
+        } 
+         
       }else{
         return(NULL)
       }
