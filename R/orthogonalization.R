@@ -55,58 +55,70 @@ make_orthog <- function(
   nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))
   nmsd <- lapply(pcf$deepterms, function(x) attr(x,"names"))
   if(!is.null(nms$smoothterms))
-    struct_nms <- c(nms$linterms, unlist(strsplit(nms$smoothterms,",")),
+    struct_nms <- c(nms$linterms, #unlist(strsplit(nms$smoothterms,",")),
                     nms$smoothterms) else
       struct_nms <- nms$linterms
   if(is.null(pcf$linterms) & is.null(pcf$smoothterms))
     return(NULL)
+  
   qList <- lapply(nmsd, function(nn){
       
-      # if there is any smooth 
-      X <- matrix(rep(1,n_obs), ncol=1) 
-      # Ps <- list()
-      # lambdas <- c()
-      if(length(intersect(nn, struct_nms)) > 0){
+    # number of columns removed due to collinearity
+    rem_cols <- 0
+    # if there is any smooth 
+    X <- matrix(rep(1,n_obs), ncol=1) 
+    # Ps <- list()
+    # lambdas <- c()
+    if(length(intersect(nn, struct_nms)) > 0){
+      
+      for(nm in nn){
         
-        for(nm in nn){
+        if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
+        if(nm %in% nms$smoothterms){ 
           
-          if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
-          if(nm %in% nms$smoothterms){ 
-            
-            X <- cbind(X, pcf$smoothterms[[
-                grep(paste0("\\b",nm,"\\b"),nms$smoothterms)]][[1]]$X)
+          Z_nr <- drop_constant(pcf$smoothterms[[
+            grep(paste0("\\b",nm,"\\b"),nms$smoothterms)
+            ]][[1]]$X)
           
-          }  
-        }
-       
-        # check for TP
-        if(any(length(nn)>1 &  grepl(",", nms$smoothterms))){ 
+          X <- cbind(X,Z_nr[[1]])
+          rem_cols <- rem_cols + Z_nr[[2]]
           
-          tps_index <- grep(",", nms$smoothterms)
-          for(tpi in tps_index){
-            
-            if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
-              
-              X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
-              
-            }
-          }
-        } 
-         
-      }else{
-        return(NULL)
+        }  
       }
       
-      qrX <- qr(X)
-      Q <- qr.Q(qrX)
-      # coefmat <- tcrossprod(Q)
-      if(retcol) return(NCOL(Q)) else 
-        return(Q)
+      # check for TP
+      if(any(length(nn)>1 &  grepl(",", nms$smoothterms))){ 
+        
+        tps_index <- grep(",", nms$smoothterms)
+        for(tpi in tps_index){
+          
+          if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
+            
+            X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
+            
+          }
+        }
+      } 
       
+    }else{
+      return(NULL)
+    }
+    
+    qrX <- qr(X)
+    # if(qrX$rank<ncol(X)){
+    #   warning("Collinear features in X")
+    #   # qrX <- qr(qrX$qr[,1:qrX$rank])
+    # }
+    
+    Q <- qr.Q(qrX)
+    # coefmat <- tcrossprod(Q)
+    if(retcol) return(NCOL(Q)+rem_cols) else 
+      return(Q)
+    
   })
   
   return(qList)
-        
+  
 }
 
 # for P-Splines
@@ -258,4 +270,13 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
       )
     }
   }
+}
+
+drop_constant <- function(X){ 
+  
+  this_notok <- apply(X, 2, function(x) var(x, na.rm=TRUE)==0)
+  return(list(X[,!this_notok], 
+              sum(this_notok))
+  )
+
 }
