@@ -112,7 +112,7 @@ make_orthog <- function(
     
     Q <- qr.Q(qrX)
     # coefmat <- tcrossprod(Q)
-    if(retcol) return(NCOL(Q)+rem_cols) else 
+    if(retcol) return(NCOL(Q)) else 
       return(Q)
     
   })
