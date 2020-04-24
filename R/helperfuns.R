@@ -599,6 +599,25 @@ nCOL <- function(x)
   lapply(x, function(y) if(is.null(dim(y))) 1 else dim(y)[-1])
 }
 
+nestNCOL <- function(x)
+{
+  
+  res <- list()
+  for(i in 1:length(x)){
+   
+    if(is.list(x[[i]]) & length(x[[i]])>=1 & !is.null(x[[i]][[1]])){
+      res[[i]] <- nestNCOL(x[[i]])
+    }else if((is.list(x[[i]]) & length(x[[i]])==0) | is.null(x[[i]][[1]])){
+      res[[i]] <- 0
+    }else{
+      res[[i]] <- NCOL(x[[i]]) 
+    }
+     
+  }
+  
+  return(res)
+}
+
 ncol_lint <- function(z)
 {
 

@@ -181,7 +181,7 @@ deepregression <- function(
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
 
-  this_OX <- lapply(parsed_formulae_contents, make_orthog, retcol = TRUE)
+  # this_OX <- lapply(parsed_formulae_contents, make_orthog, retcol = TRUE)
 
   # are parameters trained together?
   if(train_together & !all(sapply(list_of_deep_models, is.null)))
@@ -206,7 +206,8 @@ deepregression <- function(
   # get columns per term
   ncol_deep <- lapply(lapply(
     parsed_formulae_contents, "[[", "deepterms"), function(x){
-      ret <- lapply(x, nCOL)
+      ret <- #if(is.data.frame(x[[1]]) & length(x)==1) list(NCOL(x[[1]])) else
+        lapply(x, nCOL)
       names(ret) <- names(x)
       return(ret)
     })
@@ -235,35 +236,6 @@ deepregression <- function(
     for(i in 2:nr_psarams)
       parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
   }
-    
-  # initialize the model
-  model <- deepregression_init(
-    n_obs = n_obs,
-    ncol_structured = ncol_structured,
-    ncol_deep = ncol_deep,
-    list_structured = list_structured,
-    list_deep = list_of_deep_models,
-    nr_params = nr_params,
-    lss = TRUE,
-    train_together = train_together,
-    family = family,
-    variational = variational,
-    dist_fun = dist_fun,
-    kl_weight = 1 / n_obs,
-    orthogX = this_OX,
-    lambda_lasso = lambda_lasso,
-    lambda_ridge = lambda_ridge,
-    monitor_metric = monitor_metric,
-    optimizer = optimizer,
-    output_dim = output_dim,
-    mixture_dist = mixture_dist,
-    split_fun = split_fun,
-    posterior = posterior_fun,
-    prior = prior_fun,
-    ind_fun = ind_fun,
-    extend_output_dim = extend_output_dim,
-    ...
-    )
 
   # check distribution wrt to specified parameters
   # (not when distfun is given)
@@ -320,6 +292,36 @@ deepregression <- function(
     }
   }
     
+  #############################################################
+  # initialize the model
+  model <- deepregression_init(
+    n_obs = n_obs,
+    ncol_structured = ncol_structured,
+    ncol_deep = ncol_deep,
+    list_structured = list_structured,
+    list_deep = list_of_deep_models,
+    nr_params = nr_params,
+    lss = TRUE,
+    train_together = train_together,
+    family = family,
+    variational = variational,
+    dist_fun = dist_fun,
+    kl_weight = 1 / n_obs,
+    orthogX = nestNCOL(ox),
+    lambda_lasso = lambda_lasso,
+    lambda_ridge = lambda_ridge,
+    monitor_metric = monitor_metric,
+    optimizer = optimizer,
+    output_dim = output_dim,
+    mixture_dist = mixture_dist,
+    split_fun = split_fun,
+    posterior = posterior_fun,
+    prior = prior_fun,
+    ind_fun = ind_fun,
+    extend_output_dim = extend_output_dim,
+    ...
+  )
+  #############################################################
 
   ret <- list(model = model,
               init_params =
@@ -419,14 +421,15 @@ deepregression_init <- function(
   
   # define the input layers
   inputs_deep <- lapply(ncol_deep, function(param_list){
+    if(is.list(param_list) & length(param_list)==0) return(NULL)
     lapply(param_list, function(nc){
-    if(sum(unlist(nc))==0) return(NULL) else{
-      if(is.list(nc) & length(nc)>1){ 
-        layer_input(shape = list(sum(unlist(nc))))
-      }else if(is.list(nc) & length(nc)==1){
-        layer_input(shape = as.list(nc[[1]]))
-      }else stop("Not implemented yet.")
-    }
+      if(sum(unlist(nc))==0) return(NULL) else{
+        if(is.list(nc) & length(nc)>1){ 
+          layer_input(shape = list(sum(unlist(nc))))
+        }else if(is.list(nc) & length(nc)==1){
+          layer_input(shape = as.list(nc[[1]]))
+        }else stop("Not implemented yet.")
+      }
     })
   })
   inputs_struct <- lapply(1:length(ncol_structured), function(i){
@@ -438,9 +441,13 @@ deepregression_init <- function(
   })
 
   if(!is.null(orthogX)){
-    ox <- lapply(orthogX, function(x) if(is.null(x)) return(NULL) else{
+    ox <- lapply(1:length(orthogX), function(i){ 
+      
+      x = orthogX[[i]]
+      if(is.null(x) | is.null(inputs_deep[[i]])) return(NULL) else{
       lapply(x, function(y){
         if(is.null(y) || y==0) return(NULL) else return(layer_input(shape = list(y)))})
+    }
     })
   }
   
@@ -590,6 +597,8 @@ deepregression_init <- function(
       this_struct <- structured_parts[[i]]
     if(length(ox) < i | train_together) this_ox <- NULL else
       this_ox <- ox[[i]]
+    if(is.list(this_ox) & is.null(this_ox[[1]])) 
+      this_ox <- NULL
     
     combine_model_parts(deep = this_deep,
                         deep_top = this_ontop,
