@@ -13,6 +13,41 @@ WeightHistory <- R6::R6Class("WeightHistory",
                              ))
 
 
+# define AUC callback 
+# https://github.com/rstudio/keras/issues/319
+
+auc_roc <- R6::R6Class("AUC", 
+                       inherit = KerasCallback, 
+                       public = list(
+                         
+                         losses = NULL,
+                         x = NA,
+                         y = NA,
+                         x_val = NA,
+                         y_val = NA,
+                         
+                         initialize = function(training = list(), validation= list()){
+                           self$x <- training[[1]]                                   
+                           self$y <- training[[2]]
+                           self$x_val <- validation[[1]]
+                           self$y_val <- validation[[2]]
+                         },
+                         
+                         
+                         on_epoch_end = function(epoch, logs = list()){
+                           
+                           self$losses <- c(self$losses, logs[["loss"]])
+                           y_pred <- as.matrix(tfd_mean(self$model(self$x)))
+                           y_pred_val <- as.matrix(tfd_mean(self$model(self$x_val)))
+                           score = Metrics::auc(actual = c(self$y), 
+                                                predicted =  c(y_pred))
+                           score_val = Metrics::auc(actual = c(self$y_val), 
+                                                    predicted =  c(y_pred_val))
+                           cat("epoch: ", epoch+1, " AUC:", round(score,6), ' AUC_val:', 
+                               round(score_val,6), "\n")
+                         }    
+                       ))
+
 # overwrite keras:::KerasMetricsCallback class
 KerasMetricsCallback_custom <- 
   R6::R6Class("KerasMetricsCallback",

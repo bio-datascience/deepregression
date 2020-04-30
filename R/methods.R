@@ -201,6 +201,7 @@ fitted.deepregression <- function(
 #' @param view_metrics logical, whether to trigger the Viewer in RStudio / Browser.
 #' @param patience integer, number of rounds after which early stopping is done.
 #' @param save_weights logical, whether to save weights in each epoch.
+#' @param auc_callback logical, whether to use a callback for AUC
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
 #' @export
@@ -213,6 +214,8 @@ fit.deepregression <- function(
   view_metrics = TRUE,
   patience = 20,
   save_weights = FALSE,
+  auc_callback = FALSE,
+  val_data = NULL,
   ...
 )
 {
@@ -227,6 +230,19 @@ fit.deepregression <- function(
   if(early_stopping)
     this_callbacks <- append(this_callbacks, 
                              callback_early_stopping(patience = patience))
+  
+  if(auc_callback){
+    
+    if(is.null(val_data)) stop("Must provide validation data via argument val_data.")
+    if(is.data.frame(val_data[[1]])) val_data[[1]] <- as.list(val_data[[1]])
+    val_data_processed <- prepare_data(x, val_data[[1]], pred=TRUE)
+    
+    auc_cb <- auc_roc$new(training = list(unname(x$init_params$input_cov), x$init_params$y),
+                          validation = list(unname(val_data_processed), val_data[[2]]))
+    this_callbacks <- append(this_callbacks,
+                             auc_cb)
+    verbose <- FALSE
+  }
   # if(monitor_weights){
   #   # object$history <- WeightHistory$new()
   #   weight_callback <- callback_lambda(
