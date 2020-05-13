@@ -19,6 +19,9 @@ mix_dist_maker(
 the linear predictor into the parameters of the distributions.
 Should be of length #parameters of \code{dist}}
 }
+\value{
+returns function than can be used as argument \code{dist\_fun} for
+}
 \description{
 generate mixture distribution of same family
 }

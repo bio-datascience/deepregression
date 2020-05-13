@@ -157,7 +157,7 @@ prepare_data <- function(
 #' @rdname methodDR
 #'
 predict.deepregression <- function(
-  x,
+  object,
   newdata = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
@@ -166,12 +166,12 @@ predict.deepregression <- function(
 {
 
   if(is.null(newdata)){
-    yhat <- x$model(unname(x$init_params$input_cov))
+    yhat <- object$model(unname(object$init_params$input_cov))
   }else{
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(x, newdata, pred=TRUE)
-    yhat <- x$model(newdata_processed)
+    newdata_processed <- prepare_data(object, newdata, pred=TRUE)
+    yhat <- object$model(newdata_processed)
   }
 
 
@@ -185,15 +185,18 @@ predict.deepregression <- function(
 #' @rdname methodDR
 #'
 fitted.deepregression <- function(
-  x, apply_fun = tfd_mean, ...
+  object, apply_fun = tfd_mean, ...
 )
 {
   return(
-    predict.deepregression(x, apply_fun=apply_fun, ...)
+    predict.deepregression(object, apply_fun=apply_fun, ...)
   )
 }
 
-
+#' @export
+fit <- function (x, ...) {
+  UseMethod("fit", x)
+}
 
 #' @param x a deepregresison object.
 #' @param early_stopping logical, whether early stopping should be user.
@@ -204,6 +207,7 @@ fitted.deepregression <- function(
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
+#' 
 #' @export
 #' @rdname methodDR
 #'
@@ -285,14 +289,15 @@ fit.deepregression <- function(
 #' @rdname methodDR
 #'
 coef.deepregression <- function(
-  x,
-  variational = FALSE
+  object,
+  variational = FALSE,
+  ...
 )
 {
-  nrparams <- length(x$init_params$parsed_formulae_contents)
-  layer_names <- sapply(x$model$layers, "[[", "name")
+  nrparams <- length(object$init_params$parsed_formulae_contents)
+  layer_names <- sapply(object$model$layers, "[[", "name")
   lret <- vector("list", nrparams)
-  names(lret) <- x$init_params$param_names
+  names(lret) <- object$init_params$param_names
   for(i in 1:nrparams){
     sl <- paste0("structured_linear_",i)
     slas <- paste0("structured_lasso_",i)
@@ -303,14 +308,14 @@ coef.deepregression <- function(
 
     lret[[i]]$structured_linear <-
       if(sl %in% layer_names)
-        x$model$get_layer(sl)$get_weights()[[1]] else
+        object$model$get_layer(sl)$get_weights()[[1]] else
           NULL
     lret[[i]]$structured_lasso <-
       if(slas %in% layer_names)
-        x$model$get_layer(slas)$get_weights()[[1]] else
+        object$model$get_layer(slas)$get_weights()[[1]] else
           NULL
     if(snl %in% layer_names){
-      cf <- x$model$get_layer(snl)$get_weights()
+      cf <- object$model$get_layer(snl)$get_weights()
       if(length(cf)==2 & variational){
         lret[[i]]$structured_nonlinear <-  cf[[1]]
       }else{
@@ -327,9 +332,12 @@ coef.deepregression <- function(
 
 #' @export
 #' @rdname methodDR
+#' @param x a \code{deepregression} model
+#' @param ... unused
 #'
 print.deepregression <- function(
-  x
+  x,
+  ...
 )
 {
   print(x$model)
@@ -490,6 +498,11 @@ mean.deepregression <- function(
   predict.deepregression(x, newdata = data, apply_fun = tfd_mean, ...)
 }
 
+#' @export
+sd <- function (x, ...) {
+  UseMethod("sd", x)
+}
+
 #' standard deviation of model fit
 #' 
 #' @export
@@ -502,6 +515,11 @@ sd.deepregression <- function(
 )
 {
   predict.deepregression(x, newdata = data, apply_fun = tfd_stddev, ...)
+}
+
+#' @export
+quantile <- function (x, ...) {
+  UseMethod("quantile", x)
 }
 
 #' quantile of fitted values

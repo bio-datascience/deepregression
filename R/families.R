@@ -323,7 +323,7 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
 #' Should be of length #parameters of \code{dist}
 #' @return returns function than can be used as argument \code{dist\_fun} for 
 #' @export
-#' \code{deepregression}
+#' 
 mix_dist_maker <- function(
   dist = tfd_normal, 
   nr_comps = 3,
@@ -432,7 +432,7 @@ multinorm_maker <- function(dim = 2,
       mat <- tf$concat(lapply(ind_cov-dim, function(i) mat[,i,drop=FALSE]),1L)
       # mat[,ind_cov-dim,drop=FALSE]
       expmat <- tf$expand_dims(mat, 2L)
-      resexpmat <- tf$reshape(expmat, shape = list(tf$shape(expmat)[1],
+      resexpmat <- tf$reshape(expmat, shape = list(as.integer(tf$shape(expmat)[1]),
                                                    as.integer(dim), 
                                                    as.integer(dim)))
       

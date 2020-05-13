@@ -8,12 +8,12 @@ deepregression(
   y,
   list_of_formulae,
   list_of_deep_models,
-  family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar", "cauchy", "chi2",
-    "chi", "exponential", "gamma_gamma", "gamma", "gammar", "gumbel", "half_cauchy",
-    "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian", "laplace",
-    "log_normal", "logistic", "multinomial", "multinoulli", "negbinom", "pareto",
-    "poisson", "poisson_lograte", "student_t", "student_t_ls", "truncated_normal",
-    "uniform", "zip"),
+  family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar", "cauchy",
+    "chi2", "chi", "exponential", "gamma_gamma", "gamma", "gammar", "gumbel",
+    "half_cauchy", "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian",
+    "laplace", "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
+    "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
+    "truncated_normal", "uniform", "zip"),
   train_together = FALSE,
   data,
   df = NULL,
@@ -35,6 +35,7 @@ deepregression(
   prior_fun = prior_trainable,
   null.space.penalty = variational,
   ind_fun = function(x) tfd_independent(x),
+  extend_output_dim = 0,
   ...
 )
 }
@@ -104,7 +105,7 @@ verison of the network}
 \item{prior_fun}{function defining the prior function for the variational
 verison of the network}
 
-\item{...}{further arguments passed to the \code{deepRegression_init} function}
+\item{...}{further arguments passed to the \code{deepregression\_init} function}
 
 \item{validation_spit}{percentage of training data used for validation. 
 Per default 0.2.}
@@ -114,6 +115,8 @@ Fitting Deep Distributional Regression
 }
 \examples{
 library(deepregression)
+try(david <- tfd_normal(0,1), silent = TRUE)
+keras::use_implementation("tensorflow")
 
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")

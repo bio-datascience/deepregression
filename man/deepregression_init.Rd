@@ -32,7 +32,8 @@ deepregression_init(
   output_dim = 1,
   mixture_dist = FALSE,
   split_fun = split_model,
-  ind_fun = function(x) x
+  ind_fun = function(x) x,
+  extend_output_dim = 0
 )
 }
 \arguments{

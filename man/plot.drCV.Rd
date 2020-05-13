@@ -11,6 +11,8 @@
 
 \item{what}{character indicating what to plot (currently supported 'loss'
 or 'weights')}
+
+\item{...}{further arguments passed to \code{matplot}}
 }
 \description{
 Plot CV results from deepregression

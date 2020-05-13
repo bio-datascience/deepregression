@@ -48,13 +48,20 @@
 #' verison of the network
 #' @param prior_fun function defining the prior function for the variational
 #' verison of the network
-#' @param ... further arguments passed to the \code{deepRegression_init} function
+#' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
-#' @export deepregression
+#' 
+#' @importFrom keras fit
+#' @importFrom graphics abline filled.contour matplot par points
+#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var 
+#' 
+#' @export 
 #'
 #' @examples
 #' library(deepregression)
+#' try(david <- tfd_normal(0,1), silent = TRUE)
+#' keras::use_implementation("tensorflow")
 #' 
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
@@ -164,6 +171,11 @@ deepregression <- function(
   if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
+  # check monitor metric for auc
+  if("auc" %in% monitor_metric)
+    if(length(monitor_metric)==1)
+      monitor_metric <- auc_metric else
+        warning("If auc is chosen as metric, it must be the only specified metric.")
   
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
@@ -193,7 +205,7 @@ deepregression <- function(
     if(length(list_of_deep_models) > 1)
       stop("If train_together=TRUE, a list with", 
            " only one deep learning model should be provided.")
-    units_last_layer <- as.list(body(list_of_deep_models[[1]])[[3]])$units
+    units_last_layer <- as.integer(as.list(body(list_of_deep_models[[1]])[[3]])$units)
     if(units_last_layer != nr_params)
       stop("The number of units in the last layer of the network ",
            "must be equal to the number of parameters.")
@@ -364,7 +376,7 @@ deepregression <- function(
 #' (list length between 0 and number of parameters)
 #' @param list_deep list of deep models to be used
 #' (list length between 0 and number of parameters)
-#' @export deepregression_init
+#' @export 
 #'
 deepregression_init <- function(
   n_obs,
@@ -425,9 +437,9 @@ deepregression_init <- function(
     lapply(param_list, function(nc){
       if(sum(unlist(nc))==0) return(NULL) else{
         if(is.list(nc) & length(nc)>1){ 
-          layer_input(shape = list(sum(unlist(nc))))
+          layer_input(shape = list(as.integer(sum(unlist(nc)))))
         }else if(is.list(nc) & length(nc)==1){
-          layer_input(shape = as.list(nc[[1]]))
+          layer_input(shape = as.list(as.integer(nc[[1]])))
         }else stop("Not implemented yet.")
       }
     })
@@ -437,7 +449,7 @@ deepregression_init <- function(
     if(nc==0) return(NULL) else
       # if(!is.null(list_structured[[i]]) & nc > 1)
         # nc>1 will cause problems when implementing ridge/lasso
-          layer_input(shape = list(nc))
+          layer_input(shape = list(as.integer(nc)))
   })
 
   if(!is.null(orthogX)){
@@ -445,8 +457,9 @@ deepregression_init <- function(
       
       x = orthogX[[i]]
       if(is.null(x) | is.null(inputs_deep[[i]])) return(NULL) else{
-      lapply(x, function(y){
-        if(is.null(y) || y==0) return(NULL) else return(layer_input(shape = list(y)))})
+      lapply(x, function(xx){
+        if(is.null(xx) || xx==0) return(NULL) else 
+          return(layer_input(shape = list(as.integer(xx))))})
     }
     })
   }
@@ -471,7 +484,7 @@ deepregression_init <- function(
                                      l1 = tf$keras$regularizers$l1(l=lambda_lasso)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim[i], 
+                                                units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l1,
@@ -482,7 +495,7 @@ deepregression_init <- function(
                                      l2 = tf$keras$regularizers$l2(l=lambda_ridge)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim[i], 
+                                                units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l2,
@@ -494,7 +507,7 @@ deepregression_init <- function(
                                                                        l2=lambda_ridge)
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim[i], 
+                                                units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l12,
@@ -504,7 +517,7 @@ deepregression_init <- function(
                                    }else{
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
-                                                units = output_dim[i], 
+                                                units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 name = paste0("structured_linear_",
@@ -577,7 +590,7 @@ deepregression_init <- function(
     
     # function for split deep model parts
     split_fun <- function(x)
-      tf$split(x, num_or_size_splits = nr_params, axis = 1L)
+      tf$split(x, num_or_size_splits = as.integer(nr_params), axis = 1L)
 
     # apply splitting
     deep_parts <- layer_lambda(list_deep_ontop[[1]](deep_parts[[1]]), 
@@ -624,7 +637,7 @@ deepregression_init <- function(
                                          axis = 1L)
                                 })
     list_pred[[1]] <- list_pred[[1]] %>% 
-      dense_layer(units = mixture_dist, 
+      dense_layer(units = as.integer(mixture_dist), 
                   activation = "softmax", 
                   use_bias = FALSE)
     preds <- layer_concatenate(list_pred)
@@ -670,7 +683,7 @@ deepregression_init <- function(
     # }else{
 
       out <- preds %>%
-        layer_distribution_lambda(dist_fun) 
+        tfprobability::layer_distribution_lambda(dist_fun) 
 
     # }
 

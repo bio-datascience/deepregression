@@ -14,13 +14,27 @@
 \alias{quantile.deepregression}
 \title{Generic functions for deepregression models}
 \usage{
-\method{plot}{deepregression}(x, which = NULL, which_param = 1, plot = TRUE, use_posterior = FALSE, ...)
+\method{plot}{deepregression}(
+  x,
+  which = NULL,
+  which_param = 1,
+  plot = TRUE,
+  use_posterior = FALSE,
+  grid_length = 40,
+  ...
+)
 
 prepare_data(x, data, pred = FALSE)
 
-\method{predict}{deepregression}(x, newdata = NULL, apply_fun = tfd_mean, convert_fun = as.matrix, ...)
+\method{predict}{deepregression}(
+  object,
+  newdata = NULL,
+  apply_fun = tfd_mean,
+  convert_fun = as.matrix,
+  ...
+)
 
-\method{fitted}{deepregression}(x, apply_fun = tfd_mean, ...)
+\method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
 
 \method{fit}{deepregression}(
   x,
@@ -29,12 +43,14 @@ prepare_data(x, data, pred = FALSE)
   view_metrics = TRUE,
   patience = 20,
   save_weights = FALSE,
+  auc_callback = FALSE,
+  val_data = NULL,
   ...
 )
 
-\method{coef}{deepregression}(x, variational = FALSE)
+\method{coef}{deepregression}(object, variational = FALSE, ...)
 
-print.deepregression(x)
+print.deepregression(x, ...)
 
 cv(
   x,
@@ -45,12 +61,13 @@ cv(
   cv_folds = NULL,
   stop_if_nan = TRUE,
   mylapply = lapply,
+  save_weights = FALSE,
   ...
 )
 
 mean.deepregression(x, data, ...)
 
-sd.deepregression(x, data, ...)
+\method{sd}{deepregression}(x, data, ...)
 
 \method{quantile}{deepregression}(x, data, value, ...)
 }
@@ -83,6 +100,8 @@ The plot then shows the mean curve +- 2 times sd.}
 \item{patience}{number of patience for early stopping}
 
 \item{save_weights}{logical, whether to save weights in each epoch.}
+
+\item{auc_callback}{logical, whether to use a callback for AUC}
 
 \item{cv_folds}{see \code{deepregression}}
 

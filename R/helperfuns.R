@@ -16,7 +16,7 @@ sparse_mat_to_tensor <- function(X)
   i = X@i
   tf$SparseTensor(indices = lapply(1:length(i), function(ind) c(i[ind], j[ind])),
                   values = X@x,
-                  dense_shape = X@Dim)
+                  dense_shape = as.integer(X@Dim))
 
 }
 
@@ -492,14 +492,16 @@ make_cv_list_simple <- function(data_size, folds, seed = 42, shuffle = TRUE)
 
 }
 
-extract_cv_result <- function(res){
+extract_cv_result <- function(res, name_loss = "loss", name_val_loss = "val_loss"){
 
   losses <- sapply(res, "[[", "metrics")
-  trainloss <- data.frame(losses[1,])
-  validloss <- data.frame(losses[2,])
+  trainloss <- data.frame(losses[name_loss,])
+  validloss <- data.frame(losses[name_val_loss,])
   weightshist <- lapply(res, "[[", "weighthistory")
 
-  return(list(trainloss=trainloss,validloss=validloss,weight=weightshist))
+  return(list(trainloss=trainloss,
+              validloss=validloss,
+              weight=weightshist))
 
 }
 
@@ -509,6 +511,7 @@ extract_cv_result <- function(res){
 #' @param x \code{drCV} object returned by \code{cv.deepregression}
 #' @param what character indicating what to plot (currently supported 'loss'
 #' or 'weights')
+#' @param ... further arguments passed to \code{matplot}
 #'
 #' @export
 #'

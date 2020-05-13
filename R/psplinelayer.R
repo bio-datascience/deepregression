@@ -219,7 +219,7 @@ layer_spline <- function(object,
     
     args <- c(list(input_shape = input_shape),
               name = name,
-              units = 1,
+              units = 1L,
               trainable = trainable,
               kernel_regularizer=regul,
               use_bias=use_bias,
@@ -230,7 +230,7 @@ layer_spline <- function(object,
       class <- tfprobability:::tfp$layers$DenseVariational 
       args$make_posterior_fn = posterior_fun
       args$make_prior_fn = function(kernel_size,
-                                    bias_size = 0,
+                                    bias_size = 0L,
                                     dtype) prior_pspline(kernel_size = kernel_size,
                                                          bias_size = bias_size,
                                                          dtype = 'float32',
@@ -351,7 +351,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
   name <- "structured_nonlinear"
   if(!is.null(nr)) name <- paste(name, nr, sep="_")
 
-  layer_spline(input_shape = list(params),
+  layer_spline(input_shape = list(as.integer(params)),
                # the one is just an artifact from concise
                name = name,
                lambdas = lambdas,
