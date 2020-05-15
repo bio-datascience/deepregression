@@ -1,3 +1,5 @@
+normalize_callbacks <- keras:::normalize_callbacks
+
 WeightHistory <- R6::R6Class("WeightHistory",
                              inherit = KerasCallback,
                              
@@ -39,9 +41,9 @@ auc_roc <- R6::R6Class("AUC",
                            self$losses <- c(self$losses, logs[["loss"]])
                            y_pred <- as.matrix(tfd_mean(self$model(self$x)))
                            y_pred_val <- as.matrix(tfd_mean(self$model(self$x_val)))
-                           score = Metrics::auc(actual = c(self$y), 
+                           score = auc(actual = c(self$y), 
                                                 predicted =  c(y_pred))
-                           score_val = Metrics::auc(actual = c(self$y_val), 
+                           score_val = auc(actual = c(self$y_val), 
                                                     predicted =  c(y_pred_val))
                            cat("epoch: ", epoch+1, " AUC:", round(score,6), ' AUC_val:', 
                                round(score_val,6), "\n")
@@ -60,10 +62,10 @@ auc.tf.out <- function(y_true, y_pred) {
   
   return(tf$numpy_function(func = auc.numpy.out, 
                            inp = c(y_true,y_pred), 
-                           Tout = tensorflow::tf$double))
+                           Tout = tf$double))
 }
 
-auc_metric <- keras::custom_metric(name = "auc", metric_fn = auc.tf.out)
+auc_metric <- custom_metric(name = "auc", metric_fn = auc.tf.out)
 ################################################################################################
 
 # overwrite keras:::KerasMetricsCallback class
@@ -108,7 +110,7 @@ KerasMetricsCallback_custom <-
                     self$on_metrics(logs, 0.5)
                   }
                   
-                  if (tfruns::is_run_active()) {
+                  if (is_run_active()) {
                     self$write_params(self$params)
                     self$write_model_info(self$model)
                   }
@@ -167,10 +169,10 @@ KerasMetricsCallback_custom <-
                     
                     # create the metrics_viewer or update if we already have one
                     if (is.null(self$metrics_viewer)) {
-                      self$metrics_viewer <- tfruns::view_run_metrics(metrics)
+                      self$metrics_viewer <- view_run_metrics(metrics)
                     }
                     else {
-                      tfruns::update_run_metrics(self$metrics_viewer, metrics)
+                      update_run_metrics(self$metrics_viewer, metrics)
                     }
                     
                     # pump events
@@ -178,7 +180,7 @@ KerasMetricsCallback_custom <-
                   }
                   
                   # record metrics
-                  tfruns::write_run_metadata("metrics", metrics)
+                  write_run_metadata("metrics", metrics)
                   
                 },
                 
@@ -205,7 +207,7 @@ KerasMetricsCallback_custom <-
                   properties$validation_samples <- params$validation_samples
                   properties$epochs <- params$epochs
                   properties$batch_size <- params$batch_size
-                  tfruns::write_run_metadata("properties", properties)
+                  write_run_metadata("properties", properties)
                 },
                 
                 write_model_info = function(model) {
@@ -221,7 +223,7 @@ KerasMetricsCallback_custom <-
                       model_info$optimizer <- py_str(optimizer)
                       model_info$learning_rate <- k_eval(optimizer$lr)                     
                     }
-                    tfruns::write_run_metadata("properties", model_info)
+                    write_run_metadata("properties", model_info)
                   }, error = function(e) {
                     warning("Unable to log model info: ", e$message, call. = FALSE)
                   })
@@ -235,5 +237,5 @@ normalize_callbacks_with_metrics_custom <- function (view_metrics, callbacks)
   if (!is.null(callbacks) && !is.list(callbacks))
     callbacks <- list(callbacks)
   callbacks <- append(callbacks, KerasMetricsCallback_custom$new(view_metrics))
-  keras:::normalize_callbacks(callbacks)
+  normalize_callbacks(callbacks)
 }

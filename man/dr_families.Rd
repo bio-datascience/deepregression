@@ -13,6 +13,14 @@ make_tfd_dist(
 }
 \arguments{
 \item{family}{character vector}
+
+\item{add_const}{small positive constant to stabilize calculations}
+
+\item{return_nrparams}{logical, if TRUE, only the number of distribution parameters is
+returned; else (FALSE) the \code{dist_fun} required in \code{deepregression}}
+
+\item{trafo_list}{list of transformations for each distribution parameter. 
+Per default the transformation listed in details is applied.}
 }
 \description{
 Families for deepregression

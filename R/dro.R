@@ -23,8 +23,8 @@ DRO <- function(X, df = 4, lambda = NULL, dmat = NULL, # weights,
                 k = 100, q = 3, ...) {
 
   svdtype <- match.arg(svdtype)
-  if(svdtype=="rsvd") svd <- function(A, nu, nv) rsvd(A = A, nu = nu, nv = nv,
-                                                      k = 100, q = 3, ...)
+  if(svdtype=="rsvd") svd <- function(A, nu, nv) rsvd::rsvd(A = A, nu = nu, nv = nv,
+                                                            k = 100, q = 3, ...)
 
   stopifnot(xor(is.null(df), is.null(lambda)))
   if (!is.null(df)) {

@@ -50,7 +50,7 @@ prepare_data(x, data, pred = FALSE)
 
 \method{coef}{deepregression}(object, variational = FALSE, ...)
 
-print.deepregression(x, ...)
+\method{print}{deepregression}(x, ...)
 
 cv(
   x,
@@ -65,14 +65,14 @@ cv(
   ...
 )
 
-mean.deepregression(x, data, ...)
+\method{mean}{deepregression}(x, data, ...)
 
 \method{sd}{deepregression}(x, data, ...)
 
 \method{quantile}{deepregression}(x, data, value, ...)
 }
 \arguments{
-\item{x}{deepregression object}
+\item{x}{a deepregression object}
 
 \item{which}{which effect to plot, default selects all.}
 
@@ -88,8 +88,24 @@ as weights, where the first entry is a vector of mean and sd
 for each network weight. The sd is transformed using the \code{exp} function.
 The plot then shows the mean curve +- 2 times sd.}
 
-\item{...}{further arguments passed to 
-\code{keras:::fit.keras.engine.training.Model}}
+\item{grid_length}{the length of an equidistant grid at which a two-dimensional function
+is evaluated for plotting.}
+
+\item{...}{arguments passed to the \code{predict} function}
+
+\item{data}{either \code{NULL} or a new data set}
+
+\item{pred}{logical, where the data corresponds to a prediction task}
+
+\item{object}{a deepregression model}
+
+\item{newdata}{optional new data, either data.frame or list}
+
+\item{apply_fun}{function applied to fitted distribution,
+per default \code{tfd_mean}}
+
+\item{convert_fun}{how should the resulting tensor be converted,
+per default \code{as.matrix}}
 
 \item{early_stopping}{logical, whether early stopping should be user.}
 
@@ -103,13 +119,20 @@ The plot then shows the mean curve +- 2 times sd.}
 
 \item{auc_callback}{logical, whether to use a callback for AUC}
 
+\item{val_data}{optional specified validation data}
+
+\item{variational}{logical, if TRUE, the function takes into account
+that coefficients have both a mean and a variance}
+
+\item{print_folds}{whether to print the current fold}
+
 \item{cv_folds}{see \code{deepregression}}
 
 \item{stop_if_nan}{logical; whether to stop CV if NaN values occur}
 
 \item{mylapply}{lapply function to be used; defaults to \code{lapply}}
 
-\item{printfolds}{whether to print the current fold}
+\item{value}{the quantile value(s)}
 }
 \value{
 Returns an object \code{drCV}, a list, one list element for each fold
@@ -118,11 +141,23 @@ containing the model fit and the \code{weighthistory}.
 \description{
 Generic functions for deepregression models
 
+Function to prepare data for deepregression use
+
+Predict based on a deepregression object
+
+Function to extract fitted distribution
+
+Fit a deepregression model
+
+Extract layer weights / coefficients from model
+
+Print function for deepregression model
+
 Cross-validation for deepgression objects
 
 mean of model fit
 
-standard deviation of model fit
+Standard deviation of fit distribution
 
-quantile of fitted values
+Calculate the distribution quantiles
 }

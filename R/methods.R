@@ -5,13 +5,17 @@
 #' @param which_param integer of length 1.
 #' Corresponds to the distribution parameter for 
 #' which the effects should be plotted.
+#' @param plot logical, if FALSE, only the data for plotting is returned
 #' @param use_posterior logical; if \code{TRUE} it is assumed that
 #' the strucuted_nonlinear layer has stored a list of length two
 #' as weights, where the first entry is a vector of mean and sd
 #' for each network weight. The sd is transformed using the \code{exp} function.
 #' The plot then shows the mean curve +- 2 times sd.
+#' @param grid_length the length of an equidistant grid at which a two-dimensional function
+#' is evaluated for plotting.
 #' @param ... further arguments, passed to fit, plot or predict function
 #'
+#' @method plot deepregression
 #' @export
 #' @rdname methodDR
 #'
@@ -81,13 +85,15 @@ plot.deepregression <- function(
       if(nrcols==1)
       {
         if(use_posterior){
-          plot(mean_partial_effect[order(value)] ~ sort(value),
-               data = plotData[[w]],
+          plot(plotData[[w]]$mean_partial_effect[order(value)] ~ 
+                          sort(plotData[[w]]$value),
                main = paste0("s(", nam, ")"),
                xlab = nam,
                ylab = "partial effect",
-               ylim = c(min(mean_partial_effect - 2*sd_partial_effect),
-                        max(mean_partial_effect + 2*sd_partial_effect)),
+               ylim = c(min(plotData[[w]]$mean_partial_effect - 
+                              2*plotData[[w]]$sd_partial_effect),
+                        max(plotData[[w]]$mean_partial_effect + 
+                              2*plotData[[w]]$sd_partial_effect)),
                ...)
           with(plotData[[w]], {
             points((mean_partial_effect + 2 * sd_partial_effect)[order(value)] ~
@@ -137,7 +143,14 @@ plot.deepregression <- function(
 }
 
 
+#' Function to prepare data for deepregression use
+#' 
 #' @export
+#' 
+#' @param x a deepregression object
+#' @param data a data.frame or list
+#' @param pred logical, where the data corresponds to a prediction task
+#' 
 #' @rdname methodDR
 #'
 prepare_data <- function(
@@ -152,7 +165,15 @@ prepare_data <- function(
   return(newdata_processed)
 }
 
-
+#' Predict based on a deepregression object
+#' 
+#' @param object a deepregression model
+#' @param newdata optional new data, either data.frame or list
+#' @param apply_fun which function to apply to the predicted distribution,
+#' per default \code{tfd_mean}, i.e., predict the mean of the distribution
+#' @param convert_fun how should the resulting tensor be converted,
+#' per default \code{as.matrix}
+#'
 #' @export
 #' @rdname methodDR
 #'
@@ -181,6 +202,14 @@ predict.deepregression <- function(
 
 }
 
+
+#' Function to extract fitted distribution
+#' 
+#' @param object a deepregression object
+#' @param apply_fun function applied to fitted distribution,
+#' per default \code{tfd_mean}
+#' @param ... further arguments passed to the predict function
+#' 
 #' @export
 #' @rdname methodDR
 #'
@@ -193,11 +222,18 @@ fitted.deepregression <- function(
   )
 }
 
+#' Generic fit function
+#' 
+#' @param x object
+#' @param ... further arguments passed to the class-specific function
+#' 
 #' @export
 fit <- function (x, ...) {
   UseMethod("fit", x)
 }
 
+#' Fit a deepregression model
+#'
 #' @param x a deepregresison object.
 #' @param early_stopping logical, whether early stopping should be user.
 #' @param verbose logical, whether to print losses during training.
@@ -205,9 +241,12 @@ fit <- function (x, ...) {
 #' @param patience integer, number of rounds after which early stopping is done.
 #' @param save_weights logical, whether to save weights in each epoch.
 #' @param auc_callback logical, whether to use a callback for AUC
+#' @param val_data optional specified validation data
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
 #' 
+#' 
+#' @method fit deepregression
 #' @export
 #' @rdname methodDR
 #'
@@ -285,6 +324,13 @@ fit.deepregression <- function(
   invisible(ret)
 }
 
+#' Extract layer weights / coefficients from model
+#'
+#' @param object a deepregression model
+#' @param variational logical, if TRUE, the function takes into account
+#' that coefficients have both a mean and a variance
+#'
+#' @method coef deepregression
 #' @export
 #' @rdname methodDR
 #'
@@ -330,10 +376,14 @@ coef.deepregression <- function(
 
 }
 
+#' Print function for deepregression model
+#' 
 #' @export
 #' @rdname methodDR
 #' @param x a \code{deepregression} model
 #' @param ... unused
+#' 
+#' @method print deepregression
 #'
 print.deepregression <- function(
   x,
@@ -350,7 +400,7 @@ print.deepregression <- function(
 #' @param verbose whether to print training in each fold
 #' @param patience number of patience for early stopping
 #' @param plot whether to plot the resulting losses in each fold
-#' @param printfolds whether to print the current fold
+#' @param print_folds whether to print the current fold
 #' @param mylapply lapply function to be used; defaults to \code{lapply}
 #' @param save_weights logical, whether to save weights in each epoch.
 #' @param cv_folds see \code{deepregression}
@@ -489,6 +539,13 @@ cv <- function(
 #' @export
 #' @rdname methodDR
 #'
+#' @param x a deepregression model
+#' @param data optional data, a data.frame or list
+#' @param ... arguments passed to the predict function
+#' 
+#' @method mean deepregression
+#' 
+#'
 mean.deepregression <- function(
   x,
   data,
@@ -498,12 +555,22 @@ mean.deepregression <- function(
   predict.deepregression(x, newdata = data, apply_fun = tfd_mean, ...)
 }
 
+
+#' Generic sd function
+#' 
+#' @param x object
+#' @param ... further arguments passed to the class-specific function
+#' 
 #' @export
 sd <- function (x, ...) {
   UseMethod("sd", x)
 }
 
-#' standard deviation of model fit
+#' Standard deviation of fit distribution
+#' 
+#' @param x a deepregression object
+#' @param data either NULL or a new data set
+#' @param ... arguments passed to the \code{predict} function
 #' 
 #' @export
 #' @rdname methodDR
@@ -517,12 +584,22 @@ sd.deepregression <- function(
   predict.deepregression(x, newdata = data, apply_fun = tfd_stddev, ...)
 }
 
+#' Generic quantile function
+#' 
+#' @param x object
+#' @param ... further arguments passed to the class-specific function
+#' 
 #' @export
 quantile <- function (x, ...) {
   UseMethod("quantile", x)
 }
 
-#' quantile of fitted values
+#' Calculate the distribution quantiles
+#' 
+#' @param x a deepregression object
+#' @param data either \code{NULL} or a new data set
+#' @param value the quantile value(s) 
+#' @param ... arguments passed to the \code{predict} function
 #' 
 #' @export
 #' @rdname methodDR

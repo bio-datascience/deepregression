@@ -2,10 +2,10 @@ Package: deepregression
 Title: Fitting Deep Distributional Regression
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "Anonymous",
-           family = "Anonymous",
+    person(given = "David",
+           family = "Ruegamer",
            role = c("aut", "cre"),
-           email = "Anonymous.Anonymous@example.com")
+           email = "David.Ruegamer@gmail.com")
 Description: 
     This package allows for the specification of deep distributional regression models 
     which are fitted within a large neural network. Potential predictors can be modeled using 
@@ -31,8 +31,12 @@ Imports:
     R6,
     reticulate (>= 1.14),
     Matrix,
-    magrittr
+    magrittr,
+    Metrics,
+    tfruns,
+    methods
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
+StagedInstall: no 

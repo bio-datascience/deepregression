@@ -59,6 +59,11 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"uniform": }{uniform with upper and lower (both identity)}
 #'  \item{"zip":  }{Zero-inflated poisson distribution with }
 #' }
+#' @param add_const small positive constant to stabilize calculations
+#' @param return_nrparams logical, if TRUE, only the number of distribution parameters is
+#' returned; else (FALSE) the \code{dist_fun} required in \code{deepregression}
+#' @param trafo_list list of transformations for each distribution parameter. 
+#' Per default the transformation listed in details is applied.
 #' 
 #' @export
 #' @rdname dr_families
@@ -338,11 +343,11 @@ mix_dist_maker <- function(
   {
     
     mix = tfd_categorical(probs = probs)
-    comps = do.call(dist, params)
+    this_components = do.call(dist, params)
     
     res_dist <- tfd_mixture_same_family(
       mixture_distribution=mix,
-      components=comps
+      components_distribution=this_components
     )
     
     return(res_dist)
@@ -397,7 +402,9 @@ tfd_zip <- function(lambda, probs)
 #' 
 #' @param dim dimension of the multivariate normal distribution
 #' @param with_cov logical; whether or not to have a full covariance
-#' @param trafo_scale transformation function for the scale
+#' @param trafos_scale transformation function for the scale
+#' @param add_const small positive constant to stabilize calculations
+#' 
 multinorm_maker <- function(dim = 2, 
                             with_cov = TRUE,
                             trafos_scale = exp,

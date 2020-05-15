@@ -1,3 +1,5 @@
+k <- keras:::keras
+
 # splineLayer <- R6::R6Class("splineLayer",
 # 
 #                            lock_objects = FALSE,
@@ -177,11 +179,23 @@
 
 #' Wrapper function to create spline layer
 #'
-#' @param Model or layer object.
+#' @param object or layer object.
 #' @param name An optional name string for the layer (should be unique).
+#' @param trainable logical, whether the layer is trainable or not.
 #' @param input_shape Input dimensionality not including samples axis.
 #' @param lambdas vector of smoothing parameters
 #' @param Ps list of penalty matrices
+#' @param use_bias whether or not to use a bias in the layer. Default is FALSE.
+#' @param kernel_initializer function to initialize the kernel (weight). Default
+#' is "glorot_uniform".
+#' @param bias_initializer function to initialize the bias. Default is 0.
+#' @param variational logical, if TRUE, priors corresponding to the penalties
+#' and posteriors as defined in \code{posterior_fun} are created
+#' @param diffuse_scale diffuse scale prior for scalar weights
+#' @param posterior_fun function defining the variational posterior
+#' @param ... further arguments passed to \code{args} used in \code{create_layer}
+#' 
+#' 
 layer_spline <- function(object,
                          name = NULL,
                          trainable = TRUE,
@@ -192,8 +206,8 @@ layer_spline <- function(object,
                          kernel_initializer = 'glorot_uniform',
                          bias_initializer = 'zeros',
                          variational = FALSE,
+                         # prior_fun = NULL,
                          posterior_fun = NULL,
-                         prior_fun = NULL,
                          diffuse_scale = 1000,
                          ...) {
   
@@ -227,7 +241,7 @@ layer_spline <- function(object,
     
     if(variational){
       
-      class <- tfprobability:::tfp$layers$DenseVariational 
+      class <- tfprobability::tfp$layers$DenseVariational 
       args$make_posterior_fn = posterior_fun
       args$make_prior_fn = function(kernel_size,
                                     bias_size = 0L,
@@ -239,7 +253,7 @@ layer_spline <- function(object,
       
     }else{
       
-      class <- keras:::keras$layers$Dense
+      class <- k$layers$Dense
       args$kernel_initializer=kernel_initializer
       args$bias_initializer=bias_initializer
     
@@ -292,7 +306,8 @@ layer_spline <- function(object,
 
 #### get layer based on smoothCon object
 get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
-                              posterior_fun=NULL, prior_fun=NULL)
+                              posterior_fun=NULL#, prior_fun=NULL
+                              )
 {
 
   if(is.null(this_param)) return(NULL)
@@ -357,7 +372,6 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                lambdas = lambdas,
                Ps = Ps,
                variational = variational,
-               posterior_fun = posterior_fun,
-               prior_fun = prior_fun)
+               posterior_fun = posterior_fun)
 
 }

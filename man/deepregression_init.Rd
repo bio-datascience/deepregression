@@ -27,7 +27,6 @@ deepregression_init(
   prior = prior_trainable,
   orthog_fun = orthog,
   orthogX = NULL,
-  residual_projection = FALSE,
   kl_weight = 1/n_obs,
   output_dim = 1,
   mixture_dist = FALSE,
@@ -56,6 +55,59 @@ non-zero while the others must be zero.}
 
 \item{list_deep}{list of deep models to be used
 (list length between 0 and number of parameters)}
+
+\item{use_bias_in_structured}{logical, whether or not to use a bias in
+structured layer}
+
+\item{nr_params}{number of distribution parameters}
+
+\item{lss}{whether or not to model the whole distribution 
+(lss in the style of location, scale and shape approaches)}
+
+\item{train_together}{logical, whether or not to train distribution parameters
+within one network or using separete networks (the latter is the default)}
+
+\item{lambda_lasso}{penalty parameter for l1 penalty of structured layers}
+
+\item{lambda_ridge}{penalty parameter for l2 penalty of structured layers}
+
+\item{family}{family specifying the distribution that is modelled}
+
+\item{dist_fun}{a custom distribution applied to the last layer,
+see \code{\link{make_tfd_dist}} for more details on how to construct
+a custom distribution function.}
+
+\item{variational}{logical value specifying whether or not to use
+variational inference. If \code{TRUE}, details must be passed to
+the via the ellipsis to the initialization function}
+
+\item{weights}{observation weights used in the likelihood}
+
+\item{learning_rate}{learning rate for optimizer}
+
+\item{optimizer}{optimizer used (defaults to adam)}
+
+\item{monitor_metric}{see \code{?deepregression}}
+
+\item{posterior}{function defining the posterior}
+
+\item{prior}{function defining the prior}
+
+\item{orthog_fun}{function defining the orthogonalization}
+
+\item{orthogX}{vector of columns defining the orthgonalization layer}
+
+\item{kl_weight}{KL weights for variational networks}
+
+\item{output_dim}{dimension of the output (> 1 for multivariate outcomes)}
+
+\item{mixture_dist}{see \code{?deepregression}}
+
+\item{split_fun}{see \code{?deepregression}}
+
+\item{ind_fun}{see \code{?deepregression}}
+
+\item{extend_output_dim}{see \code{?deepregression}}
 }
 \description{
 Initializing Deep Distributional Regression Models

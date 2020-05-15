@@ -16,13 +16,16 @@ layer_spline(
   bias_initializer = "zeros",
   variational = FALSE,
   posterior_fun = NULL,
-  prior_fun = NULL,
   diffuse_scale = 1000,
   ...
 )
 }
 \arguments{
+\item{object}{or layer object.}
+
 \item{name}{An optional name string for the layer (should be unique).}
+
+\item{trainable}{logical, whether the layer is trainable or not.}
 
 \item{input_shape}{Input dimensionality not including samples axis.}
 
@@ -30,7 +33,21 @@ layer_spline(
 
 \item{Ps}{list of penalty matrices}
 
-\item{Model}{or layer object.}
+\item{use_bias}{whether or not to use a bias in the layer. Default is FALSE.}
+
+\item{kernel_initializer}{function to initialize the kernel (weight). Default
+is "glorot_uniform".}
+
+\item{bias_initializer}{function to initialize the bias. Default is 0.}
+
+\item{variational}{logical, if TRUE, priors corresponding to the penalties
+and posteriors as defined in \code{posterior_fun} are created}
+
+\item{posterior_fun}{function defining the variational posterior}
+
+\item{diffuse_scale}{diffuse scale prior for scalar weights}
+
+\item{...}{further arguments passed to \code{args} used in \code{create_layer}}
 }
 \description{
 Wrapper function to create spline layer

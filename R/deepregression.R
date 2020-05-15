@@ -32,7 +32,7 @@
 #' if a single integer number is given, 
 #' a simple k-fold cross-validation is defined, where k is the supplied number.
 #' @param validation_data data for validation during training.
-#' @param validation_spit percentage of training data used for validation. 
+#' @param validation_split percentage of training data used for validation. 
 #' Per default 0.2.
 #' @param dist_fun a custom distribution applied to the last layer,
 #' see \code{\link{make_tfd_dist}} for more details on how to construct
@@ -48,13 +48,34 @@
 #' verison of the network
 #' @param prior_fun function defining the prior function for the variational
 #' verison of the network
+#' @param seed integer value used as a seed in data splitting
+#' @param mixture_dist integer either 0 or >= 2. If 0 (default), no mixture distribution is fitted.
+#' If >= 2, a network is constructed that outputs a multivariate response for each of the mixture 
+#' components.
+#' @param split_fun a function separating the deep neural network in two parts
+#' so that the orthogonalization can be applied to the first part before 
+#' applying the second network part; per default, the function \code{split_model} is
+#' used which assumes a dense layer as penultimate layer and separates the network
+#' into a first part without this last layer and a second part only consisting of a 
+#' single dense layer that is fed into the output layer
+#' @param null.space.penalty logical value;
+#' if TRUE, the null space will also be penalized for smooth effects. 
+#' Per default, this is equal to the value give in \code{variational}.
+#' @param ind_fun function applied to the model output before calculating the 
+#' log-likelihood. Per default independence is assumed by applying \code{tfd_independent}.
+#' @param extend_output_dim integer value >= 0 for extending the output dimension by an 
+#' additive constant. If set to a value > 0, a multivariate response with dimension
+#' \code{1 + extend_output_dim} is defined.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
 #' 
 #' @importFrom keras fit
+#' @importFrom Metrics auc
+#' @importFrom tfruns is_run_active view_run_metrics update_run_metrics write_run_metadata
 #' @importFrom graphics abline filled.contour matplot par points
-#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var 
+#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var
+#' @importFrom methods slotNames is
 #' 
 #' @export 
 #'
@@ -239,13 +260,13 @@ deepregression <- function(
   list_structured <- lapply(1:length(parsed_formulae_contents), function(i)
                             get_layers_from_s(parsed_formulae_contents[[i]], i,
                                               variational = variational,
-                                              posterior_fun = posterior_fun,
-                                              prior_fun = prior_fun
+                                              posterior_fun = posterior_fun#,
+                                              # prior_fun = prior_fun
                                               ))
   
   if(train_together){
     ncol_deep <- ncol_deep[[1]]
-    for(i in 2:nr_psarams)
+    for(i in 2:nr_params)
       parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
   }
 
@@ -376,6 +397,37 @@ deepregression <- function(
 #' (list length between 0 and number of parameters)
 #' @param list_deep list of deep models to be used
 #' (list length between 0 and number of parameters)
+#' @param use_bias_in_structured logical, whether or not to use a bias in
+#' structured layer
+#' @param nr_params number of distribution parameters 
+#' @param lss whether or not to model the whole distribution 
+#' (lss in the style of location, scale and shape approaches) 
+#' @param train_together logical, whether or not to train distribution parameters
+#' within one network or using separete networks (the latter is the default)
+#' @param lambda_lasso penalty parameter for l1 penalty of structured layers
+#' @param lambda_ridge penalty parameter for l2 penalty of structured layers
+#' @param family family specifying the distribution that is modelled
+#' @param dist_fun a custom distribution applied to the last layer,
+#' see \code{\link{make_tfd_dist}} for more details on how to construct
+#' a custom distribution function.
+#' @param variational logical value specifying whether or not to use
+#' variational inference. If \code{TRUE}, details must be passed to
+#' the via the ellipsis to the initialization function
+#' @param weights observation weights used in the likelihood 
+#' @param learning_rate learning rate for optimizer 
+#' @param optimizer optimizer used (defaults to adam)
+#' @param monitor_metric see \code{?deepregression}
+#' @param posterior function defining the posterior
+#' @param prior function defining the prior
+#' @param orthog_fun function defining the orthogonalization
+#' @param orthogX vector of columns defining the orthgonalization layer
+#' @param kl_weight KL weights for variational networks
+#' @param output_dim dimension of the output (> 1 for multivariate outcomes)
+#' @param mixture_dist see \code{?deepregression}
+#' @param split_fun see \code{?deepregression}
+#' @param ind_fun see \code{?deepregression}
+#' @param extend_output_dim see \code{?deepregression}
+#' 
 #' @export 
 #'
 deepregression_init <- function(
@@ -401,7 +453,6 @@ deepregression_init <- function(
   prior = prior_trainable,
   orthog_fun = orthog,
   orthogX = NULL,
-  residual_projection = FALSE,
   kl_weight = 1 / n_obs,
   output_dim = 1,
   mixture_dist = FALSE,
@@ -589,12 +640,12 @@ deepregression_init <- function(
                                     ox[[1]])
     
     # function for split deep model parts
-    split_fun <- function(x)
+    this_split_fun <- function(x)
       tf$split(x, num_or_size_splits = as.integer(nr_params), axis = 1L)
 
     # apply splitting
     deep_parts <- layer_lambda(list_deep_ontop[[1]](deep_parts[[1]]), 
-                               f = split_fun)
+                               f = this_split_fun)
     
     list_deep_ontop <- lapply(1:nr_params, function(i) function(obj) obj)
 

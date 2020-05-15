@@ -84,6 +84,9 @@ a simple k-fold cross-validation is defined, where k is the supplied number.}
 
 \item{validation_data}{data for validation during training.}
 
+\item{validation_split}{percentage of training data used for validation. 
+Per default 0.2.}
+
 \item{dist_fun}{a custom distribution applied to the last layer,
 see \code{\link{make_tfd_dist}} for more details on how to construct
 a custom distribution function.}
@@ -99,16 +102,37 @@ the via the ellipsis to the initialization function
 
 \item{monitor_metric}{Further metrics to monitor}
 
+\item{seed}{integer value used as a seed in data splitting}
+
+\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), no mixture distribution is fitted.
+If >= 2, a network is constructed that outputs a multivariate response for each of the mixture 
+components.}
+
+\item{split_fun}{a function separating the deep neural network in two parts
+so that the orthogonalization can be applied to the first part before 
+applying the second network part; per default, the function \code{split_model} is
+used which assumes a dense layer as penultimate layer and separates the network
+into a first part without this last layer and a second part only consisting of a 
+single dense layer that is fed into the output layer}
+
 \item{posterior_fun}{function defining the posterior function for the variational
 verison of the network}
 
 \item{prior_fun}{function defining the prior function for the variational
 verison of the network}
 
-\item{...}{further arguments passed to the \code{deepregression\_init} function}
+\item{null.space.penalty}{logical value;
+if TRUE, the null space will also be penalized for smooth effects. 
+Per default, this is equal to the value give in \code{variational}.}
 
-\item{validation_spit}{percentage of training data used for validation. 
-Per default 0.2.}
+\item{ind_fun}{function applied to the model output before calculating the 
+log-likelihood. Per default independence is assumed by applying \code{tfd_independent}.}
+
+\item{extend_output_dim}{integer value >= 0 for extending the output dimension by an 
+additive constant. If set to a value > 0, a multivariate response with dimension
+\code{1 + extend_output_dim} is defined.}
+
+\item{...}{further arguments passed to the \code{deepregression\_init} function}
 }
 \description{
 Fitting Deep Distributional Regression
