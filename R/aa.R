@@ -3,6 +3,9 @@
   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
 }
 
+reticulate::use_python(python = "/usr/bin/python3",
+                       required = TRUE)
+
 if(length(reticulate::virtualenv_list())==0)
   reticulate::virtualenv_create()
 
