@@ -3,6 +3,8 @@
   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
 }
 
+reticulate::py_config()
+
 if(!reticulate::py_module_available("tensorflow"))
 {
   
