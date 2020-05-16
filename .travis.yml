@@ -18,3 +18,5 @@ r_github_packages:
 # set a Linux system dependency
 apt_packages:
   - libxml2-dev
+# print installation log
+before_script: cat /home/travis/build/davidruegamer/deepregression/deepregression.Rcheck/00install.out
