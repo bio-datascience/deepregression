@@ -3,6 +3,9 @@
   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
 }
 
+if(length(reticulate::virtualenv_list())==0)
+  reticulate::virtualenv_create()
+
 if(!reticulate::py_module_available("tensorflow"))
 {
   
