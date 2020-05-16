@@ -11,8 +11,6 @@ r_github_packages:
   - r-lib/testthat
   - r-lib/covr
   - r-lib/pkgdown
-# Set one of your dependencies from CRAN
-r_packages: RTest
 # set a Linux system dependency
 apt_packages:
   - libxml2-dev
