@@ -1,9 +1,7 @@
 # Use R language
 language: r
-addons:
-  apt:
-    packages:
-    - python3.6
+install:
+  - sudo apt-get install -y python3.6
 #Define multiple R-versions, one from bioconductor
 r:
   - oldrel
