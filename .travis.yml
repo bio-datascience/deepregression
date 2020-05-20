@@ -10,6 +10,7 @@ r:
 addons:
   apt:
     packages:
+      - python2.7
       - python-numpy
       - python-scipy
       - python-virtualenv
