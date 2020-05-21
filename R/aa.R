@@ -3,8 +3,7 @@
   
   # check if TF is available
   # if not, 
-  if(!reticulate::py_module_available("tensorflow") | 
-     !reticulate::py_available())
+  if(!reticulate::py_available())
   {
     
     # first check if an env is available
@@ -15,10 +14,15 @@
       
     }
     
-    tensorflow::install_tensorflow(version = "2.0.0")
-    
-    # if(!reticulate::py_module_available("tfprobability"))
-    tfprobability::install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+    if(!reticulate::py_module_available("tensorflow"))
+    {
+      
+      tensorflow::install_tensorflow(version = "2.0.0")
+      
+      # if(!reticulate::py_module_available("tfprobability"))
+      tfprobability::install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+      
+    }
     
   }
   
