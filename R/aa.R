@@ -2,12 +2,8 @@
   reticulate::configure_environment(pkgname)
   
   # check if TF is available
-  is_TF_avail <- require(tensorflow)
-  if(class(is_TF_avail)=="try-error")
-    is_TF_avail <- FALSE
-  
   # if not, 
-  if(!is_TF_avail)
+  if(!reticulate::py_module_available("tensorflow"))
   {
     
     # first check if an env is available
@@ -18,11 +14,10 @@
       
     }
     
-    library(tensorflow)
-    install_tensorflow(version = "2.0.0")
-    library(tfprobability)
-    install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
-    suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
+    tensorflow::install_tensorflow(version = "2.0.0")
+    
+    # if(!reticulate::py_module_available("tfprobability"))
+    tfprobability::install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
     
   }
   
