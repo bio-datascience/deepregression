@@ -9,16 +9,23 @@
 # if(length(reticulate::virtualenv_list())==0)
 #   reticulate::virtualenv_create()
 # 
-# if(!reticulate::py_module_available("tensorflow"))
-# {
-#   
-#   library(tensorflow)
-#   try(install_tensorflow(version = "2.0.0")
-#   library(tfprobability)
-#   install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
-#   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
-#   
-# }
+if(!reticulate::py_module_available("tensorflow"))
+{
+
+  if(!reticulate::py_available()){
+    
+    reticulate::install_miniconda()
+    reticulate::use_miniconda(required = TRUE)
+    
+  }
+  
+  library(tensorflow)
+  try(install_tensorflow(version = "2.0.0")
+  library(tfprobability)
+  install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+  suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
+
+}
 
 # install_keras(tensorflow = "2.0")
 
