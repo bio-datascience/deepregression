@@ -24,7 +24,6 @@
       tfprobability::install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
       
     }
-    
   }
   
   # Use TF
