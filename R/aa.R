@@ -3,7 +3,8 @@
   
   # check if TF is available
   # if not, 
-  if(!reticulate::py_module_available("tensorflow"))
+  if(!reticulate::py_module_available("tensorflow") | 
+     !reticulate::py_available())
   {
     
     # first check if an env is available
