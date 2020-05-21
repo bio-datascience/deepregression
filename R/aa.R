@@ -9,7 +9,12 @@
 # if(length(reticulate::virtualenv_list())==0)
 #   reticulate::virtualenv_create()
 # 
-if(!reticulate::py_module_available("tensorflow"))
+
+is_TF_avail <- require(tensorflow)
+if(class(is_TF_avail)=="try-error")
+  is_TF_avail <- FALSE
+
+if(!is_TF_avail)
 {
 
   if(!reticulate::py_available()){
