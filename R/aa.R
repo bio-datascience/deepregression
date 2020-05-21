@@ -9,7 +9,7 @@
     # first check if an env is available
     if(!reticulate::py_available()){
       
-      if(lenght(list.files(reticulate:::miniconda_path_default()))==0)
+      if(length(list.files(reticulate:::miniconda_path()))==0)
         reticulate::install_miniconda()
       reticulate::use_miniconda(required = TRUE)
       
