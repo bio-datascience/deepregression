@@ -81,8 +81,6 @@
 #'
 #' @examples
 #' library(deepregression)
-#' try(david <- tfd_normal(0,1), silent = TRUE)
-#' keras::use_implementation("tensorflow")
 #' 
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")

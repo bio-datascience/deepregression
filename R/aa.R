@@ -1,45 +1,34 @@
 .onLoad <- function(libname, pkgname) {
   reticulate::configure_environment(pkgname)
-  suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
-}
-
-# reticulate::use_python(python = "/usr/bin/python3",
-#                        required = TRUE)
-# 
-# if(length(reticulate::virtualenv_list())==0)
-#   reticulate::virtualenv_create()
-# 
-
-is_TF_avail <- require(tensorflow)
-if(class(is_TF_avail)=="try-error")
-  is_TF_avail <- FALSE
-
-if(!is_TF_avail)
-{
-
-  if(!reticulate::py_available()){
+  
+  # check if TF is available
+  is_TF_avail <- require(tensorflow)
+  if(class(is_TF_avail)=="try-error")
+    is_TF_avail <- FALSE
+  
+  # if not, 
+  if(!is_TF_avail)
+  {
     
-    reticulate::install_miniconda()
-    reticulate::use_miniconda(required = TRUE)
+    # first check if an env is available
+    if(!reticulate::py_available()){
+      
+      reticulate::install_miniconda()
+      reticulate::use_miniconda(required = TRUE)
+      
+    }
+    
+    library(tensorflow)
+    install_tensorflow(version = "2.0.0")
+    library(tfprobability)
+    install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+    suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
     
   }
   
-  library(tensorflow)
-  install_tensorflow(version = "2.0.0")
-  library(tfprobability)
-  install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+  # Use TF
+  keras::use_implementation("tensorflow")
+  
+  # catch TFP error
   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
-
 }
-
-# install_keras(tensorflow = "2.0")
-
-
-# keras::use_implementation("tensorflow")
-# Sys.setenv(TF_KERAS=1)
-
-# initialize v2 behavior -> make TF 2 required
-# tf$compat$v1$enable_v2_behavior()
-
-# catch weird initial loading error
-# suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
