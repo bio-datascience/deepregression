@@ -85,7 +85,7 @@ plot.deepregression <- function(
       if(nrcols==1)
       {
         if(use_posterior){
-          plot(plotData[[w]]$mean_partial_effect[order(value)] ~ 
+          plot(plotData[[w]]$mean_partial_effect[order(plotData[[w]]$value)] ~ 
                           sort(plotData[[w]]$value),
                main = paste0("s(", nam, ")"),
                xlab = nam,
@@ -96,18 +96,18 @@ plot.deepregression <- function(
                               2*plotData[[w]]$sd_partial_effect)),
                ...)
           with(plotData[[w]], {
-            points((mean_partial_effect + 2 * sd_partial_effect)[order(value)] ~
-                     sort(value), type="l", lty=2)
-            points((mean_partial_effect - 2 * sd_partial_effect)[order(value)] ~
-                     sort(value), type="l", lty=2)
+            points((mean_partial_effect + 2 * sd_partial_effect)[order(plotData[[w]]$value)] ~
+                     sort(plotData[[w]]$value), type="l", lty=2)
+            points((mean_partial_effect - 2 * sd_partial_effect)[order(plotData[[w]]$value)] ~
+                     sort(plotData[[w]]$value), type="l", lty=2)
           })
         }else{
-          plot(partial_effect[order(value)] ~ sort(value),
-               data = plotData[[w]],
-               main = paste0("s(", nam, ")"),
-               xlab = nam,
-               ylab = "partial effect",
-               ...)
+            plot(partial_effect[order(value),1] ~ sort(value[,1]),
+                 data = plotData[[w]][c("value", "partial_effect")],
+                 main = paste0("s(", nam, ")"),
+                 xlab = nam,
+                 ylab = "partial effect",
+                 ...)
         }
       }else if(nrcols==2){
         sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]

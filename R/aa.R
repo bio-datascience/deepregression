@@ -25,10 +25,8 @@
       
     }
   }
-  
   # Use TF
   keras::use_implementation("tensorflow")
-  
   # catch TFP error
   suppressMessages(try(david <- tfd_normal(0,1), silent = TRUE))
 }

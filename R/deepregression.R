@@ -66,6 +66,9 @@
 #' @param extend_output_dim integer value >= 0 for extending the output dimension by an 
 #' additive constant. If set to a value > 0, a multivariate response with dimension
 #' \code{1 + extend_output_dim} is defined.
+#' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
+#' in case an offset should be added to the additive predictor; if NULL, no offset is used
+#' @param offset_val a list analogous to offset for the validation data
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -144,6 +147,8 @@ deepregression <- function(
   null.space.penalty = variational,
   ind_fun = function(x) tfd_independent(x),
   extend_output_dim = 0,
+  offset = NULL,
+  offset_val = NULL,
   ...
 )
 {
@@ -291,6 +296,13 @@ deepregression <- function(
                                    tf$constant(x, dtype="float32")))), 
                         recursive = F)
   ))
+  
+  if(!is.null(offset)){
+    
+    print("Using an offset.")
+    input_cov <- c(input_cov, unlist(offset[!sapply(offset, is.null)]))
+    
+  }
 
   param_names <- names(parsed_formulae_contents)
   l_names_effets <- lapply(parsed_formulae_contents, get_names)
@@ -306,6 +318,12 @@ deepregression <- function(
     validation_data[[1]] <- prepare_newdata(parsed_formulae_contents,
                                             validation_data[[1]],
                                             pred = TRUE)
+    
+    if(!is.null(offset_val)){
+      print("Using an offset.")
+      validation_data <- c(validation_data, 
+                           unlist(offset_val[!sapply(offset_val, is.null)]))
+    }
   }
   
   if(!is.null(cv_folds))
@@ -350,6 +368,7 @@ deepregression <- function(
     prior = prior_fun,
     ind_fun = ind_fun,
     extend_output_dim = extend_output_dim,
+    offset = if(is.null(offset)) NULL else lapply(offset, ncol),
     ...
   )
   #############################################################
@@ -360,6 +379,7 @@ deepregression <- function(
                   input_cov = input_cov,
                   n_obs = n_obs,
                   y = y,
+                  offset = offset,
                   validation_split = validation_split,
                   validation_data = validation_data,
                   cv_folds = cv_folds,
@@ -425,6 +445,8 @@ deepregression <- function(
 #' @param split_fun see \code{?deepregression}
 #' @param ind_fun see \code{?deepregression}
 #' @param extend_output_dim see \code{?deepregression}
+#' @param offset list of logicals corresponding to the paramters;
+#' defines per parameter if an offset should be added to the predictor 
 #' 
 #' @export 
 #'
@@ -456,7 +478,8 @@ deepregression_init <- function(
   mixture_dist = FALSE,
   split_fun = split_model,
   ind_fun = function(x) x,
-  extend_output_dim = 0
+  extend_output_dim = 0,
+  offset = NULL
   )
 {
 
@@ -511,6 +534,25 @@ deepregression_init <- function(
           return(layer_input(shape = list(as.integer(xx))))})
     }
     })
+  }
+  
+  if(!is.null(offset)){
+    
+    ones_initializer = tf$keras.initializers$Ones()
+    
+    offset_layers <- lapply(offset, function(odim){
+      if(is.null(odim)) return(NULL) else{
+        return(
+          layer_input(shape = list(odim)) %>%
+            layer_dense(units = 1, 
+                        activation = "linear",
+                        use_bias = FALSE , 
+                        trainable = FALSE,
+                        kernel_initializer = ones_initializer))
+      }
+    })
+    
+    
   }
   
   # extend one or more layers' output dimension
@@ -670,6 +712,18 @@ deepregression_init <- function(
   }
   )
   
+  
+  if(!is.null(offset)){
+    
+    for(i in 1:length(list_pred_param)){
+      
+      if(!offset_layers[[i]])
+        list_pred_param[[i]] <- layer_add(list(list_pred_param[[i]],
+                                               offset_layers[[i]]))
+    
+    }
+    
+  }
 
   # concatenate predictors
   # -> just to split them later again?
@@ -757,6 +811,14 @@ deepregression_init <- function(
     inputs_struct[!sapply(inputs_struct, is.null)],
     unlist(ox[!sapply(ox, is.null)]))
   )
+  
+  if(!is.null(offset)){
+    
+    inputList <- c(inputList,
+                   unlist(offset[!sapply(offset, is.null)]))
+    
+  }
+  
   # the final model is defined by its inputs
   # and outputs
 
