@@ -159,9 +159,26 @@ prepare_data <- function(
   pred=FALSE
 )
 {
-  newdata_processed <- prepare_newdata(
-    x$init_params$parsed_formulae_contents,
-    data, pred=pred)
+  if(length(data)>1 & is.list(data) & !is.null(x$init_params$offset))
+  {
+
+    message("Using the second list item of data as offset.")
+    newdata_processed <- prepare_newdata(
+      x$init_params$parsed_formulae_contents,
+      data[[1]], pred=pred)
+    if(is.list(data[[2]]))
+      data[[2]] <- unlist(data[[2]], recursive = FALSE)
+    newdata_processed <- c(newdata_processed,
+                           tf$constant(matrix(data[[2]], ncol = 1), 
+                                       dtype="float32"))
+    
+  }else{
+    
+    newdata_processed <- prepare_newdata(
+      x$init_params$parsed_formulae_contents,
+      data, pred=pred)
+    
+  }
   return(newdata_processed)
 }
 
@@ -297,12 +314,26 @@ fit.deepregression <- function(
   #   this_callbacks <- append(this_callbacks, weight_callback)
   # }
   
+  if(is.null(x$init_params$input_cov)){
+    
+    input_x <- prepare_newdata(x$init_params$parsed_formulae_contents,
+                               x$init_params$data,
+                               pred = FALSE)
+    if(!is.null(x$init_params$offset))
+      input_x <- c(input_x, unlist(lapply(x$init_params$offset, function(yy)
+        tf$constant(matrix(yy, ncol = 1), dtype="float32")), recursive = FALSE))
+    
+  }else{
+    
+    input_x <- x$init_params$input_cov
+    
+  }
+  
+  
   args <- list(...)
   input_list_model <- 
     list(object = x$model,
-         x = prepare_newdata(x$init_params$parsed_formulae_contents,
-                             x$init_params$data,
-                             pred = FALSE),
+         x = input_x,
          y = x$init_params$y,
          validation_split = x$init_params$validation_split,
          validation_data = x$init_params$validation_data,
@@ -318,6 +349,7 @@ fit.deepregression <- function(
                    x$init_params$ellipsis[
                      !names(x$init_params$ellipsis) %in% names(args)])
 
+  
   ret <- do.call(fit_fun,
                  args)
   if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer

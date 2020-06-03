@@ -7,7 +7,7 @@ orthog_structured <- function(S,L)
   return(Sorth)
 }
 
-orthog_smooth <- function(pcf){
+orthog_smooth <- function(pcf, zero_cons = TRUE){
   
   nml <- attr(pcf$linterms, "names")
   nms <- attr(pcf$smoothterms, "names")
@@ -17,7 +17,7 @@ orthog_smooth <- function(pcf){
   L <- NULL
   for(nm in nms){
     
-    if("(Intercept)" %in% nml)
+    if("(Intercept)" %in% nml & zero_cons)
       L <- matrix(rep(1,NROW(pcf$linterms)), ncol=1)
     
     if(nm %in% nml){

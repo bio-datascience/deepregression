@@ -69,6 +69,8 @@
 #' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
 #' in case an offset should be added to the additive predictor; if NULL, no offset is used
 #' @param offset_val a list analogous to offset for the validation data
+#' @param zero_constraint_for_smooths logical; whether or not to constraint smooths to 
+#' have zero mean
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -149,6 +151,7 @@ deepregression <- function(
   extend_output_dim = 0,
   offset = NULL,
   offset_val = NULL,
+  zero_constraint_for_smooths = TRUE,
   ...
 )
 {
@@ -200,7 +203,10 @@ deepregression <- function(
     if(length(monitor_metric)==1)
       monitor_metric <- auc_metric else
         warning("If auc is chosen as metric, it must be the only specified metric.")
+  if(!is.null(offset) & !is.list(offset))
+    stop("Argument offset must be a list of offsets for each parameter.")
   
+  cat("Preparing additive formula(e)...")
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
                                      get_contents,
@@ -210,6 +216,7 @@ deepregression <- function(
                                      network_names = netnames,
                                      defaultSmoothing = defaultSmoothing,
                                      null.space.penalty = null.space.penalty)
+  cat(" Done.\n")
   
   # check for zero ncol linterms
   for(i in 1:nr_params){
@@ -284,8 +291,11 @@ deepregression <- function(
   # must be a list of the following form:
   # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
   #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
-  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth)
+  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
+                                     zero_cons = zero_constraint_for_smooths)
+  cat("Translating data into tensors...")
   input_cov <- make_cov(parsed_formulae_contents)
+  cat(" Done.\n")
   ox <- lapply(parsed_formulae_contents, make_orthog)
   
   input_cov <- unname(c(input_cov, 
@@ -299,8 +309,11 @@ deepregression <- function(
   
   if(!is.null(offset)){
     
-    print("Using an offset.")
-    input_cov <- c(input_cov, unlist(offset[!sapply(offset, is.null)]))
+    cat("Using an offset.")
+    input_cov <- c(input_cov, unlist(lapply(offset[!sapply(offset, is.null)],
+                                            function(x) tf$constant(matrix(x, ncol = 1), 
+                                                                    dtype="float32")),
+                                     recursive = FALSE))
     
   }
 
@@ -320,9 +333,12 @@ deepregression <- function(
                                             pred = TRUE)
     
     if(!is.null(offset_val)){
-      print("Using an offset.")
-      validation_data <- c(validation_data, 
-                           unlist(offset_val[!sapply(offset_val, is.null)]))
+      # print("Using an offset.")
+      validation_data[[1]] <- c(validation_data[[1]], 
+                                unlist(lapply(offset_val[!sapply(offset_val, is.null)],
+                                              function(x) tf$constant(matrix(x, ncol = 1), 
+                                                                      dtype="float32")),
+                                       recursive = FALSE))
     }
   }
   
@@ -368,7 +384,7 @@ deepregression <- function(
     prior = prior_fun,
     ind_fun = ind_fun,
     extend_output_dim = extend_output_dim,
-    offset = if(is.null(offset)) NULL else lapply(offset, ncol),
+    offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
     ...
   )
   #############################################################
@@ -538,18 +554,25 @@ deepregression_init <- function(
   
   if(!is.null(offset)){
     
-    ones_initializer = tf$keras.initializers$Ones()
-    
-    offset_layers <- lapply(offset, function(odim){
+    offset_inputs <- lapply(offset, function(odim){
       if(is.null(odim)) return(NULL) else{
         return(
-          layer_input(shape = list(odim)) %>%
+          layer_input(shape = list(odim))
+        )
+      }
+    })
+    
+    ones_initializer = tf$keras.initializers$Ones()
+    
+    offset_layers <- lapply(offset_inputs, function(x){
+      if(is.null(x)) return(NULL) else
+        return(
+          x %>%
             layer_dense(units = 1, 
                         activation = "linear",
                         use_bias = FALSE , 
                         trainable = FALSE,
                         kernel_initializer = ones_initializer))
-      }
     })
     
     
@@ -717,7 +740,7 @@ deepregression_init <- function(
     
     for(i in 1:length(list_pred_param)){
       
-      if(!offset_layers[[i]])
+      if(!offset[[i]])
         list_pred_param[[i]] <- layer_add(list(list_pred_param[[i]],
                                                offset_layers[[i]]))
     
@@ -815,7 +838,7 @@ deepregression_init <- function(
   if(!is.null(offset)){
     
     inputList <- c(inputList,
-                   unlist(offset[!sapply(offset, is.null)]))
+                   unlist(offset_inputs[!sapply(offset_inputs, is.null)]))
     
   }
   
