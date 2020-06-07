@@ -105,9 +105,11 @@
 #' mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 #' data = data, validation_data = list(data, y), y = y,
 #' list_of_deep_models = list(deep_model = deep_model))
-#'
-#'mod %>% fit(epochs = 100)
-#'mod %>% plot()
+#' 
+#' if(!is.null(mod)){
+#'    mod %>% fit(epochs = 100)
+#'    mod %>% plot()
+#' }
 #'
 deepregression <- function(
   y,

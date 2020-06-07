@@ -1,5 +1,8 @@
 #' Function to check python environment and install necessary packages
 #' 
+#' @return Function that checks if a Python environment is available
+#' and contains TensorFlow. If not the recommended version is installed.
+#' 
 #' @export
 #' 
 check_and_install <- function()
