@@ -33,9 +33,13 @@ deepregression(
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
   prior_fun = prior_trainable,
-  null.space.penalty = variational,
+  null_space_penalty = variational,
   ind_fun = function(x) tfd_independent(x),
   extend_output_dim = 0,
+  offset = NULL,
+  offset_val = NULL,
+  absorb_cons = TRUE,
+  zero_constraint_for_smooths = FALSE,
   ...
 )
 }
@@ -121,7 +125,7 @@ verison of the network}
 \item{prior_fun}{function defining the prior function for the variational
 verison of the network}
 
-\item{null.space.penalty}{logical value;
+\item{null_space_penalty}{logical value;
 if TRUE, the null space will also be penalized for smooth effects. 
 Per default, this is equal to the value give in \code{variational}.}
 
@@ -132,6 +136,17 @@ log-likelihood. Per default independence is assumed by applying \code{tfd_indepe
 additive constant. If set to a value > 0, a multivariate response with dimension
 \code{1 + extend_output_dim} is defined.}
 
+\item{offset}{a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
+in case an offset should be added to the additive predictor; if NULL, no offset is used}
+
+\item{offset_val}{a list analogous to offset for the validation data}
+
+\item{absorb_cons}{logical; adds identifiability constraint to the basisi. 
+See \code{?mgcv::smoothCon} for more details.}
+
+\item{zero_constraint_for_smooths}{logical; the same as absorb_cons, 
+but done explicitly. If true a constraint is put on each smooth to have zero mean.}
+
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }
 \description{
@@ -139,12 +154,10 @@ Fitting Deep Distributional Regression
 }
 \examples{
 library(deepregression)
-try(david <- tfd_normal(0,1), silent = TRUE)
-keras::use_implementation("tensorflow")
 
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
-formula <- ~ 1 + d(x1,x2,x3) +
+formula <- ~ 1 + deep_model(x1,x2,x3) +
 s(xa, sp = 1) + x1
 
 deep_model <- function(x) x \%>\%
@@ -157,7 +170,7 @@ y <- rnorm(100)
 
 mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
-list_of_deep_models = list(deep_model, NULL))
+list_of_deep_models = list(deep_model = deep_model))
 
 mod \%>\% fit(epochs = 100)
 mod \%>\% plot()

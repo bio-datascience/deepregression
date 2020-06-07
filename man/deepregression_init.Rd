@@ -32,7 +32,8 @@ deepregression_init(
   mixture_dist = FALSE,
   split_fun = split_model,
   ind_fun = function(x) x,
-  extend_output_dim = 0
+  extend_output_dim = 0,
+  offset = NULL
 )
 }
 \arguments{
@@ -108,6 +109,9 @@ the via the ellipsis to the initialization function}
 \item{ind_fun}{see \code{?deepregression}}
 
 \item{extend_output_dim}{see \code{?deepregression}}
+
+\item{offset}{list of logicals corresponding to the paramters;
+defines per parameter if an offset should be added to the predictor}
 }
 \description{
 Initializing Deep Distributional Regression Models

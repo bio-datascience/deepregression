@@ -27,13 +27,142 @@ NCOL0 <- function(x)
   return(NCOL(x))
 }
 
+# #### from mgcv 
+# uniquecombs <- function(x,ordered=FALSE) {
+#   ## takes matrix x and counts up unique rows
+#   ## `unique' now does this in R
+#   if (is.null(x)) stop("x is null")
+#   if (is.null(nrow(x))||is.null(ncol(x))) x <- data.frame(x)
+#   recheck <- FALSE
+#   if (inherits(x,"data.frame")) {
+#     xoo <- xo <- x
+#     ## reset character, logical and factor to numeric, to guarantee that text versions of labels
+#     ## are unique iff rows are unique (otherwise labels containing "*" could in principle
+#     ## fool it).
+#     is.char <- rep(FALSE,length(x)) 
+#     for (i in 1:length(x)) {
+#       if (is.character(xo[[i]])) {
+#         is.char[i] <- TRUE
+#         xo[[i]] <- as.factor(xo[[i]])
+#       }
+#       if (is.factor(xo[[i]])||is.logical(xo[[i]])) x[[i]] <- as.numeric(xo[[i]])
+#       if (!is.numeric(x[[i]])) recheck <- TRUE ## input contains unknown type cols 
+#     }
+#     #x <- data.matrix(xo) ## ensure all data are numeric
+#   } else xo <- NULL
+#   if (ncol(x)==1) { ## faster to use R 
+#     xu <- if (ordered) sort(unique(x[,1])) else unique(x[,1])
+#     ind <- match(x[,1],xu)
+#     if (is.null(xo)) x <- matrix(xu,ncol=1,nrow=length(xu)) else {
+#       x <-  data.frame(xu)
+#       names(x) <- names(xo)
+#     }
+#   } else { ## no R equivalent that directly yields indices
+#     if (ordered) {
+#       chloc <- Sys.getlocale("LC_CTYPE")
+#       Sys.setlocale("LC_CTYPE","C")
+#     }
+#     ## txt <- paste("paste0(",paste("x[,",1:ncol(x),"]",sep="",collapse=","),")",sep="")
+#     ## ... this can produce duplicate labels e.g. x[,1] = c(1,11), x[,2] = c(12,2)...
+#     ## solution is to insert separator not present in representation of a number (any
+#     ## factor codes are already converted to numeric by data.matrix call above.)
+#     txt <- paste("paste0(",paste("x[,",1:ncol(x),"]",sep="",collapse=",\"*\","),")",sep="")
+#     xt <- eval(parse(text=txt)) ## text representation of rows
+#     dup <- duplicated(xt)       ## identify duplicates
+#     xtu <- xt[!dup]             ## unique text rows
+#     x <- x[!dup,]               ## unique rows in original format
+#     #ordered <- FALSE
+#     if (ordered) { ## return unique in same order regardless of entry order
+#       ## ordering of character based labels is locale dependent
+#       ## so that e.g. running the same code interactively and via
+#       ## R CMD check can give different answers. 
+#       coloc <- Sys.getlocale("LC_COLLATE")
+#       Sys.setlocale("LC_COLLATE","C")
+#       ii <- order(xtu)
+#       Sys.setlocale("LC_COLLATE",coloc)
+#       Sys.setlocale("LC_CTYPE",chloc)
+#       xtu <- xtu[ii]
+#       x <- x[ii,]
+#     }
+#     ind <- match(xt,xtu)   ## index each row to the unique duplicate deleted set
+#     
+#   }
+#   if (!is.null(xo)) { ## original was a data.frame
+#     x <- as.data.frame(x)
+#     names(x) <- names(xo)
+#     for (i in 1:ncol(xo)) {
+#       if (is.factor(xo[,i])) { ## may need to reset factors to factors
+#         xoi <- levels(xo[,i])
+#         x[,i] <- if (is.ordered(xo[,i])) ordered(x[,i],levels=1:length(xoi),labels=xoi) else 
+#           factor(x[,i],levels=1:length(xoi),labels=xoi)
+#         contrasts(x[,i]) <- contrasts(xo[,i])
+#       }
+#       if (is.char[i]) x[,i] <- as.character(x[,i])
+#       if (is.logical(xo[,i])) x[,i] <- as.logical(x[,i])
+#     }
+#   }
+#   if (recheck) {
+#     if (all.equal(xoo,x[ind,],check.attributes=FALSE)!=TRUE) warning("uniquecombs has not worked properly")
+#   }
+#   attr(x,"index") <- ind
+#   x
+# } ## uniquecombs
+# 
+# ### from mgcv
+# compress_data <- function(dat, m = NULL)
+# {
+#   d <- ncol(dat) ## number of variables to deal with
+#   n <- nrow(dat) ## number of data/cases
+#   if (is.null(m)) m <- if (d==1) 1000 else if (d==2) 100 else 25 else
+#     if (d>1) m <- round(m^{1/d}) + 1
+#   
+#   mf <- mm <- 1 ## total grid points for factor and metric
+#   for (i in 1:d) if (is.factor(dat[,i])) {  
+#     mf <- mf * length(unique(as.vector(dat[,i]))) 
+#   } else {
+#     mm <- mm * m 
+#   } 
+#   if (is.matrix(dat[[1]])) { ## must replace matrix terms with vec(dat[[i]])
+#     dat0 <- data.frame(as.vector(dat[[1]]))
+#     if (d>1) for (i in 2:d) dat0[[i]] <- as.vector(dat[[i]])
+#     names(dat0) <- names(dat)
+#     dat <- dat0;rm(dat0)
+#   }
+#   xu <- uniquecombs(dat,TRUE)
+#   if (nrow(xu)>mm*mf) { ## too many unique rows to use only unique
+#     for (i in 1:d) if (!is.factor(dat[,i])) { ## round the metric variables
+#       xl <- range(dat[,i])
+#       xu <- seq(xl[1],xl[2],length=m)
+#       dx <- xu[2]-xu[1]
+#       kx <- round((dat[,i]-xl[1])/dx)+1
+#       dat[,i] <- xu[kx] ## rounding the metric variables
+#     }
+#     xu <- uniquecombs(dat,TRUE)
+#   }  
+#   k <- attr(xu,"index")
+#   ## shuffle rows in order to avoid induced dependencies between discretized
+#   ## covariates (which can mess up gam.side)...
+#   ## Any RNG setting should be done in routine calling this one!!
+#   
+#   ii <- sample(1:nrow(xu),nrow(xu),replace=FALSE) ## shuffling index
+#   
+#   xu[ii,] <- xu  ## shuffle rows of xu
+#   k <- ii[k]     ## correct k index accordingly
+#   ## ... finished shuffle
+#   ## if arguments were matrices, then return matrix index
+#   if (length(k)>n) k <- matrix(k,nrow=n) 
+#   k -> attr(xu,"index")
+#   xu
+# }
+
 # get contents from formula
 get_contents <- function(lf, data, df,
                          variable_names,
                          network_names,
                          intercept = TRUE,
                          defaultSmoothing,
-                         null.space.penalty = FALSE){
+                         absorb_cons = TRUE,
+                         null_space_penalty = FALSE){
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
@@ -159,19 +288,19 @@ get_contents <- function(lf, data, df,
              function(t)
                smoothCon(eval(t),
                          data=data.frame(data[unname(unlist(terms_w_s))]),
-                         knots=NULL, absorb.cons=F,
-                         null.space.penalty = null.space.penalty))
+                         knots=NULL, absorb.cons = absorb_cons,
+                         null.space.penalty = null_space_penalty))
     
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- pmax(min(sapply(smoothterms, function(x) x[[1]]$df)) - 
-                                 null.space.penalty, 1)
+                                 null_space_penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
         if(length(st[[1]]$S)==1) S <- st[[1]]$S[[1]] else
           S <- Reduce("+", st[[1]]$S)
-        st[[1]]$sp = DRO(st[[1]]$X, df = df, dmat = S)["lambda"] + null.space.penalty
+        st[[1]]$sp = DRO(st[[1]]$X, df = df, dmat = S)["lambda"] + null_space_penalty
         return(st)
       }
     smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))] <-
@@ -416,8 +545,9 @@ get_indices <- function(x)
     if(!is.null(x$smoothterms))
       bsdims <- unlist(lapply(x$smoothterms, function(y){
         if(is.null(y[[1]]$margin) & y[[1]]$by=="NA") 
-          return(y[[1]]$bs.dim) else if(is.null(y[[1]]$margin) & y[[1]]$by!="NA")
-            return(sapply(y, "[[", "bs.dim")) else
+          return(y[[1]]$bs.dim-attr(y[[1]],"nCons")) else if(
+            is.null(y[[1]]$margin) & y[[1]]$by!="NA")
+            return(sapply(y, "[[", "bs.dim")-attr(y[[1]],"nCons")) else
               # Tensorprod
               return(prod(sapply(y[[1]]$margin,"[[", "bs.dim")))
       })) else bsdims <- c()

@@ -58,7 +58,7 @@
 #' used which assumes a dense layer as penultimate layer and separates the network
 #' into a first part without this last layer and a second part only consisting of a 
 #' single dense layer that is fed into the output layer
-#' @param null.space.penalty logical value;
+#' @param null_space_penalty logical value;
 #' if TRUE, the null space will also be penalized for smooth effects. 
 #' Per default, this is equal to the value give in \code{variational}.
 #' @param ind_fun function applied to the model output before calculating the 
@@ -69,8 +69,10 @@
 #' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
 #' in case an offset should be added to the additive predictor; if NULL, no offset is used
 #' @param offset_val a list analogous to offset for the validation data
-#' @param zero_constraint_for_smooths logical; whether or not to constraint smooths to 
-#' have zero mean
+#' @param absorb_cons logical; adds identifiability constraint to the basisi. 
+#' See \code{?mgcv::smoothCon} for more details.
+#' @param zero_constraint_for_smooths logical; the same as absorb_cons, 
+#' but done explicitly. If true a constraint is put on each smooth to have zero mean.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -89,7 +91,7 @@
 #' 
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
-#' formula <- ~ 1 + d(x1,x2,x3) +
+#' formula <- ~ 1 + deep_model(x1,x2,x3) +
 #' s(xa, sp = 1) + x1
 #'
 #' deep_model <- function(x) x %>%
@@ -102,7 +104,7 @@
 #'
 #' mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 #' data = data, validation_data = list(data, y), y = y,
-#' list_of_deep_models = list(deep_model, NULL))
+#' list_of_deep_models = list(deep_model = deep_model))
 #'
 #'mod %>% fit(epochs = 100)
 #'mod %>% plot()
@@ -146,21 +148,49 @@ deepregression <- function(
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
   prior_fun = prior_trainable,
-  null.space.penalty = variational,
+  null_space_penalty = variational,
   ind_fun = function(x) tfd_independent(x),
   extend_output_dim = 0,
   offset = NULL,
   offset_val = NULL,
-  zero_constraint_for_smooths = TRUE,
+  absorb_cons = TRUE,
+  zero_constraint_for_smooths = FALSE,
+  # compress = TRUE,
   ...
 )
 {
   
+  # first check if an env is available
+  if(!reticulate::py_available())
+  {
+    message("No Python Environemt available. Use check_and_install() to install recommended environment.") 
+    invisible(return(NULL))
+  }
+  
+  if(!py_module_available("tensorflow"))
+  {
+    stop("Tensorflow not available. Use install_tensorflow() or check_and_install() to update you system.")
+    invisible(return(NULL))
+  }
+  
   # check family
   family <- match.arg(family)
   # convert data.frame to list
-  if(is.data.frame(data))
-    data <- as.list(data)
+  if(is.data.frame(data)){
+    # if(compress){
+      # data_repr <- data
+      data <- as.list(
+        # compress_data(
+        data
+        # )
+      )
+  }
+    # }else{
+        # data_repr <- data
+  # }else{
+    # warning("Data compression currently not available for list inputs.")
+    # data_repr <- data 
+  # }
   # if(any(sapply(data, is.data.frame)))
   #   stop("Data.frames within the input list are now allowed.")
   # get column names of data
@@ -215,7 +245,8 @@ deepregression <- function(
                                      variable_names = varnames,
                                      network_names = netnames,
                                      defaultSmoothing = defaultSmoothing,
-                                     null.space.penalty = null.space.penalty)
+                                     absorb_cons = absorb_cons,
+                                     null_space_penalty = null_space_penalty)
   cat(" Done.\n")
   
   # check for zero ncol linterms
