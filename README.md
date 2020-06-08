@@ -17,8 +17,6 @@ Also make sure you have installed all the dependencies:
   - tensorflow
   - tfprobability
 
-In the future, the package can be installed as follows:
-
 To install the latest version of deepregression:
 
 ``` r
