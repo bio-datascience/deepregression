@@ -1,4 +1,4 @@
-deepregression -- Fitting Semistructured Deep Distributional Models in R
+deepregression - Fitting Semistructured Deep Distributional Models in R
 ======
 [![Build Status](https://travis-ci.com/davidruegamer/deepregression.svg?token=UQrq5mDFv9MYhofnJ2xn&branch=master)](https://travis-ci.com/davidruegamer/deepregression)
 
