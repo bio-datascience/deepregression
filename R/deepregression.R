@@ -165,7 +165,7 @@ deepregression <- function(
   # first check if an env is available
   if(!reticulate::py_available())
   {
-    message("No Python Environemt available. Use check_and_install() ".
+    message("No Python Environemt available. Use check_and_install() ",
             "to install recommended environment.") 
     invisible(return(NULL))
   }
