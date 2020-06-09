@@ -252,13 +252,16 @@ fit <- function (x, ...) {
 #' Fit a deepregression model
 #'
 #' @param x a deepregresison object.
+#' @param y the vector (or matrix in mulitvariate case) of outcomes
+#' @param data a data.frame or list that contains all features
+#' @param offset a list of offsets for each parameter
 #' @param early_stopping logical, whether early stopping should be user.
 #' @param verbose logical, whether to print losses during training.
 #' @param view_metrics logical, whether to trigger the Viewer in RStudio / Browser.
 #' @param patience integer, number of rounds after which early stopping is done.
 #' @param save_weights logical, whether to save weights in each epoch.
-#' @param auc_callback logical, whether to use a callback for AUC
-#' @param val_data optional specified validation data
+#' @param val_data optional specified validation data in the format 
+#' # list(data,y) or list(data,offset,y)
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
 #' 
@@ -269,12 +272,14 @@ fit <- function (x, ...) {
 #'
 fit.deepregression <- function(
   x,
+  y,
+  data,
+  offset = NULL,
   early_stopping = FALSE,
   verbose = FALSE, 
   view_metrics = TRUE,
   patience = 20,
   save_weights = FALSE,
-  auc_callback = FALSE,
   val_data = NULL,
   ...
 )
@@ -291,52 +296,36 @@ fit.deepregression <- function(
     this_callbacks <- append(this_callbacks, 
                              callback_early_stopping(patience = patience))
   
-  if(auc_callback){
-    
-    if(is.null(val_data)) stop("Must provide validation data via argument val_data.")
-    if(is.data.frame(val_data[[1]])) val_data[[1]] <- as.list(val_data[[1]])
-    val_data_processed <- prepare_data(x, val_data[[1]], pred=TRUE)
-    
-    auc_cb <- auc_roc$new(training = list(unname(x$init_params$input_cov), x$init_params$y),
-                          validation = list(unname(val_data_processed), val_data[[2]]))
-    this_callbacks <- append(this_callbacks,
-                             auc_cb)
-    verbose <- FALSE
-  }
-  # if(monitor_weights){
-  #   # object$history <- WeightHistory$new()
-  #   weight_callback <- callback_lambda(
-  #     on_epoch_begin = function(epoch, logs) 
-  #       coef_prior_to_epoch <<- unlist(coef(object)),
-  #     on_epoch_end = function(epoch, logs) 
-  #       print(sum(abs(coef_prior_to_epoch-unlist(coef(object)))))
-  #     )
-  #   this_callbacks <- append(this_callbacks, weight_callback)
-  # }
+  input_x <- prepare_newdata(
+    x$init_params$parsed_formulae_contents,
+    data,
+    pred = FALSE
+  )
+  if(!is.null(offset))
+    input_x <- c(input_x, unlist(lapply(offset, function(oo)
+      tf$constant(matrix(oo, ncol = 1), dtype="float32")), recursive = FALSE))
   
-  if(is.null(x$init_params$input_cov)){
-    
-    input_x <- prepare_newdata(x$init_params$parsed_formulae_contents,
-                               x$init_params$data,
-                               pred = FALSE)
-    if(!is.null(x$init_params$offset))
-      input_x <- c(input_x, unlist(lapply(x$init_params$offset, function(yy)
-        tf$constant(matrix(yy, ncol = 1), dtype="float32")), recursive = FALSE))
-    
-  }else{
-    
-    input_x <- x$init_params$input_cov
-    
-  }
+  # if(auc_callback){
+  #   
+  #   if(is.null(val_data)) stop("Must provide validation data via argument val_data.")
+  #   if(is.data.frame(val_data[[1]])) val_data[[1]] <- as.list(val_data[[1]])
+  #   val_data_processed <- prepare_data(x, val_data[[1]], pred=TRUE)
+  #   
+  #   auc_cb <- auc_roc$new(training = list(unname(x$init_params$input_cov), y),
+  #                         validation = list(unname(val_data_processed), val_data[[2]]))
+  #   this_callbacks <- append(this_callbacks,
+  #                            auc_cb)
+  #   verbose <- FALSE
+  # }
   
   
   args <- list(...)
   input_list_model <- 
     list(object = x$model,
          x = input_x,
-         y = x$init_params$y,
+         y = y,
          validation_split = x$init_params$validation_split,
-         validation_data = x$init_params$validation_data,
+         validation_data = val_data,
          callbacks = this_callbacks,
          verbose = verbose,
          view_metrics = view_metrics
@@ -349,8 +338,9 @@ fit.deepregression <- function(
                    x$init_params$ellipsis[
                      !names(x$init_params$ellipsis) %in% names(args)])
 
+  args$generator <- create_generator()
   
-  ret <- do.call(fit_fun,
+  ret <- do.call(fit_generator,
                  args)
   if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
   invisible(ret)

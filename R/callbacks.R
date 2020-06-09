@@ -69,7 +69,7 @@ auc_metric <- custom_metric(name = "auc", metric_fn = auc.tf.out)
 ################################################################################################
 
 # overwrite keras:::KerasMetricsCallback class
-KerasMetricsCallback_custom <- 
+KerasMetricsCallback <- 
   R6::R6Class("KerasMetricsCallback",
               
               inherit = KerasCallback,
@@ -231,6 +231,8 @@ KerasMetricsCallback_custom <-
                 }
               )
   )
+
+environment(KerasMetricsCallback) <- asNamespace('keras')
 
 normalize_callbacks_with_metrics_custom <- function (view_metrics, callbacks)
 {

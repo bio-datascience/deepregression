@@ -1,6 +1,5 @@
 #'@title Fitting Deep Distributional Regression
 #'
-#' @param y response variable
 #' @param list_of_formulae a named list of right hand side formulae,
 #' one for each parameter of the distribution specified in \code{family};
 #' set to \code{~ 1} if the parameter should be treated as constant.
@@ -20,6 +19,8 @@
 #' @param train_together logical; whether or not to train all parameters in 
 #' one deep network.
 #' @param data data.frame or named list with input features
+#' @param output_dim integer; default is 1. If multivariate response, specify the number
+#' of columns the outcome matrix has.
 #' @param df degrees of freedom for all non-linear structural terms
 #' @param lambda_lasso smoothing parameter for lasso regression; 
 #' can be combined with ridge
@@ -27,13 +28,6 @@
 #' can be combined with lasso
 #' @param defaultSmoothing function applied to all s-terms, per default (NULL)
 #' the minimum df of all possible terms is used.
-#' @param cv_folds a list of lists, each list element has two elements, one for
-#' training indices and one for testing indices; 
-#' if a single integer number is given, 
-#' a simple k-fold cross-validation is defined, where k is the supplied number.
-#' @param validation_data data for validation during training.
-#' @param validation_split percentage of training data used for validation. 
-#' Per default 0.2.
 #' @param dist_fun a custom distribution applied to the last layer,
 #' see \code{\link{make_tfd_dist}} for more details on how to construct
 #' a custom distribution function.
@@ -42,7 +36,7 @@
 #' @param variational logical value specifying whether or not to use
 #' variational inference. If \code{TRUE}, details must be passed to
 #' the via the ellipsis to the initialization function
-#' (see \code{\link{deepregression_init}})
+#' (see \code{\link{deepregression_create_net}})
 #' @param monitor_metric Further metrics to monitor
 #' @param posterior_fun function defining the posterior function for the variational
 #' verison of the network
@@ -66,9 +60,8 @@
 #' @param extend_output_dim integer value >= 0 for extending the output dimension by an 
 #' additive constant. If set to a value > 0, a multivariate response with dimension
 #' \code{1 + extend_output_dim} is defined.
-#' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
-#' in case an offset should be added to the additive predictor; if NULL, no offset is used
-#' @param offset_val a list analogous to offset for the validation data
+#' @param offset integer; defines the number of columns for the offset. If 0 (default),
+#' no offset is used.
 #' @param absorb_cons logical; adds identifiability constraint to the basisi. 
 #' See \code{?mgcv::smoothCon} for more details.
 #' @param zero_constraint_for_smooths logical; the same as absorb_cons, 
@@ -112,7 +105,6 @@
 #' }
 #'
 deepregression <- function(
-  y,
   list_of_formulae,
   list_of_deep_models,
   family = c(
@@ -126,6 +118,7 @@ deepregression <- function(
   ),
   train_together = FALSE,
   data,
+  output_dim = 1,
   # batch_size = NULL,
   # epochs = 10L,
   df = NULL,
@@ -137,9 +130,6 @@ deepregression <- function(
   #   return(smoothTerm)
   # },
   defaultSmoothing = NULL,
-  cv_folds = NULL,
-  validation_data = NULL,
-  validation_split = ifelse(is.null(validation_data) & is.null(cv_folds), 0.2, 0),
   dist_fun = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
@@ -153,11 +143,10 @@ deepregression <- function(
   null_space_penalty = variational,
   ind_fun = function(x) tfd_independent(x),
   extend_output_dim = 0,
-  offset = NULL,
-  offset_val = NULL,
+  offset = 0,
   absorb_cons = TRUE,
   zero_constraint_for_smooths = FALSE,
-  # compress = TRUE,
+  compress = TRUE,
   ...
 )
 {
@@ -179,15 +168,16 @@ deepregression <- function(
   
   # check family
   family <- match.arg(family)
+  # number of observations
+  n_obs <- nROW(data)
   # convert data.frame to list
   if(is.data.frame(data)){
-    # if(compress){
-      # data_repr <- data
-      data <- as.list(
-        # compress_data(
-        data
-        # )
-      )
+    if(compress)
+      data <- compress_data(data)
+    data <- as.list(data)
+  }else{
+    if(compress)
+      warning("Compressing data currently only works for data.frames.")
   }
     # }else{
         # data_repr <- data
@@ -212,10 +202,6 @@ deepregression <- function(
     netnames <- "d"
   if(!is.null(list_of_deep_models) && is.null(names(list_of_deep_models)))
     names(list_of_deep_models) <- rep("d", length(list_of_deep_models))
-  # number of observations
-  n_obs <- NROW(y)
-  # number of output dim
-  output_dim <- NCOL(y)
   # check consistency of #parameters
   nr_params <- length(list_of_formulae)
   if(is.null(dist_fun)) 
@@ -326,75 +312,16 @@ deepregression <- function(
   # must be a list of the following form:
   # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
   #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
-  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
-                                     zero_cons = zero_constraint_for_smooths)
-  cat("Translating data into tensors...")
-  input_cov <- make_cov(parsed_formulae_contents)
-  cat(" Done.\n")
-  ox <- lapply(parsed_formulae_contents, make_orthog)
   
-  input_cov <- unname(c(input_cov, 
-                 unlist(lapply(ox[!sapply(ox,is.null)],
-                               function(x_per_param) 
-                                 unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], 
-                                               function(x)
-                                   tf$constant(x, dtype="float32")))), 
-                        recursive = F)
-  ))
+  ox_columns <- lapply(parsed_formulae_contents, make_orthog_columns)
   
-  if(!is.null(offset)){
-    
-    cat("Using an offset.")
-    input_cov <- c(input_cov, unlist(lapply(offset[!sapply(offset, is.null)],
-                                            function(x) tf$constant(matrix(x, ncol = 1), 
-                                                                    dtype="float32")),
-                                     recursive = FALSE))
-    
-  }
-
   param_names <- names(parsed_formulae_contents)
   l_names_effets <- lapply(parsed_formulae_contents, get_names)
   ind_structterms <- lapply(parsed_formulae_contents, get_indices)
-
-  if(!is.null(validation_data)){
-    if(!is.list(validation_data) && length(validation_data)!=2 | 
-       is.data.frame(validation_data))
-      stop("Validation data must be a list of length two ",
-           "with first entry for the data (features) and second entry for response.")
-    if(is.data.frame(validation_data[[1]])) 
-      validation_data[[1]] <- as.list(validation_data[[1]])
-    validation_data[[1]] <- prepare_newdata(parsed_formulae_contents,
-                                            validation_data[[1]],
-                                            pred = TRUE)
-    
-    if(!is.null(offset_val)){
-      # print("Using an offset.")
-      validation_data[[1]] <- c(validation_data[[1]], 
-                                unlist(lapply(offset_val[!sapply(offset_val, is.null)],
-                                              function(x) tf$constant(matrix(x, ncol = 1), 
-                                                                      dtype="float32")),
-                                       recursive = FALSE))
-    }
-  }
-  
-  if(!is.null(cv_folds))
-  {
-    
-    validation_split <- NULL
-    validation_data <- NULL
-    if(!is.list(cv_folds) & is.numeric(cv_folds) & is.null(dim(cv_folds))){
-      
-      if(cv_folds <= 0) stop("cv_folds must be a positive integer, but is ", 
-                             cv_folds, ".")
-      cv_folds <- make_cv_list_simple(data_size=NROW(data[[1]]), round(cv_folds), 
-                                      seed)
-      
-    }
-  }
     
   #############################################################
   # initialize the model
-  model <- deepregression_init(
+  model <- deepregression_create_net(
     n_obs = n_obs,
     ncol_structured = ncol_structured,
     ncol_deep = ncol_deep,
@@ -419,7 +346,7 @@ deepregression <- function(
     prior = prior_fun,
     ind_fun = ind_fun,
     extend_output_dim = extend_output_dim,
-    offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
+    offset = if(offset==0) return(NULL) else offset,
     ...
   )
   #############################################################
@@ -427,16 +354,11 @@ deepregression <- function(
   ret <- list(model = model,
               init_params =
                 list(
-                  input_cov = input_cov,
                   n_obs = n_obs,
-                  y = y,
                   offset = offset,
-                  validation_split = validation_split,
-                  validation_data = validation_data,
                   cv_folds = cv_folds,
                   l_names_effets = l_names_effets,
                   parsed_formulae_contents = parsed_formulae_contents,
-                  data = data,
                   ind_structterms = ind_structterms,
                   param_names = param_names,
                   ellipsis = list(...)
@@ -448,7 +370,7 @@ deepregression <- function(
 
 }
 
-#' @title Initializing Deep Distributional Regression Models
+#' @title Create Deep Distributional Regression Network
 #'
 #'
 #' @param n_obs number of observations
@@ -501,7 +423,7 @@ deepregression <- function(
 #' 
 #' @export 
 #'
-deepregression_init <- function(
+deepregression_create_net <- function(
   n_obs,
   ncol_structured,
   ncol_deep,
