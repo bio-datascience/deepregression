@@ -73,6 +73,9 @@
 #' See \code{?mgcv::smoothCon} for more details.
 #' @param zero_constraint_for_smooths logical; the same as absorb_cons, 
 #' but done explicitly. If true a constraint is put on each smooth to have zero mean.
+#' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated up
+#' front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
+#' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -157,6 +160,7 @@ deepregression <- function(
   offset_val = NULL,
   absorb_cons = TRUE,
   zero_constraint_for_smooths = FALSE,
+  orthog_type = c("tf", "manual"),
   # compress = TRUE,
   ...
 )
@@ -232,6 +236,8 @@ deepregression <- function(
   if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
+  # check orthog type
+  orthog_type <- match.arg(orthog_type)
   # check monitor metric for auc
   if("auc" %in% monitor_metric)
     if(length(monitor_metric)==1)
@@ -317,9 +323,9 @@ deepregression <- function(
 
   # check distribution wrt to specified parameters
   # (not when distfun is given)
-  if(is.null(dist_fun)) 
-    nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
-      nrparams_dist <- nr_params
+  # if(is.null(dist_fun)) 
+  #   nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
+  #     nrparams_dist <- nr_params
   
   # get covariates
   #
@@ -331,7 +337,9 @@ deepregression <- function(
   cat("Translating data into tensors...")
   input_cov <- make_cov(parsed_formulae_contents)
   cat(" Done.\n")
-  ox <- lapply(parsed_formulae_contents, make_orthog)
+  ox <- lapply(parsed_formulae_contents, make_orthog, 
+               retcol = FALSE,
+               returnX = (orthog_type=="tf"))
   
   input_cov <- unname(c(input_cov, 
                  unlist(lapply(ox[!sapply(ox,is.null)],
@@ -391,6 +399,10 @@ deepregression <- function(
       
     }
   }
+  
+  # define orthogonalization function
+  if(orthog_type == "tf")
+    orthog_fun <- orthog_tf else orthog_fun <- orthog
     
   #############################################################
   # initialize the model
@@ -420,6 +432,7 @@ deepregression <- function(
     ind_fun = ind_fun,
     extend_output_dim = extend_output_dim,
     offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
+    orthog_fun = orthog_fun,
     ...
   )
   #############################################################
@@ -497,7 +510,7 @@ deepregression <- function(
 #' @param ind_fun see \code{?deepregression}
 #' @param extend_output_dim see \code{?deepregression}
 #' @param offset list of logicals corresponding to the paramters;
-#' defines per parameter if an offset should be added to the predictor 
+#' defines per parameter if an offset should be added to the predictor
 #' 
 #' @export 
 #'

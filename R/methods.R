@@ -276,20 +276,21 @@ fit.deepregression <- function(
   save_weights = FALSE,
   auc_callback = FALSE,
   val_data = NULL,
+  callbacks = list(),
   ...
 )
 {
 
-  this_callbacks <- list()
+  callbacks <- list()
   
   # make callbacks 
   if(save_weights){
     weighthistory <- WeightHistory$new()
-    this_callbacks <- append(this_callbacks, weighthistory)
+    callbacks <- append(callbacks, weighthistory)
   }
   if(early_stopping)
-    this_callbacks <- append(this_callbacks, 
-                             callback_early_stopping(patience = patience))
+    callbacks <- append(callbacks, 
+                        callback_early_stopping(patience = patience))
   
   if(auc_callback){
     
@@ -299,8 +300,8 @@ fit.deepregression <- function(
     
     auc_cb <- auc_roc$new(training = list(unname(x$init_params$input_cov), x$init_params$y),
                           validation = list(unname(val_data_processed), val_data[[2]]))
-    this_callbacks <- append(this_callbacks,
-                             auc_cb)
+    callbacks <- append(callbacks,
+                        auc_cb)
     verbose <- FALSE
   }
   # if(monitor_weights){
@@ -337,7 +338,7 @@ fit.deepregression <- function(
          y = x$init_params$y,
          validation_split = x$init_params$validation_split,
          validation_data = x$init_params$validation_data,
-         callbacks = this_callbacks,
+         callbacks = callbacks,
          verbose = verbose,
          view_metrics = view_metrics
     )

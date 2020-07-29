@@ -2,8 +2,8 @@ orthog_structured <- function(S,L)
 {
   qrL <- qr(L)
   Q <- qr.Q(qrL)
-  XtXinvXt <- tcrossprod(Q)
-  Sorth <- S - XtXinvXt%*%S
+  X_XtXinv_Xt <- tcrossprod(Q)
+  Sorth <- S - X_XtXinv_Xt%*%S
   return(Sorth)
 }
 
@@ -41,7 +41,8 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
 
 make_orthog <- function(
   pcf,
-  retcol = FALSE
+  retcol = FALSE,
+  returnX = FALSE
 )
 {
 
@@ -104,6 +105,11 @@ make_orthog <- function(
       return(NULL)
     }
     
+    if(returnX){
+      if(retcol) return(NCOL(X)) else
+        return(as.matrix(X))
+    }
+    
     qrX <- qr(X)
     # if(qrX$rank<ncol(X)){
     #   warning("Collinear features in X")
@@ -128,39 +134,19 @@ centerxk <- function(X,K) tcrossprod(X, K) %*% solve(tcrossprod(K))
 orthog <- function(Y, Q)
 {
   
-  # print(Y)
-  # print(XtXinvXt)
-  XtXinvXt <- tf$linalg$matmul(Q,tf$linalg$matrix_transpose(Q))
-  Yorth <- Y - tf$linalg$matmul(XtXinvXt, Y)
-  # print(Yorth)
+  X_XtXinv_Xt <- tf$linalg$matmul(Q,tf$linalg$matrix_transpose(Q))
+  Yorth <- Y - tf$linalg$matmul(X_XtXinv_Xt, Y)
   return(Yorth)
+
+}
+
+orthog_tf <- function(Y, X)
+{
   
-  # tfcrossprodx <- function(x) tf$linalg$matmul(tf$linalg$matrix_transpose(x),x)
-  # 
-  # if(is.null(XtXinv))
-  # 
-  # if(!is.null(pwr)){ 
-  #   # X must be same size but something invertible in the case of
-  #   # prediction, for prediction pwr = 0
-  #   # pwr <- tf$reshape(
-  #   pwr <- tf$squeeze(tfcrossprodx(pwr), 0)
-  #   #                   list(tf$constant(1)))
-  #   neg_pwr <- 1-pwr
-  #   pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(pwr, ncol(X)))
-  #   neg_pwr_ncolX <- tf$linalg$tensor_diag(tf$tile(neg_pwr, ncol(X)))
-  #   pwr_ncolY <- tf$linalg$tensor_diag(
-  #     tf$tile(pwr, ncol(Y))
-  #   )
-  #   XtX <- tf$linalg$matmul(tfcrossprodx(X), pwr_ncolX) + neg_pwr_ncolX
-  #   XtXinv <- tf$linalg$inv(XtX + tf$linalg$tensor_diag(rep(1e-8,ncol(X))))
-  #   XXtXinv <- tf$linalg$matmul(X,XtXinv)
-  #   XtY <- tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y)
-  #   Y - tf$linalg$matmul(tf$linalg$matmul(XXtXinv, XtY), pwr_ncolY)
-  # }else{
-  #   Y - tf$linalg$matmul(tf$linalg$matmul(X, tf$linalg$inv(
-  #     tf$linalg$matmul(tf$linalg$matrix_transpose(X),X)
-  #   )), tf$linalg$matmul(tf$linalg$matrix_transpose(X), Y))
-  # }
+  Q = tf$linalg$qr(X, full_matrices=TRUE, name="QR")$q
+  X_XtXinv_Xt <- tf$linalg$matmul(Q,tf$linalg$matrix_transpose(Q))
+  Yorth <- Y - tf$linalg$matmul(X_XtXinv_Xt, Y)
+  
 }
 
 orthog_nt <- function(Y,X) Y <- X%*%solve(crossprod(X))%*%crossprod(X,Y)
