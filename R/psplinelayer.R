@@ -318,14 +318,15 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
 
   # create vectors of lambdas and list of penalties
   if(!is.null(this_param$linterms)){
-    lambdas = c(lambdas, rep(0, ncol(this_param$linterms)))
-    Ps = c(Ps, list(0)[rep(1, ncol(this_param$linterms))])
+    lambdas = c(lambdas, rep(0, ncol_lint(this_param$linterms)))
+    Ps = c(Ps, list(0)[rep(1, ncol_lint(this_param$linterms))])
     params = ncol(this_param$linterms)
   }
   if(!is.null(this_param$smoothterms)){
     these_lambdas = unlist(sapply(this_param$smoothterms, function(x) x[[1]]$sp))
     lambdas = c(lambdas, these_lambdas)
-    these_Ps = lapply(this_param$smoothterms, function(x) x[[1]]$S)
+    these_Ps = lapply(this_param$smoothterms, function(x) if(length(x)==1) x[[1]]$S else 
+      list(Matrix::bdiag(lapply(x,function(y)y$S[[1]]))))
     is_TP <- sapply(these_Ps, length) > 1
     if(any(is_TP))
       these_Ps[which(is_TP)] <- lapply(these_Ps[which(is_TP)],

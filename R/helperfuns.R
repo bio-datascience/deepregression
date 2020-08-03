@@ -293,14 +293,16 @@ get_contents <- function(lf, data, df,
     
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
-    if(is.null(df)) df <- pmax(min(sapply(smoothterms, function(x) x[[1]]$df)) - 
+    if(is.null(df)) df <- pmax(min(sapply(smoothterms, 
+                                          function(x) if(length(x)>1) sum(sapply(x, "[[", "df")) else x[[1]]$df)) - 
                                  null_space_penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
-        if(length(st[[1]]$S)==1) S <- st[[1]]$S[[1]] else
-          S <- Reduce("+", st[[1]]$S)
-        st[[1]]$sp = DRO(st[[1]]$X, df = df, dmat = S)["lambda"] + null_space_penalty
+        if(length(st[[1]]$S)==1 & length(st)==1) S <- st[[1]]$S[[1]] else if(length(st[[1]]$S)!=1)
+          S <- Reduce("+", st[[1]]$S) else S <- Matrix::bdiag(lapply(st,function(x)x$S[[1]]))
+        if(length(st)==1) X <- st[[1]]$X else X <- do.call("cbind", lapply(st,"[[","X"))
+        st[[1]]$sp = DRO(X, df = df, dmat = S)["lambda"] + null_space_penalty
         return(st)
       }
     smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))] <-
