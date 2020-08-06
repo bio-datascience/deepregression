@@ -162,7 +162,8 @@ get_contents <- function(lf, data, df,
                          intercept = TRUE,
                          defaultSmoothing,
                          absorb_cons = TRUE,
-                         null_space_penalty = FALSE){
+                         null_space_penalty = FALSE, 
+                         hat1 = TRUE){
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
@@ -302,7 +303,7 @@ get_contents <- function(lf, data, df,
         if(length(st[[1]]$S)==1 & length(st)==1) S <- st[[1]]$S[[1]] else if(length(st[[1]]$S)!=1)
           S <- Reduce("+", st[[1]]$S) else S <- Matrix::bdiag(lapply(st,function(x)x$S[[1]]))
         if(length(st)==1) X <- st[[1]]$X else X <- do.call("cbind", lapply(st,"[[","X"))
-        st[[1]]$sp = DRO(X, df = df, dmat = S)["lambda"] + null_space_penalty
+        st[[1]]$sp = DRO(X, df = df, dmat = S, hat1 = hat1)["lambda"] + null_space_penalty
         return(st)
       }
     smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))] <-

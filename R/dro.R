@@ -20,7 +20,7 @@ make_psd <- function(x, eps = sqrt(.Machine$double.eps)) {
 # => we allow for an approximation based on the package rsvd
 DRO <- function(X, df = 4, lambda = NULL, dmat = NULL, # weights,
                 svdtype = c("default", "rsvd"), XtX = NULL,
-                k = 100, q = 3, ...) {
+                k = 100, q = 3, hat1 = TRUE, ...) {
 
   svdtype <- match.arg(svdtype)
   if(svdtype=="rsvd") svd <- function(A, nu, nv) rsvd::rsvd(A = A, nu = nu, nv = nv,
@@ -67,10 +67,13 @@ DRO <- function(X, df = 4, lambda = NULL, dmat = NULL, # weights,
   ## if unsucessfull try the same computation but compute singular vectors as well
   if (inherits(d, "try-error"))
     d <- svd(crossprod(Rm, dmat) %*% Rm)$d
-
-  ## df := trace(2S - S'S)
-  dfFun <- function(lambda) 2 * sum( 1/(1+lambda*d) ) - sum( 1/(1+lambda*d)^2 )
-
+  if (hat1) {
+    dfFun <- function(lambda) sum(1/(1 + lambda * d))
+  }
+  else {
+    dfFun <- function(lambda) 2 * sum(1/(1 + lambda * d)) - 
+      sum(1/(1 + lambda * d)^2)
+  }
   if (!is.null(lambda))
     return(c(df = dfFun(lambda), lambda = lambda))
   if (df >= length(d)) return(c(df = df, lambda = 0))

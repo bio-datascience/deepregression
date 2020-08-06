@@ -76,6 +76,8 @@
 #' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated up
 #' front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
 #' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
+#' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
+#' matrix sum(diag(H)), else sum(diag(2*H-HH))
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -161,6 +163,7 @@ deepregression <- function(
   absorb_cons = TRUE,
   zero_constraint_for_smooths = FALSE,
   orthog_type = c("tf", "manual"),
+  hat1 = TRUE,
   # compress = TRUE,
   ...
 )
