@@ -163,7 +163,7 @@ deepregression <- function(
   absorb_cons = TRUE,
   zero_constraint_for_smooths = FALSE,
   orthog_type = c("tf", "manual"),
-  hat1 = TRUE,
+  hat1 = FALSE,
   # compress = TRUE,
   ...
 )
