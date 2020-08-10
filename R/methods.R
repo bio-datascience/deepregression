@@ -280,8 +280,6 @@ fit.deepregression <- function(
   ...
 )
 {
-
-  callbacks <- list()
   
   # make callbacks 
   if(save_weights){
