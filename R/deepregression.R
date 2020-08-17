@@ -78,6 +78,7 @@
 #' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
 #' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 #' matrix sum(diag(H)), else sum(diag(2*H-HH))
+#' @param sp_scale positive constat; for scaling the DRO calculated penalty (1 per default)
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -164,6 +165,7 @@ deepregression <- function(
   zero_constraint_for_smooths = TRUE,
   orthog_type = c("tf", "manual"),
   hat1 = FALSE,
+  sp_scale = 1,
   # compress = TRUE,
   ...
 )
@@ -259,7 +261,9 @@ deepregression <- function(
                                      network_names = netnames,
                                      defaultSmoothing = defaultSmoothing,
                                      absorb_cons = absorb_cons,
-                                     null_space_penalty = null_space_penalty)
+                                     null_space_penalty = null_space_penalty,
+                                     hat1 = hat1,
+                                     sp_scale = sp_scale)
   cat(" Done.\n")
   
   # check for zero ncol linterms
