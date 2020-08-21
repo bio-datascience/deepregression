@@ -215,11 +215,11 @@ if(FALSE){
 combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
 {
   
-  if(is.null(deep)){
+  if(is.null(deep) || length(deep)==0){
     
     return(struct)
   
-  }else if(is.null(struct)){
+  }else if(is.null(struct) || (is.list(struct) && length(struct)==0)){
     
     if(length(deep)==1) return(deep_top[[1]](deep[[1]]))
     
@@ -228,7 +228,7 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
     
   }else{
     
-    if(is.null(ox)){
+    if(is.null(ox) || length(ox)==0 || (length(ox)==1 & is.null(ox[[1]]))){
       
       return(
         layer_add( append(lapply(1:length(deep), 

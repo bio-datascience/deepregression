@@ -771,21 +771,10 @@ deepregression_init <- function(
   
   list_pred_param <- lapply(1:nr_params, function(i){
     
-    if(length(deep_parts[[i]]) < i) this_deep <- NULL else 
-      this_deep <- deep_parts[[i]]
-    if(length(list_deep_ontop[[i]]) < i) this_ontop <- NULL else 
-      this_ontop <- list_deep_ontop[[i]]
-    if(length(structured_parts) < i) this_struct <- NULL else 
-      this_struct <- structured_parts[[i]]
-    if(length(ox) < i | train_together) this_ox <- NULL else
-      this_ox <- ox[[i]]
-    if(is.list(this_ox) & is.null(this_ox[[1]])) 
-      this_ox <- NULL
-    
-    combine_model_parts(deep = this_deep,
-                        deep_top = this_ontop,
-                        struct = this_struct,
-                        ox = this_ox,
+    combine_model_parts(deep = deep_parts[[i]],
+                        deep_top = list_deep_ontop[[i]],
+                        struct = structured_parts[[i]],
+                        ox = ox[[i]],
                         orthog_fun = orthog_fun)
   }
   )
