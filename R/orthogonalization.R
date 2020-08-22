@@ -212,30 +212,56 @@ if(FALSE){
 
 }
 
-combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun)
+combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
 {
   
   if(is.null(deep) || length(deep)==0){
     
-    return(struct)
+    if(is.null(shared)) return(struct) else
+      return(
+        layer_add(list(shared,struct))
+        )
+      
   
   }else if(is.null(struct) || (is.list(struct) && length(struct)==0)){
     
-    if(length(deep)==1) return(deep_top[[1]](deep[[1]]))
+    if(length(deep)==1){ 
+      
+      if(is.null(shared))
+        return(deep_top[[1]](deep[[1]])) else
+          return(
+            layer_add(list(shared,deep_top[[1]](deep[[1]])))
+          )
+      
+    } # else
     
-    return(layer_add(lapply(1:length(deep), 
-                            function(j) deep_top[[j]](deep[[j]]))))
+    if(is.null(shared))
+      return(
+        layer_add(
+          lapply(1:length(deep), function(j) deep_top[[j]](deep[[j]])))) else
+                                return(
+                                  layer_add(list(shared,
+                                                 layer_add(lapply(1:length(deep), 
+                                                                  function(j) deep_top[[j]](deep[[j]])))))
+                                )
     
   }else{
     
     if(is.null(ox) || length(ox)==0 || (length(ox)==1 & is.null(ox[[1]]))){
       
-      return(
-        layer_add( append(lapply(1:length(deep), 
-                                           function(j) deep_top[[j]](deep[[j]])),
-                          list(struct))
-        )
-        )
+      if(is.null(shared))
+        return(
+          layer_add( append(lapply(1:length(deep), 
+                                   function(j) deep_top[[j]](deep[[j]])),
+                            list(struct))
+          )
+        ) else
+          return(
+            layer_add( append(lapply(1:length(deep), 
+                                     function(j) deep_top[[j]](deep[[j]])),
+                              list(struct), list(shared))
+            )
+          )
       
     }else{
       

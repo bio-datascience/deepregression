@@ -17,8 +17,13 @@
 #' See the examples for more details.
 #' @param family a character specifying the distribution. For information on 
 #' possible distribution and parameters, see \code{\link{make_tfd_dist}} 
-#' @param train_together logical; whether or not to train all parameters in 
-#' one deep network.
+#' @param train_together a list of formulae of the same length as \code{list_of_formulae} 
+#' specifying the deep predictors that should be trained together and then the results are; 
+#' fed into different distribution parameters; use the same name for the deep predictor to
+#' indicate for which distribution parameter they should be used. For example, if the second
+#' and fourth list entry are \code{~ lstm_mod(text)} then the jointly learned \code{lstm_mod} 
+#' network is added to the linear predictor of the second and fourth distribution parameter.
+#' Those network names should then be excluded from the \code{list_of_formulae}
 #' @param data data.frame or named list with input features
 #' @param df degrees of freedom for all non-linear structural terms
 #' @param lambda_lasso smoothing parameter for lasso regression; 
@@ -130,7 +135,7 @@ deepregression <- function(
     "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform", "zip"
   ),
-  train_together = FALSE,
+  train_together = list(),
   data,
   # batch_size = NULL,
   # epochs = 10L,
@@ -213,8 +218,12 @@ deepregression <- function(
   # for convenience transform NULL to list(NULL) for list_of_deep_models
   if(missing(list_of_deep_models) | is.null(list_of_deep_models)){ 
     list_of_deep_models <- list(NULL)
-    warning("No deep model specified")
+    if(length(train_together)==0) warning("No deep model specified")
   }else if(!is.list(list_of_deep_models)) stop("list_of_deep_models must be a list.")
+  
+  if(length(train_together)>0 & (!is.list(train_together) | 
+                                 length(train_together) != length(list_of_formulae)))
+    stop("If specified, train_together must be of same length as list_of_formulae.")
   # get names of networks
   netnames <- names(list_of_deep_models)
   if(is.null(netnames) & length(list_of_deep_models) > 0)
@@ -227,15 +236,18 @@ deepregression <- function(
   output_dim <- NCOL(y)
   # check consistency of #parameters
   nr_params <- length(list_of_formulae)
+  # add fake parameter for train_together models
+  # if(length(train_together)>0)
+  #   nr_params <- nr_params + length(unique(list_of_formulae))
   if(is.null(dist_fun)) 
     nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
-      nrparams_dist <- nr_params
-  if(nrparams_dist < nr_params)
+      nrparams_dist <- nr_params # - length(unique(list_of_formulae))
+  if(nrparams_dist < nr_params) # - length(unique(list_of_formulae)))
   {
     warning("More formulae specified than parameters available.",
             " Will only use ", nrparams_dist, " formula(e).") 
     nr_params <- nrparams_dist
-    list_of_formulae <- list_of_formulae[1:nr_params]
+    list_of_formulae <- list_of_formulae[1:nrparams_dist]
   }
   # check list of formulae is always one-sided
   if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
@@ -250,7 +262,16 @@ deepregression <- function(
         warning("If auc is chosen as metric, it must be the only specified metric.")
   if(!is.null(offset) & !is.list(offset))
     stop("Argument offset must be a list of offsets for each parameter.")
-  
+  # add train together networks in case there are any
+  if(length(train_together)>0){
+    
+    warning("train_together not yet implemented in combination with the orthogonalization.")
+    nulls <- sapply(train_together,is.null)
+    train_together[!nulls] <- 
+      lapply(train_together[!nulls], remove_intercept)
+    list_of_formulae <- c(list_of_formulae, unique(train_together[!nulls]))
+    
+  }
   cat("Preparing additive formula(e)...")
   # parse formulae
   parsed_formulae_contents <- lapply(list_of_formulae,
@@ -267,32 +288,10 @@ deepregression <- function(
   cat(" Done.\n")
   
   # check for zero ncol linterms
-  for(i in 1:nr_params){
+  for(i in 1:length(parsed_formulae_contents)){
     if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
-
-  # this_OX <- lapply(parsed_formulae_contents, make_orthog, retcol = TRUE)
-
-  # are parameters trained together?
-  if(train_together & !all(sapply(list_of_deep_models, is.null)))
-  {
-
-    # check if d-terms and corresponding covariates are in all
-    # parameter
-    nr_params <- length(parsed_formulae_contents)
-    if(length(list_of_deep_models) > 1)
-      stop("If train_together=TRUE, a list with", 
-           " only one deep learning model should be provided.")
-    units_last_layer <- as.integer(as.list(body(list_of_deep_models[[1]])[[3]])$units)
-    if(units_last_layer != nr_params)
-      stop("The number of units in the last layer of the network ",
-           "must be equal to the number of parameters.")
-    
-  }
-
-  # extract constraints
-  # TODO
 
   # get columns per term
   ncol_deep <- lapply(lapply(
@@ -322,11 +321,6 @@ deepregression <- function(
                                               # prior_fun = prior_fun
                                               ))
   
-  if(train_together){
-    ncol_deep <- ncol_deep[[1]]
-    for(i in 2:nr_params)
-      parsed_formulae_contents[[i]]["deepterms"] <- list(NULL)
-  }
 
   # check distribution wrt to specified parameters
   # (not when distfun is given)
@@ -421,7 +415,7 @@ deepregression <- function(
     list_deep = list_of_deep_models,
     nr_params = nr_params,
     lss = TRUE,
-    train_together = train_together,
+    train_together = train_together_ind(train_together),
     family = family,
     variational = variational,
     dist_fun = dist_fun,
@@ -712,12 +706,18 @@ deepregression_init <- function(
   #    any(!sapply(inputs_deep, is.null)) & length(ncol_deep)>1)
   #   stop(paste0("If paramters of distribution are not trained together, ",
   #        "a deep model must be provided for each parameter."))
-  deep_split <- lapply(ncol_deep, function(param_list){
+  deep_split <- lapply(ncol_deep[1:nr_params], function(param_list){
     lapply(names(param_list), function(nn){
       if(is.null(nn)) return(NULL) else
         split_fun(list_deep[[nn]], -1)
     })
   })
+  
+  if(!is.null(train_together) && !is.null(list_deep) & 
+     !(length(list_deep)==1 & is.null(list_deep[[1]])))
+    list_deep_shared <- list_deep[sapply(names(list_deep),function(nnn)
+      !nnn%in%names(ncol_deep[1:nr_params]))] else
+        list_deep_shared <- NULL
 
   list_deep <- lapply(deep_split, function(param_list) 
     lapply(param_list, "[[", 1))
@@ -725,12 +725,12 @@ deepregression_init <- function(
     lapply(param_list, "[[", 2))
 
   # define deep predictor
-  deep_parts <- lapply(1:length(inputs_deep), function(i)
+  deep_parts <- lapply(1:length(list_deep), function(i)
     if(is.null(inputs_deep[[i]]) | length(inputs_deep[[i]])==0) 
       return(NULL) else 
       lapply(1:length(list_deep[[i]]), function(j)
         list_deep[[i]][[j]](inputs_deep[[i]][[j]])))
-
+  
   ############################################################
   ################# Apply Orthogonalization ##################
   
@@ -740,42 +740,44 @@ deepregression_init <- function(
   # the deep part is projected into the orthogonal space of the
   # structured part
   
-  # Check if only one shared deep network is present
-  if(train_together & !is.null(deep_parts[[1]])){
-
-    if(length(deep_parts) > 1)
-      stop("Training deep parts together for more than one deep model",
-           " not supported yet.")
+  if(!is.null(train_together) && !is.null(list_deep_shared) & 
+     any(!sapply(inputs_deep, is.null))){
     
-    if(!all(sapply(ox, is.null))){
-      warning("Orthogonalization currently only works with separate deep models.")
-      ox <- ox[1] 
-    }
+    shared_parts <- lapply(unique(unlist(train_together)), function(i)
+      list_deep_shared[[i]](
+        inputs_deep[[nr_params + i]][[1]]
+      ))
     
-    # apply orthogonalization
-    if(!is.null(ox[[1]]))
-      deep_parts[[1]] <- orthog_fun(deep_parts[[1]],
-                                    ox[[1]])
+    colind_shared <- 
+      apply(sapply(1:length(shared_parts),function(j) 
+        sapply(train_together, function(tt) if(length(tt)==0) 0 else tt == j)),
+        2, cumsum)
     
-    # function for split deep model parts
-    this_split_fun <- function(x)
-      tf$split(x, num_or_size_splits = as.integer(nr_params), axis = 1L)
-
-    # apply splitting
-    deep_parts <- layer_lambda(list_deep_ontop[[1]](deep_parts[[1]]), 
-                               f = this_split_fun)
+  }else{
     
-    list_deep_ontop <- lapply(1:nr_params, function(i) function(obj) obj)
-
+    shared_parts <- NULL
+    
   }
   
   list_pred_param <- lapply(1:nr_params, function(i){
+    
+    if(!is.null(shared_parts)){
+      
+      shared_i <- if(length(train_together[[i]])==0) NULL else
+        shared_parts[[train_together[[i]]]][
+          ,
+          colind_shared[,train_together[[i]]][i],
+          drop=FALSE]
+    }else{
+      shared_i <- NULL
+    }
     
     combine_model_parts(deep = deep_parts[[i]],
                         deep_top = list_deep_ontop[[i]],
                         struct = structured_parts[[i]],
                         ox = ox[[i]],
-                        orthog_fun = orthog_fun)
+                        orthog_fun = orthog_fun,
+                        shared = shared_i)
   }
   )
   

@@ -296,8 +296,8 @@ get_contents <- function(lf, data, df,
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- pmax(min(sapply(smoothterms, 
-                                          function(x) if(length(x)>1) sum(sapply(x, "[[", "df")) else x[[1]]$df)) - 
-                                 null_space_penalty, 1)
+                                          function(x) if(length(x)>1) sum(sapply(x, "[[", "df")) else 
+                                            x[[1]]$df)) - null_space_penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
@@ -797,3 +797,21 @@ unlist_order_preserving <- function(x)
 }
 
 get_family_name <- function(dist) gsub(".*(^|/)(.*)/$", "\\2", dist$name)
+
+remove_intercept <- function(form) update(form, ~ 0 + . )
+
+frm_to_text <- function(form) Reduce(paste, deparse(form))
+
+train_together_ind <- function(train_together)
+{
+ 
+  if(is.list(train_together) & length(train_together )==0) return(NULL) 
+  nulls <- sapply(train_together, is.null)
+  nets <- unique(train_together[!nulls])
+  apply(sapply(nets, function(nn) 
+    sapply(train_together, 
+           function(tt) if(is.null(tt)) FALSE else nn==tt)), 1, which)
+
+  
+}
+  
