@@ -102,7 +102,8 @@ NCOL0 <- function(x)
 #     }
 #   }
 #   if (recheck) {
-#     if (all.equal(xoo,x[ind,],check.attributes=FALSE)!=TRUE) warning("uniquecombs has not worked properly")
+#     if (all.equal(xoo,x[ind,],check.attributes=FALSE)!=TRUE) 
+# warning("uniquecombs has not worked properly")
 #   }
 #   attr(x,"index") <- ind
 #   x
@@ -296,7 +297,8 @@ get_contents <- function(lf, data, df,
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- pmax(min(sapply(smoothterms, 
-                                          function(x) if(length(x)>1) sum(sapply(x, "[[", "df")) else 
+                                          function(x) if(length(x)>1) 
+                                            sum(sapply(x, "[[", "df")) else 
                                             x[[1]]$df)) - null_space_penalty, 1)
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st){
@@ -320,7 +322,8 @@ get_contents <- function(lf, data, df,
                #   fac <- trimws(gsub("by.*\\=(.*)","\\1",vars[grepl("by.*\\=",vars)]))
                #   rep <- TRUE
                #   }
-               # vars[grepl("by.*\\=",vars)] <- gsub("(\\s+)\\=(\\s+)","_",vars[grepl("by.*\\=",vars)])
+               # vars[grepl("by.*\\=",vars)] <- 
+               # gsub("(\\s+)\\=(\\s+)","_",vars[grepl("by.*\\=",vars)])
                #ret <- 
                  paste(vars, collapse=",")
                # if(rep) paste0(ret, 1:nlevels(data[[fac]])) else ret
@@ -549,9 +552,9 @@ get_indices <- function(x)
     if(!is.null(x$smoothterms))
       bsdims <- unlist(lapply(x$smoothterms, function(y){
         if(is.null(y[[1]]$margin) & y[[1]]$by=="NA") 
-          return(y[[1]]$bs.dim-attr(y[[1]],"nCons")) else if(
+          return(ncol(y[[1]]$X)) else if(
             is.null(y[[1]]$margin) & y[[1]]$by!="NA")
-            return(sapply(y, "[[", "bs.dim")-attr(y[[1]],"nCons")) else
+            return(sapply(y, "[[", "bs.dim")) else
               # Tensorprod
               return(prod(sapply(y[[1]]$margin,"[[", "bs.dim")))
       })) else bsdims <- c()
