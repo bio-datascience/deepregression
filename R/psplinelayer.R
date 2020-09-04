@@ -306,7 +306,7 @@ layer_spline <- function(object,
 
 #### get layer based on smoothCon object
 get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
-                              posterior_fun=NULL#, prior_fun=NULL
+                              posterior_fun=NULL, trafo=FALSE#, prior_fun=NULL
                               )
 {
 
@@ -366,6 +366,12 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
 
   name <- "structured_nonlinear"
   if(!is.null(nr)) name <- paste(name, nr, sep="_")
+  
+  if(trafo){
+    
+    return(bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]])))
+    
+  }
 
   layer_spline(input_shape = list(as.integer(params)),
                # the one is just an artifact from concise

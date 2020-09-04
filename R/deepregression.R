@@ -84,6 +84,9 @@
 #' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 #' matrix sum(diag(H)), else sum(diag(2*H-HH))
 #' @param sp_scale positive constat; for scaling the DRO calculated penalty (1 per default)
+#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, a conditional transformation
+#' model (CTM) is fitted.
+#' @param y_basis_fun,y_basis_fun_prime basis functions for y transformation for CTM case
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -133,7 +136,8 @@ deepregression <- function(
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
     "multinomial", "multinoulli", "negbinom", "pareto", "poisson", 
     "poisson_lograte", "student_t",
-    "student_t_ls", "truncated_normal", "uniform", "zip"
+    "student_t_ls", "truncated_normal", "uniform", "zip",
+    "transformation_model"
   ),
   train_together = list(),
   data,
@@ -171,6 +175,9 @@ deepregression <- function(
   orthog_type = c("tf", "manual"),
   hat1 = FALSE,
   sp_scale = 1,
+  order_bsp = NULL,
+  y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
+  y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, supp = range(y)) / diff(range(y)),
   # compress = TRUE,
   ...
 )
@@ -239,7 +246,7 @@ deepregression <- function(
   # add fake parameter for train_together models
   # if(length(train_together)>0)
   #   nr_params <- nr_params + length(unique(list_of_formulae))
-  if(is.null(dist_fun)) 
+  if(is.null(dist_fun) & family != "transformation_model") 
     nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
       nrparams_dist <- nr_params # - length(unique(list_of_formulae))
   if(nrparams_dist < nr_params) # - length(unique(list_of_formulae)))
@@ -317,7 +324,8 @@ deepregression <- function(
   list_structured <- lapply(1:length(parsed_formulae_contents), function(i)
                             get_layers_from_s(parsed_formulae_contents[[i]], i,
                                               variational = variational,
-                                              posterior_fun = posterior_fun#,
+                                              posterior_fun = posterior_fun,
+                                              trafo = (family == "transformation_model")
                                               # prior_fun = prior_fun
                                               ))
   
@@ -404,40 +412,70 @@ deepregression <- function(
   # define orthogonalization function
   if(orthog_type == "tf")
     orthog_fun <- orthog_tf else orthog_fun <- orthog
+  
+  # check if transformation models
+  
+  if(family=="transformation_model"){
     
-  #############################################################
-  # initialize the model
-  model <- deepregression_init(
-    n_obs = n_obs,
-    ncol_structured = ncol_structured,
-    ncol_deep = ncol_deep,
-    list_structured = list_structured,
-    list_deep = list_of_deep_models,
-    nr_params = nr_params,
-    lss = TRUE,
-    train_together = train_together_ind(train_together),
-    family = family,
-    variational = variational,
-    dist_fun = dist_fun,
-    kl_weight = 1 / n_obs,
-    orthogX = nestNCOL(ox),
-    lambda_lasso = lambda_lasso,
-    lambda_ridge = lambda_ridge,
-    monitor_metric = monitor_metric,
-    optimizer = optimizer,
-    output_dim = output_dim,
-    mixture_dist = mixture_dist,
-    split_fun = split_fun,
-    posterior = posterior_fun,
-    prior = prior_fun,
-    ind_fun = ind_fun,
-    extend_output_dim = extend_output_dim,
-    offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
-    orthog_fun = orthog_fun,
-    ...
-  )
-  #############################################################
+    input_cov <- c(input_cov, 
+                   list(y_basis_fun(y), 
+                        y_basis_fun_prime(y)))
+    
+    model <- deeptransformation_init(
+      n_obs = n_obs,
+      ncol_structured = ncol_structured,
+      ncol_deep = ncol_deep,
+      list_structured = list_structured,
+      list_deep = list_of_deep_models,
+      orthogX = nestNCOL(ox),
+      lambda_lasso = lambda_lasso,
+      lambda_ridge = lambda_ridge,
+      monitor_metric = monitor_metric,
+      optimizer = optimizer,
+      split_fun = split_fun,
+      orthog_fun = orthog_fun,
+      order_bsp = order_bsp,
+      ...
+    )
+    
+  }else{
+    
+    #############################################################
+    # initialize the model
+    model <- deepregression_init(
+      n_obs = n_obs,
+      ncol_structured = ncol_structured,
+      ncol_deep = ncol_deep,
+      list_structured = list_structured,
+      list_deep = list_of_deep_models,
+      nr_params = nr_params,
+      lss = TRUE,
+      train_together = train_together_ind(train_together),
+      family = family,
+      variational = variational,
+      dist_fun = dist_fun,
+      kl_weight = 1 / n_obs,
+      orthogX = nestNCOL(ox),
+      lambda_lasso = lambda_lasso,
+      lambda_ridge = lambda_ridge,
+      monitor_metric = monitor_metric,
+      optimizer = optimizer,
+      output_dim = output_dim,
+      mixture_dist = mixture_dist,
+      split_fun = split_fun,
+      posterior = posterior_fun,
+      prior = prior_fun,
+      ind_fun = ind_fun,
+      extend_output_dim = extend_output_dim,
+      offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
+      orthog_fun = orthog_fun,
+      ...
+    )
+    #############################################################
 
+  }
+  
+  
   ret <- list(model = model,
               init_params =
                 list(
@@ -485,8 +523,7 @@ deepregression <- function(
 #' @param nr_params number of distribution parameters 
 #' @param lss whether or not to model the whole distribution 
 #' (lss in the style of location, scale and shape approaches) 
-#' @param train_together logical, whether or not to train distribution parameters
-#' within one network or using separete networks (the latter is the default)
+#' @param train_together see \code{?deepregression}
 #' @param lambda_lasso penalty parameter for l1 penalty of structured layers
 #' @param lambda_ridge penalty parameter for l2 penalty of structured layers
 #' @param family family specifying the distribution that is modelled
@@ -524,7 +561,7 @@ deepregression_init <- function(
   use_bias_in_structured = FALSE,
   nr_params = 2,
   lss = TRUE,
-  train_together = FALSE,
+  train_together = NULL,
   lambda_lasso=NULL,
   lambda_ridge=NULL,
   family,
@@ -913,3 +950,330 @@ deepregression_init <- function(
 
 }
 
+
+
+#' @title Initializing Deep Transformation Models
+#'
+#'
+#' @param n_obs number of observations
+#' @param ncol_structured a vector of length #parameters
+#' defining the number of variables used for each of the parameters.
+#' If any of the parameters is not modelled using a structured part
+#' the corresponding entry must be zero.
+#' @param ncol_deep a vector of length #parameters
+#' defining the number of variables used for each of the parameters.
+#' If any of the parameters is not modelled using a deep part
+#' the corresponding entry must be zero. If all parameters
+#' are estimated by the same deep model, the first entry must be
+#' non-zero while the others must be zero.
+#' @param list_structured list of (non-linear) structured layers
+#' (list length between 0 and number of parameters)
+#' @param list_deep list of deep models to be used
+#' (list length between 0 and number of parameters)
+#' @param lambda_lasso penalty parameter for l1 penalty of structured layers
+#' @param lambda_ridge penalty parameter for l2 penalty of structured layers
+#' @param weights observation weights used in the likelihood 
+#' @param learning_rate learning rate for optimizer 
+#' @param optimizer optimizer used (defaults to adam)
+#' @param monitor_metric see \code{?deepregression}
+#' @param orthog_fun function defining the orthogonalization
+#' @param orthogX vector of columns defining the orthgonalization layer
+#' @param split_fun see \code{?deepregression}
+#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, a conditional transformation
+#' model (CTM) is fitted.
+#' 
+#' @export 
+#'
+deeptransformation_init <- function(
+  n_obs,
+  ncol_structured,
+  ncol_deep,
+  list_structured,
+  list_deep,
+  lambda_lasso=NULL,
+  lambda_ridge=NULL,
+  weights = NULL,
+  learning_rate = 0.01,
+  optimizer = optimizer_adam(lr = learning_rate),
+  monitor_metric = list(),
+  orthog_fun = orthog,
+  orthogX = NULL,
+  split_fun = split_model,
+  order_bsp,
+  use_bias_in_structured = FALSE
+)
+{
+  
+  nr_params = 2 # shift & interaction term
+  output_dim = rep(1, nr_params) # only univariate responses
+  if(length(list_deep)==1 & is.null(list_deep[[1]])) 
+    list_deep <- list_deep[rep(1,2)]
+  
+  # define the input layers
+  inputs_deep <- lapply(ncol_deep, function(param_list){
+    if(is.list(param_list) & length(param_list)==0) return(NULL)
+    lapply(param_list, function(nc){
+      if(sum(unlist(nc))==0) return(NULL) else{
+        if(is.list(nc) & length(nc)>1){ 
+          layer_input(shape = list(as.integer(sum(unlist(nc)))))
+        }else if(is.list(nc) & length(nc)==1){
+          layer_input(shape = as.list(as.integer(nc[[1]])))
+        }else stop("Not implemented yet.")
+      }
+    })
+  })
+  
+  inputs_struct <- lapply(1:length(ncol_structured), function(i){
+    nc = ncol_structured[i]
+    if(nc==0) return(NULL) else
+      # if(!is.null(list_structured[[i]]) & nc > 1)
+      # nc>1 will cause problems when implementing ridge/lasso
+      layer_input(shape = list(as.integer(nc)))
+  })
+  
+  if(!is.null(orthogX)){
+    ox <- lapply(1:length(orthogX), function(i){ 
+      
+      x = orthogX[[i]]
+      if(is.null(x) | is.null(inputs_deep[[i]])) return(NULL) else{
+        lapply(x, function(xx){
+          if(is.null(xx) || xx==0) return(NULL) else 
+            return(layer_input(shape = list(as.integer(xx))))})
+      }
+    })
+  }
+  
+  # inputs for BSP trafo of Y, both n x tilde{M}
+  input_theta_y <- layer_input(shape = list(order_bsp+1L))
+  input_theta_y_prime <- layer_input(shape = list(order_bsp+1L))
+  
+  structured_parts <- vector("list", 2)
+  
+  # define structured predictor
+  if(is.null(inputs_struct[[1]]))
+  {
+    structured_parts[[1]] <-  NULL
+    
+  }else{
+    
+    if(is.null(list_structured[[1]]))
+    {
+      if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
+        
+        l1 = tf$keras$regularizers$l1(l=lambda_lasso)
+        
+        structured_parts[[1]] <- inputs_struct[[1]] %>%
+                 layer_dense(
+                   units = as.integer(output_dim[1]), 
+                   activation = "linear",
+                   use_bias = use_bias_in_structured,
+                   kernel_regularizer = l1,
+                   name = paste0("structured_lasso_",
+                                 1))
+
+      }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
+        
+        l2 = tf$keras$regularizers$l2(l=lambda_ridge)
+        
+        structured_parts[[1]] <- inputs_struct[[1]] %>%
+                 layer_dense(
+                   units = as.integer(output_dim[1]), 
+                   activation = "linear",
+                   use_bias = use_bias_in_structured,
+                   kernel_regularizer = l2,
+                   name = paste0("structured_ridge_",
+                                 1))
+        
+        
+      }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
+        
+        l12 = tf$keras$regularizers$l1_l2(l1=lambda_lasso,
+                                          l2=lambda_ridge)
+        
+        structured_parts[[1]] <- inputs_struct[[1]] %>%
+                 layer_dense(
+                   units = as.integer(output_dim[1]), 
+                   activation = "linear",
+                   use_bias = use_bias_in_structured,
+                   kernel_regularizer = l12,
+                   name = paste0("structured_elastnet_",
+                                 1))
+        
+      }else{
+        
+        structured_parts[[1]] <- inputs_struct[[1]] %>%
+                 layer_dense(
+                   units = as.integer(output_dim[1]), 
+                   activation = "linear",
+                   use_bias = use_bias_in_structured,
+                   name = paste0("structured_linear_",
+                                 1))
+        
+      }
+      
+    }else{
+      
+      this_layer <- list_structured[[1]]
+      structured_parts[[1]] <- inputs_struct[[1]] %>% this_layer
+    
+      }
+  }
+
+  # splitting is not done for CTMs
+
+  # define deep predictor
+  deep_parts <- lapply(1:length(list_deep), function(i)
+    if(is.null(inputs_deep[[i]]) | length(inputs_deep[[i]])==0) 
+      return(NULL) else 
+        lapply(1:length(list_deep[[i]]), function(j)
+          list_deep[[i]][[j]](inputs_deep[[i]][[j]])))
+  
+  ############################################################
+  ################# Apply Orthogonalization ##################
+  
+  # create final linear predictor per distribution parameter
+  # -> depending on the presence of a deep or structured part
+  # the corresponding part is returned. If both are present
+  # the deep part is projected into the orthogonal space of the
+  # structured part
+  
+  ## shift term
+  final_eta_pred <- combine_model_parts(deep = deep_parts[[1]],
+                        deep_top = if(is.null(deep_parts[[1]])) NULL else 
+                          function(x) layer_dense(x, units = 1, activation = "linear"),
+                        struct = structured_parts[[1]],
+                        ox = ox[[1]],
+                        orthog_fun = orthog_fun,
+                        shared = NULL)
+
+  
+  ## interaction term
+  if(is.null(deep_parts[[2]])){
+    
+    deep_part_ia <- NULL
+    
+  }else if(is.null(ox[[2]])){
+    
+    deep_part_ia <- deep_parts[[2]]
+    
+  }else{
+    
+    deep_part_ia <- orthog_fun(deep_parts[[2]], ox[[2]])
+  
+  }
+  
+  if(is.null(deep_parts[[2]])){
+    
+    interact_pred <- inputs_struct[[2]] 
+    
+  }else if(is.null(inputs_struct[[2]])){
+      
+    interact_pred <- deep_part_ia
+    
+  }else{
+    
+    interact_pred <- layer_concatenate(list(inputs_struct[[2]],deep_part_ia))
+    
+  }
+    
+  ## thetas
+  AoB <- tf_row_tensor(input_theta_y, interact_pred)
+  AprimeoB <- tf_row_tensor(input_theta_y_prime, interact_pred)
+  
+  thetas_layer <- layer_mono_multi(input_shape = 
+                                     list(NULL, (order_bsp+1L)*
+                                            (ncol(interact_pred)[[1]])),
+                                   dim_bsp = c(order_bsp+1L))
+  
+  aTtheta <- AoB %>% thetas_layer()
+  aPrimeTtheta <- AprimeoB %>% thetas_layer()
+  
+  
+  modeled_terms <- layer_concatenate(list(
+    final_eta_pred,
+    aTtheta,
+    aPrimeTtheta
+  ))
+  
+  neg_ll <- function(y, model) {
+    
+    # shift term/lin pred
+    w_eta <- model[, 1, drop = FALSE]
+    
+    # first part of the loglikelihood, n x (order + 1)
+    aTtheta <- model[, 2, drop = FALSE]
+    aTtheta_shift <- aTtheta + w_eta
+    first_term <- tfd_normal(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
+    
+    # second part of the loglikelihood
+    aPrimeTtheta <- model[, 3, drop =  FALSE]
+    sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
+    
+    neglogLik <- -1 * (first_term + sec_term)
+    
+    return(neglogLik)
+  }
+  
+  inputList <- unname(c(
+    unlist(inputs_deep[!sapply(inputs_deep, is.null)],
+           recursive = F),
+    inputs_struct[!sapply(inputs_struct, is.null)],
+    unlist(ox[!sapply(ox, is.null)]),
+    input_theta_y,
+    input_theta_y_prime
+    )
+  )
+  
+  model <- keras_model(inputs = inputList,
+                       outputs = modeled_terms)
+  
+  # add penalty for interaction term
+  if(is.null(list_structured[[2]]))
+  {
+    if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
+      
+      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[1]])
+      
+    }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
+      
+      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[1]])
+      
+      
+    }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
+      
+      reg = function(x) tf$keras$regularizers$l1_l2(
+        l1=lambda_lasso,
+        l2=lambda_ridge)(model$trainable_weights[[1]])
+      
+    }else{
+     
+      reg = NULL # no penalty
+       
+    }
+      
+  }else{
+    
+
+      bigP <- list_structured[[2]]
+      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[1]], k_dot(
+        # tf$constant(
+        sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),"CsparseMatrix")),
+        # dtype = "float32"),
+        model$trainable_weights[[1]]),
+        axes=2) # 1-based
+      )
+    
+  }
+  
+  # add penalization
+  if(!is.null(reg)) model$add_loss(reg)
+  
+  model %>% compile(
+    optimizer = optimizer, 
+    loss      = neg_ll
+  )
+  
+  return(model)
+  
+  
+}
