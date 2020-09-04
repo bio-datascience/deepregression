@@ -1006,8 +1006,8 @@ deeptransformation_init <- function(
   
   nr_params = 2 # shift & interaction term
   output_dim = rep(1, nr_params) # only univariate responses
-  if(length(list_deep)==1 & is.null(list_deep[[1]])) 
-    list_deep <- list_deep[rep(1,2)]
+  # if(length(list_deep)==1 & is.null(list_deep[[1]])) 
+  #   list_deep <- list_deep[rep(1,2)]
   
   # define the input layers
   inputs_deep <- lapply(ncol_deep, function(param_list){
@@ -1046,6 +1046,14 @@ deeptransformation_init <- function(
   # inputs for BSP trafo of Y, both n x tilde{M}
   input_theta_y <- layer_input(shape = list(order_bsp+1L))
   input_theta_y_prime <- layer_input(shape = list(order_bsp+1L))
+  
+  # list_deep
+  list_deep <- lapply(ncol_deep[1:nr_params], function(param_list){
+    lapply(names(param_list), function(nn){
+      if(is.null(nn)) return(NULL) else
+        list_deep[[nn]]
+    })
+  })
   
   structured_parts <- vector("list", 2)
   
@@ -1139,22 +1147,23 @@ deeptransformation_init <- function(
   
   ## shift term
   final_eta_pred <- combine_model_parts(deep = deep_parts[[1]],
-                        deep_top = if(is.null(deep_parts[[1]])) NULL else 
-                          function(x) layer_dense(x, units = 1, activation = "linear"),
-                        struct = structured_parts[[1]],
-                        ox = ox[[1]],
-                        orthog_fun = orthog_fun,
-                        shared = NULL)
+                                        deep_top = if(is.null(deep_parts[[1]])) NULL else 
+                                          function(x) layer_dense(x, units = 1, activation = "linear"),
+                                        struct = structured_parts[[1]],
+                                        ox = ox[[1]],
+                                        orthog_fun = orthog_fun,
+                                        shared = NULL)
 
-  
   ## interaction term
   if(is.null(deep_parts[[2]])){
     
     deep_part_ia <- NULL
     
-  }else if(is.null(ox[[2]])){
+  }else if(is.null(ox[[2]]) | (is.null(ox[[2]][[1]]) & length(ox[[2]])==1)){
     
-    deep_part_ia <- deep_parts[[2]]
+    if(length(deep_parts[[2]])==1)
+      deep_part_ia <- deep_parts[[2]][[1]] else
+        deep_part_ia <- layer_add(deep_parts[[2]])
     
   }else{
     
