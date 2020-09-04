@@ -1255,13 +1255,14 @@ deeptransformation_init <- function(
     
 
       bigP <- list_structured[[2]]
-      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[1]], k_dot(
-        # tf$constant(
-        sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),"CsparseMatrix")),
-        # dtype = "float32"),
-        model$trainable_weights[[1]]),
-        axes=2) # 1-based
-      )
+      if(length(bigP@x)) reg = NULL else
+        reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[2]], k_dot(
+          # tf$constant(
+          sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),"CsparseMatrix")),
+          # dtype = "float32"),
+          model$trainable_weights[[2]]),
+          axes=2) # 1-based
+        )
     
   }
   
