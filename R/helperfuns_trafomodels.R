@@ -129,7 +129,7 @@ softplus <- function(x) log(exp(x)+1)
 reshape_softplus_cumsum <- function(x, order_bsp_p1)
 {
   
-  x <- matrix(x, nrow = order_bsp_p1)
+  x <- matrix(x, nrow = order_bsp_p1, byrow=T)
   x[2:nrow(x),] <- softplus(x[2:nrow(x),])
   apply(x, 2, cumsum)
   
