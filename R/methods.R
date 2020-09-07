@@ -364,7 +364,7 @@ predict.deeptrafo <- function(
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf"))
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "grid"))
   {
     type <- match.arg(type)
     
@@ -375,11 +375,22 @@ predict.deeptrafo <- function(
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
     ytransf <- aTtheta + w_eta
+    theta <- get_theta(object)
     
     ret <- switch (type,
                    trafo = ytransf,
                    pdf = (tfd_normal(0,1) %>% tfd_prob(ytransf)),
-                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf))
+                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf)),
+                   grid = t(as.matrix(
+                     tf$matmul(inpCov[[2]],
+                               tf$transpose(
+                                 tf$matmul(ay,
+                                           tf$cast(theta, tf$float32)
+                                           )
+                               )
+                               )
+                     )
+                   )
     )
     
     return(ret)
