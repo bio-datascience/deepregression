@@ -54,9 +54,9 @@
 #' @param prior_fun function defining the prior function for the variational
 #' verison of the network
 #' @param seed integer value used as a seed in data splitting
-#' @param mixture_dist integer either 0 or >= 2. If 0 (default), no mixture distribution is fitted.
-#' If >= 2, a network is constructed that outputs a multivariate response for each of the mixture 
-#' components.
+#' @param mixture_dist integer either 0 or >= 2. If 0 (default), 
+#' no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
+#' a multivariate response for each of the mixture components.
 #' @param split_fun a function separating the deep neural network in two parts
 #' so that the orthogonalization can be applied to the first part before 
 #' applying the second network part; per default, the function \code{split_model} is
@@ -71,8 +71,9 @@
 #' @param extend_output_dim integer value >= 0 for extending the output dimension by an 
 #' additive constant. If set to a value > 0, a multivariate response with dimension
 #' \code{1 + extend_output_dim} is defined.
-#' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
-#' in case an offset should be added to the additive predictor; if NULL, no offset is used
+#' @param offset a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each 
+#' parameter, in case an offset should be added to the additive predictor; 
+#' if NULL, no offset is used
 #' @param offset_val a list analogous to offset for the validation data
 #' @param absorb_cons logical; adds identifiability constraint to the basisi. 
 #' See \code{?mgcv::smoothCon} for more details.
@@ -84,8 +85,8 @@
 #' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 #' matrix sum(diag(H)), else sum(diag(2*H-HH))
 #' @param sp_scale positive constat; for scaling the DRO calculated penalty (1 per default)
-#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, a conditional transformation
-#' model (CTM) is fitted.
+#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
+#' a conditional transformation model (CTM) is fitted.
 #' @param y_basis_fun,y_basis_fun_prime basis functions for y transformation for CTM case
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
@@ -177,7 +178,8 @@ deepregression <- function(
   sp_scale = 1,
   order_bsp = NULL,
   y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
-  y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, supp = range(y)) / diff(range(y)),
+  y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
+                                                 supp = range(y)) / diff(range(y)),
   # compress = TRUE,
   ...
 )
@@ -325,7 +327,9 @@ deepregression <- function(
                             get_layers_from_s(parsed_formulae_contents[[i]], i,
                                               variational = variational,
                                               posterior_fun = posterior_fun,
-                                              trafo = (family == "transformation_model")
+                                              trafo = 
+                                                (family == "transformation_model" & 
+                                                   i == 2)
                                               # prior_fun = prior_fun
                                               ))
   
@@ -491,10 +495,19 @@ deepregression <- function(
                   data = data,
                   ind_structterms = ind_structterms,
                   param_names = param_names,
-                  ellipsis = list(...)
+                  ellipsis = list(...),
+                  family = family
                 ))
 
   class(ret) <- "deepregression"
+  if(family=="transformation_model"){
+    class(ret) <- c("deeptrafo","deepregression")
+    ret$init_params <- c(ret$init_params, 
+                         order_bsp = order_bsp,
+                         y_basis_fun = y_basis_fun,
+                         y_basis_fun_prime = y_basis_fun_prime)
+  }
+
 
   return(ret)
 
@@ -979,8 +992,8 @@ deepregression_init <- function(
 #' @param orthog_fun function defining the orthogonalization
 #' @param orthogX vector of columns defining the orthgonalization layer
 #' @param split_fun see \code{?deepregression}
-#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, a conditional transformation
-#' model (CTM) is fitted.
+#' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
+#' a conditional transformation model (CTM) is fitted.
 #' 
 #' @export 
 #'
@@ -1148,7 +1161,8 @@ deeptransformation_init <- function(
   ## shift term
   final_eta_pred <- combine_model_parts(deep = deep_parts[[1]],
                                         deep_top = if(is.null(deep_parts[[1]])) NULL else 
-                                          function(x) layer_dense(x, units = 1, activation = "linear"),
+                                          function(x) layer_dense(x, units = 1, 
+                                                                  activation = "linear"),
                                         struct = structured_parts[[1]],
                                         ox = ox[[1]],
                                         orthog_fun = orthog_fun,
@@ -1264,10 +1278,11 @@ deeptransformation_init <- function(
     
 
       bigP <- list_structured[[2]]
-      if(length(bigP@x)) reg = NULL else
+      if(length(bigP@x)==0) reg = NULL else
         reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[2]], k_dot(
           # tf$constant(
-          sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),"CsparseMatrix")),
+          sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),
+                                  "CsparseMatrix")),
           # dtype = "float32"),
           model$trainable_weights[[2]]),
           axes=2) # 1-based

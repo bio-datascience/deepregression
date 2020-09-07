@@ -142,6 +142,123 @@ plot.deepregression <- function(
   invisible(plotData)
 }
 
+#' @title Generic functions for deeptrafo models
+#'
+#' @param x deepregression object
+#' @param which which effect to plot, default selects all.
+#' @param which_param integer, either 1 or 2.
+#' 1 corresponds to the shift term, 2 to the interaction term.
+#' @param plot logical, if FALSE, only the data for plotting is returned
+#' @param grid_length the length of an equidistant grid at which a two-dimensional function
+#' is evaluated for plotting.
+#' @param ... further arguments, passed to fit, plot or predict function
+#'
+#' @method plot deeptrafo
+#' @export
+#' @rdname methodTrafo
+#'
+plot.deeptrafo <- function(
+  x,
+  which = NULL,
+  # which of the nonlinear structured effects
+  which_param = 1, # for which parameter
+  plot = TRUE,
+  grid_length = 40,
+  ... # passed to plot function
+)
+{
+  this_ind <- x$init_params$ind_structterms[[which_param]]
+  if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
+  if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
+  plus_number_lin_eff <- sum(this_ind$type=="lin")
+  
+  plotData <- vector("list", length(which))
+  org_feature_names <- 
+    names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
+  if(which_param==1){
+    phi <- matrix(get_shift(x), ncol=1)
+  }else{
+    phi <- t(get_theta(x))
+  }
+  
+  for(w in which){
+    
+    nam <- org_feature_names[w]
+    this_ind_this_w <- do.call("Map",
+                               c(":", as.list(this_ind[w+plus_number_lin_eff,
+                                                       c("start","end")])))[[1]]
+    BX <- 
+      x$init_params$parsed_formulae_contents[[
+        which_param]]$smoothterms[[nam]][[1]]$X
+
+    plotData[[w]] <-
+        list(org_feature_name = nam,
+             value = sapply(strsplit(nam,",")[[1]], function(xx)
+               x$init_params$data[[xx]]),
+             design_mat = BX,
+             coef = phi[this_ind_this_w,],
+             partial_effects = BX%*%phi[this_ind_this_w,])
+    
+    if(plot){
+      if(which_param==1){
+        nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
+        if(nrcols==1)
+        {
+          
+          plot(partial_effects[order(value),1] ~ sort(value[,1]),
+               data = plotData[[w]][c("value", "partial_effects")],
+               main = paste0("s(", nam, ")"),
+               xlab = nam,
+               ylab = "partial effect",
+               ...)
+          
+        }else if(nrcols==2){
+          sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
+          this_x <- do.call(seq, c(as.list(range(plotData[[w]]$value[,1])),
+                                   list(l=grid_length)))
+          this_y <- do.call(seq, c(as.list(range(plotData[[w]]$value[,2])),
+                                   list(l=grid_length)))
+          df <- as.data.frame(expand.grid(this_x,
+                                          this_y))
+          colnames(df) <- sTerm$term
+          pred <- PredictMat(sTerm, data = df)%*%phi[this_ind_this_w,]
+          #this_z <- plotData[[w]]$partial_effect
+          filled.contour(
+            this_x,
+            this_y,
+            matrix(pred, ncol=length(this_y)),
+            ...,
+            xlab = colnames(df)[1],
+            ylab = colnames(df)[2],
+            # zlab = "partial effect",
+            main = sTerm$label
+          )
+          # warning("Plotting of effects with ", nrcols, " 
+          #         covariate inputs not supported yet.")
+        }else{
+          warning("Plotting of effects with ", nrcols, 
+                  " covariate inputs not supported.")
+        }
+      }else{ # plot effects in theta
+        
+        matplot(
+          #sort(plotData[[w]]$value[,1]),
+          #1:ncol(plotData[[w]]$partial_effects),
+          plotData[[w]]$partial_effects[order(plotData[[w]]$value[,1]),],
+          ...,
+          xlab = plotData[[w]]$org_feature_name,
+          ylab = paste0("partial effects ", plotData[[w]]$org_feature_name),
+          # zlab = "partial effect",
+          type = "l"
+        )
+        
+      }
+    }
+  }
+  
+  invisible(plotData)
+}
+
 
 #' Function to prepare data for deepregression use
 #' 
@@ -217,6 +334,64 @@ predict.deepregression <- function(
     return(convert_fun(apply_fun(yhat))) else
       return(convert_fun(yhat))
 
+}
+
+#' Predict based on a deeptrafo object
+#' 
+#' @param object a deeptrafo model
+#' @param newdata optional new data, either data.frame or list
+#' @param type type of returned object, \code{"trafo"} for the transformation
+#' function, \code{"pdf"} for the density function, \code{"cdf"} for
+#' the cdf
+#' @param apply_fun which function to apply to the predicted distribution,
+#' per default \code{tfd_mean}, i.e., predict the mean of the distribution
+#' @param convert_fun how should the resulting tensor be converted,
+#' per default \code{as.matrix}
+#'
+#' @export
+#' @rdname methodDR
+#'
+predict.deeptrafo <- function(
+  object,
+  newdata = NULL,
+  type = c("trafo", "pdf", "cdf")
+  apply_fun = tfd_mean,
+  convert_fun = as.matrix,
+  ...
+)
+{
+  
+  type <- match.arg(type)
+  
+  if(is.null(newdata)){
+    inpCov <- unname(object$init_params$input_cov)
+  }else{
+    # preprocess data
+    if(is.data.frame(newdata)) newdata <- as.list(newdata)
+    inpCov <- prepare_data(object, newdata, pred=TRUE)
+    inpCov <- c(inpCov, list(NULL), list(NULL))
+  }
+  
+  trafo_fun <- function(y) 
+  {
+    ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
+    aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)
+    inpCov[length(inpCov)-c(1,0)] <- list(ay, aPrimey)
+    mod_output <- object$model(list(inpCov, tf$cast(matrix(y, ncol=1), tf$float32)))
+    w_eta <- mod_output[, 1, drop = FALSE]
+    aTtheta <- mod_output[, 2, drop = FALSE]
+    return(aTtheta + w_eta)
+                                 
+  }
+  
+  retFun <- switch (type,
+    trafo = trafo_fun,
+    pdf = function(y){ tfd_normal(0,1) %>% tfd_prob(trafo_fun(y)) },
+    cdf = function(y){ tfd_normal(0,1) %>% tfd_cdf(trafo_fun(y))}
+  )
+
+  return(retFun)
+  
 }
 
 
@@ -675,11 +850,28 @@ log_score <- function(
   data=NULL,
   this_y=NULL,
   ind_fun = function(x) tfd_independent(x,1),
-  convert_fun = as.matrix
+  convert_fun = as.matrix,
+  summary_fun = function(x) x
 )
 {
+  is_trafo <- x$init_params$family=="transformation_model"
+  
   if(is.null(data)){
-    disthat <- x$model(unname(x$init_params$input_cov))
+    this_data <- unname(x$init_params$input_cov)
+    this_data <- lapply(this_data, function(x) tf$cast(x, tf$float32))
+    if(is_trafo)
+      this_data <- list(this_data, tf$constant(matrix(x$init_params$y, 
+                                                      ncol=1), 
+                                               dtype = "float32"))
+    disthat <- x$model(this_data)
+    if(is_trafo)
+      return(summary_fun(
+        convert_fun(
+          tfd_normal(loc = 0, scale = 1) %>% 
+            tfd_log_prob(disthat[,2,drop=F] + 
+                           disthat[,1,drop=F])
+        ))
+      )
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
@@ -689,7 +881,26 @@ log_score <- function(
   if(is.null(this_y)){
     this_y <- x$init_params$y
   }
-  return(convert_fun(
+  return(summary_fun(convert_fun(
     disthat %>% ind_fun() %>% tfd_log_prob(this_y)
-    ))
+    )))
+}
+
+get_shift <- function(x)
+{
+  
+  stopifnot("deeptrafo" %in% class(x))
+  c(-1* (as.matrix(x$model$weights[[1]] + 0)))
+  
+}
+
+get_theta <- function(x)
+{
+  
+  stopifnot("deeptrafo" %in% class(x))
+  reshape_softplus_cumsum(
+    as.matrix(my_net$model$weights[[2]] + 0), 
+    order_bsp_p1 = x$init_params$order_bsp + 1
+    )
+  
 }

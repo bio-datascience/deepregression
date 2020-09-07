@@ -23,6 +23,7 @@ check_and_install <- function()
     
     # if(!reticulate::py_module_available("tfprobability"))
     tfprobability::install_tfprobability(version = "0.8.0", tensorflow = "2.0.0")
+    keras::install_keras(tensorflow = "2.0.0")
     
   }
   
