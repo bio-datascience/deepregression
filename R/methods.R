@@ -906,7 +906,7 @@ get_theta <- function(x)
   
   stopifnot("deeptrafo" %in% class(x))
   reshape_softplus_cumsum(
-    as.matrix(my_net$model$weights[[2]] + 0), 
+    as.matrix(x$model$weights[[2]] + 0), 
     order_bsp_p1 = x$init_params$order_bsp + 1
     )
   
