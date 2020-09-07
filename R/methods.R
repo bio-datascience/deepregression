@@ -340,13 +340,10 @@ predict.deepregression <- function(
 #' 
 #' @param object a deeptrafo model
 #' @param newdata optional new data, either data.frame or list
-#' @param type type of returned object, \code{"trafo"} for the transformation
-#' function, \code{"pdf"} for the density function, \code{"cdf"} for
-#' the cdf
-#' @param apply_fun which function to apply to the predicted distribution,
-#' per default \code{tfd_mean}, i.e., predict the mean of the distribution
-#' @param convert_fun how should the resulting tensor be converted,
-#' per default \code{as.matrix}
+#' @param ... not used atm
+#' @return returns a function with two parameters: the actual response
+#' and \code{type %in% c("trafo", "pdf", "cdf")} determining the
+#' returned value
 #'
 #' @export
 #' @rdname methodDR
@@ -354,14 +351,9 @@ predict.deepregression <- function(
 predict.deeptrafo <- function(
   object,
   newdata = NULL,
-  type = c("trafo", "pdf", "cdf")
-  apply_fun = tfd_mean,
-  convert_fun = as.matrix,
   ...
 )
 {
-  
-  type <- match.arg(type)
   
   if(is.null(newdata)){
     inpCov <- unname(object$init_params$input_cov)
@@ -372,25 +364,29 @@ predict.deeptrafo <- function(
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
-  trafo_fun <- function(y) 
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf"))
   {
+    type <- match.arg(type)
+    
     ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
     aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)
     inpCov[length(inpCov)-c(1,0)] <- list(ay, aPrimey)
     mod_output <- object$model(list(inpCov, tf$cast(matrix(y, ncol=1), tf$float32)))
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
-    return(aTtheta + w_eta)
-                                 
-  }
+    ytransf <- aTtheta + w_eta
+    
+    ret <- switch (type,
+                   trafo = ytransf,
+                   pdf = (tfd_normal(0,1) %>% tfd_prob(ytransf)),
+                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf))
+    )
+    
+    return(ret)
   
-  retFun <- switch (type,
-    trafo = trafo_fun,
-    pdf = function(y){ tfd_normal(0,1) %>% tfd_prob(trafo_fun(y)) },
-    cdf = function(y){ tfd_normal(0,1) %>% tfd_cdf(trafo_fun(y))}
-  )
+  }
 
-  return(retFun)
+  return(trafo_fun)
   
 }
 
