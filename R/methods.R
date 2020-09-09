@@ -244,7 +244,8 @@ plot.deeptrafo <- function(
         matplot(
           #sort(plotData[[w]]$value[,1]),
           #1:ncol(plotData[[w]]$partial_effects),
-          plotData[[w]]$partial_effects[order(plotData[[w]]$value[,1]),],
+          x=sort(plotData[[w]]$value[,1]),
+          y=(plotData[[w]]$partial_effects[order(plotData[[w]]$value[,1]),]),
           ...,
           xlab = plotData[[w]]$org_feature_name,
           ylab = paste0("partial effects ", plotData[[w]]$org_feature_name),
@@ -273,7 +274,7 @@ plot.deeptrafo <- function(
 prepare_data <- function(
   x,
   data,
-  pred=FALSE
+  pred=TRUE
 )
 {
   if(length(data)>1 & is.list(data) & !is.null(x$init_params$offset))
@@ -364,7 +365,7 @@ predict.deeptrafo <- function(
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "grid"))
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf"), grid = FALSE)
   {
     type <- match.arg(type)
     
@@ -375,22 +376,44 @@ predict.deeptrafo <- function(
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
     ytransf <- aTtheta + w_eta
+    yprimeTrans <- mod_output[, 3, drop = FALSE]
     theta <- get_theta(object)
+    if(grid)
+    {
+      
+      grid_eval <- t(as.matrix(
+        tf$matmul(inpCov[[2]],
+                  tf$transpose(
+                    tf$matmul(ay,
+                              tf$cast(theta, tf$float32)
+                    )))))
+      grid_eval <- grid_eval + 
+        t(as.matrix(w_eta)[,rep(1,nrow(grid_eval))])
+      
+      if(type=="pdf") 
+        grid_prime_eval <- t(as.matrix(
+          tf$matmul(inpCov[[2]],
+                    tf$transpose(
+                      tf$matmul(aPrimey,
+                                tf$cast(theta, tf$float32)
+                      )))))
+      
+      
+    }
+    
+    if(grid) type <- paste0("grid_",type)
     
     ret <- switch (type,
-                   trafo = ytransf,
-                   pdf = (tfd_normal(0,1) %>% tfd_prob(ytransf)),
-                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf)),
-                   grid = t(as.matrix(
-                     tf$matmul(inpCov[[2]],
-                               tf$transpose(
-                                 tf$matmul(ay,
-                                           tf$cast(theta, tf$float32)
-                                           )
-                               )
-                               )
-                     )
-                   )
+                   trafo = (ytransf %>% as.matrix),
+                   pdf = ((tfd_normal(0,1) %>% tfd_prob(ytransf) %>% 
+                            as.matrix)*as.matrix(yprimeTrans)),
+                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf) %>% 
+                            as.matrix),
+                   grid_trafo = grid_eval,
+                   grid_pdf = ((tfd_normal(0,1) %>% tfd_prob(grid_eval) %>% 
+                                  as.matrix)*as.matrix(grid_prime_eval)),
+                   grid_cdf = (tfd_normal(0,1) %>% tfd_cdf(grid_eval) %>% 
+                                 as.matrix)
     )
     
     return(ret)
@@ -702,7 +725,7 @@ cv <- function(
                         x = prepare_newdata(
                           x$init_params$parsed_formulae_contents,
                           train_data,
-                          pred = FALSE,
+                          pred = TRUE,
                           index = train_ind),
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
@@ -710,7 +733,7 @@ cv <- function(
                           prepare_newdata(
                             x$init_params$parsed_formulae_contents,
                             test_data,
-                            pred = FALSE,
+                            pred = TRUE,
                             index = test_ind),
                           subset_fun(x$init_params$y,test_ind)
                         ),

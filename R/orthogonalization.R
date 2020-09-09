@@ -7,6 +7,24 @@ orthog_structured <- function(S,L)
   return(Sorth)
 }
 
+orthog_structured_smooths <- function(S,P,L)
+{
+  
+  C <- t(S) %*% L
+  qr_C <- qr(C) 
+  if( any(class(qr_C) == "sparseQR") ){
+    rank_C <- qr_C@Dim[2]
+  }else{
+    rank_C <- qr_C$rank 
+  } 
+  Q <- qr.Q(qr_C, complete=TRUE) 
+  Z <- Q[  , (rank_C + 1) : ncol(Q) ]
+  return(list(Snew = S %*% Z,
+              Pnew = lapply(P, function(p) t(Z) %*% p %*% Z))
+  )
+         
+}
+
 orthog_smooth <- function(pcf, zero_cons = TRUE){
   
   nml <- attr(pcf$linterms, "names")
@@ -17,8 +35,9 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
   L <- NULL
   for(nm in nms){
     
-    if("(Intercept)" %in% nml & zero_cons)
-      L <- matrix(rep(1,NROW(pcf$linterms)), ncol=1)
+    if(#"(Intercept)" %in% nml & 
+       zero_cons)
+      L <- matrix(rep(1,NROW(pcf$smoothterms[[nm]][[1]]$X)), ncol=1)
     
     if(nm %in% nml){
       
@@ -28,9 +47,18 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
       
     }
     
-    if(!is.null(L))
-      pcf$smoothterms[[nm]][[1]]$X <- 
-        orthog_structured(pcf$smoothterms[[nm]][[1]]$X, L) 
+    if(!is.null(L)){
+      
+      X_and_P <- orthog_structured_smooths(
+        pcf$smoothterms[[nm]][[1]]$X,
+        pcf$smoothterms[[nm]][[1]]$S,
+        L
+      )
+      
+      pcf$smoothterms[[nm]][[1]]$X <- X_and_P[[1]]
+      pcf$smoothterms[[nm]][[1]]$S <- X_and_P[[2]]
+      
+    }
     
   }
   

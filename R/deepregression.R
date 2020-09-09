@@ -301,7 +301,12 @@ deepregression <- function(
     if(NCOL(parsed_formulae_contents[[i]]$linterms)==0)
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
+  
+  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
+                                     zero_cons = zero_constraint_for_smooths)
 
+  attr(parsed_formulae_contents,"zero_cons") <- TRUE
+  
   # get columns per term
   ncol_deep <- lapply(lapply(
     parsed_formulae_contents, "[[", "deepterms"), function(x){
@@ -334,19 +339,6 @@ deepregression <- function(
                                               ))
   
 
-  # check distribution wrt to specified parameters
-  # (not when distfun is given)
-  # if(is.null(dist_fun)) 
-  #   nrparams_dist <- make_tfd_dist(family, return_nrparams = TRUE) else
-  #     nrparams_dist <- nr_params
-  
-  # get covariates
-  #
-  # must be a list of the following form:
-  # list(deep_part_param1, deep_part_param2, ..., deep_part_param_u,
-  #      deep_struct_param1, deep_struct_param2, ..., deep_struct_param_r)
-  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
-                                     zero_cons = zero_constraint_for_smooths)
   cat("Translating data into tensors...")
   input_cov <- make_cov(parsed_formulae_contents)
   cat(" Done.\n")
