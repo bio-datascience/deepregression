@@ -19,10 +19,11 @@ orthog_structured_smooths <- function(S,P,L)
   } 
   Q <- qr.Q(qr_C, complete=TRUE) 
   Z <- Q[  , (rank_C + 1) : ncol(Q) ]
-  return(list(Snew = S %*% Z,
-              Pnew = lapply(P, function(p) t(Z) %*% p %*% Z))
-  )
-         
+  if(is.null(P)) return(S %*% Z) else
+    return(list(Snew = S %*% Z,
+                Pnew = lapply(P, function(p) t(Z) %*% p %*% Z))
+    )
+  
 }
 
 orthog_smooth <- function(pcf, zero_cons = TRUE){
@@ -35,16 +36,23 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
   L <- NULL
   for(nm in nms){
     
+    Lcontent <- c()
+    
     if(#"(Intercept)" %in% nml & 
+      !grepl("by", nm) & 
        zero_cons)
+    {
       L <- matrix(rep(1,NROW(pcf$smoothterms[[nm]][[1]]$X)), ncol=1)
+      Lcontent <- c("int")
+    }
     
     if(nm %in% nml){
       
       if(!is.null(L))
         L <- cbind(L, pcf$linterms[,nm]) else
           L <- pcf$linterms[,nm]
-      
+      Lcontent <- c(Lcontent, "lin")
+        
     }
     
     if(!is.null(L)){
@@ -57,6 +65,11 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
       
       pcf$smoothterms[[nm]][[1]]$X <- X_and_P[[1]]
       pcf$smoothterms[[nm]][[1]]$S <- X_and_P[[2]]
+      pcf$smoothterms[[nm]][[1]]$Lcontent <- Lcontent
+      
+    }else{
+      
+      pcf$smoothterms[[nm]][[1]]$Lcontent <- Lcontent
       
     }
     

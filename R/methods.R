@@ -726,7 +726,8 @@ cv <- function(
                           x$init_params$parsed_formulae_contents,
                           train_data,
                           pred = TRUE,
-                          index = train_ind),
+                          index = train_ind,
+                          cv = TRUE),
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
@@ -734,7 +735,8 @@ cv <- function(
                             x$init_params$parsed_formulae_contents,
                             test_data,
                             pred = TRUE,
-                            index = test_ind),
+                            index = test_ind,
+                            cv = TRUE),
                           subset_fun(x$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,

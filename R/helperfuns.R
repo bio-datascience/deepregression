@@ -394,7 +394,8 @@ get_contents_newdata <- function(pcf, newdata)
 make_cov <- function(pcf, newdata=NULL,
                      convertfun = function(x)
                        tf$constant(x, dtype="float32"),
-                     pred = !is.null(newdata)){
+                     pred = !is.null(newdata),
+                     zc = FALSE){
 
   if(is.null(newdata)){
     input_cov <- lapply(pcf, function(x){
@@ -427,8 +428,8 @@ make_cov <- function(pcf, newdata=NULL,
     input_cov[which(input_cov_isdf)] <-
     lapply(input_cov[which(input_cov_isdf)], as.matrix)
 
-  if(!is.null(newdata) & pred)
-    pcfnew <- get_contents_newdata(pcf, newdata)
+  # if(!is.null(newdata) & pred)
+  #   pcfnew <- get_contents_newdata(pcf, newdata)
 
   input_cov <- c(input_cov,
                  lapply(1:length(pcf), function(i){
@@ -477,23 +478,39 @@ make_cov <- function(pcf, newdata=NULL,
                        #     xsm <- c(xsm, list(x$smoothterms[tl]))
                        #   }
                        # }
-                       if(!is.null(newdata) & !pred){
+                       if(!is.null(newdata)){
                          Xp <- lapply(x$smoothterms, function(sm)
                          {
                            if(length(sm)==1){ 
                              sm <- sm[[1]]
                              sterms <- sm$term
-                             PredictMat(sm,as.data.frame(newdata[sterms]))
+                             Lcontent <- sm$Lcontent
+                             pm <- PredictMat(sm,as.data.frame(newdata[sterms]))
+                             if(length(Lcontent)>0)
+                             {
+                               if("int" %in% Lcontent)
+                                 thisL <- matrix(rep(1,NROW(newdata[[1]])), ncol=1)
+                               if("lin" %in% Lcontent)
+                                 thisL <- cbind(thisL, newdata[[sterms]])
+                             }else thisL <- NULL
+                             if(is.null(thisL))
+                                return(pm) else
+                                 return(
+                                   orthog_structured_smooths(
+                                     S = pm, P = NULL, L = thisL
+                                   )
+                                 )
                            }else{
                              sterms <- c(sm[[1]]$term, sm[[1]]$by)
                              do.call("cbind", lapply(sm, function(smm)
-                               PredictMat(smm,as.data.frame(newdata[sterms]))))
+                               applySumToZero(PredictMat(smm,as.data.frame(newdata[sterms])),
+                                              apply = FALSE)))
                            }
 
                          })
-                       }else if(!is.null(newdata) & pred){
-                         Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
-                           do.call("cbind", lapply(x, "[[", "X")))
+                       # }else if(!is.null(newdata) & pred){
+                       #   Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
+                       #     do.call("cbind", lapply(x, "[[", "X")))
                        }else{
                          Xp <- lapply(x$smoothterms, function(x)  
                            do.call("cbind", lapply(x, "[[", "X")))
@@ -571,15 +588,17 @@ get_indices <- function(x)
       )
 }
 
-prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
+prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
 {
   n_obs <- nROW(data)
-  if(attr(pfc, "zero_cons"))
+  if(attr(pfc, "zero_cons") & is.null(data))
   {
     pfc <- 
       lapply(pfc, orthog_smooth, TRUE)
+    attr(pfc, "zero_cons") <- TRUE
   }
-  input_cov_new <- make_cov(pfc, data, pred = pred)
+  input_cov_new <- make_cov(pfc, data, pred = pred, 
+                            zc = attr(pfc, "zero_cons"))
   if(pred & !is.null(data))
     pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)
@@ -822,4 +841,23 @@ train_together_ind <- function(train_together)
 
   
 }
+
+sum_cols_smooth <- function(x)
+{
   
+  byt <- grepl("by", names(x))
+  if(length(byt)==0) return(sum(sapply(x, function(y) NCOL(y$X))))
+  # if(sum(byt)==0 & length(x)==1) return(NCOL(x[[1]][[1]]$X))
+  if(sum(byt)==0) return(sum(sapply(x, function(y) NCOL(y[[1]]$X))))
+  if(sum(byt)==length(byt)) return(sum(sapply(x, sum_cols_smooth)))
+  return(sum(sapply(x[byt], sum_cols_smooth)) + 
+           sum(sapply(x, function(y) NCOL(y$X))))
+  
+}
+  
+applySumToZero <- function(X, apply=TRUE)
+{
+  if(apply)
+    return(orthog_structured_smooths(X, NULL, matrix(rep(1,nrow(X)),ncol=1)))
+  return(X)
+}
