@@ -427,8 +427,8 @@ make_cov <- function(pcf, newdata=NULL,
     input_cov[which(input_cov_isdf)] <-
     lapply(input_cov[which(input_cov_isdf)], as.matrix)
 
-  if(!is.null(newdata) & pred)
-    pcfnew <- get_contents_newdata(pcf, newdata)
+  # if(!is.null(newdata) & pred)
+  #   pcfnew <- get_contents_newdata(pcf, newdata)
 
   input_cov <- c(input_cov,
                  lapply(1:length(pcf), function(i){
@@ -477,7 +477,7 @@ make_cov <- function(pcf, newdata=NULL,
                        #     xsm <- c(xsm, list(x$smoothterms[tl]))
                        #   }
                        # }
-                       if(!is.null(newdata) & !pred){
+                       if(!is.null(newdata)){
                          Xp <- lapply(x$smoothterms, function(sm)
                          {
                            if(length(sm)==1){ 
@@ -491,9 +491,9 @@ make_cov <- function(pcf, newdata=NULL,
                            }
 
                          })
-                       }else if(!is.null(newdata) & pred){
-                         Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
-                           do.call("cbind", lapply(x, "[[", "X")))
+                       # }else if(!is.null(newdata) & pred){
+                       #   Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
+                       #     do.call("cbind", lapply(x, "[[", "X")))
                        }else{
                          Xp <- lapply(x$smoothterms, function(x)  
                            do.call("cbind", lapply(x, "[[", "X")))
