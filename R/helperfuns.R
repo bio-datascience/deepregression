@@ -574,12 +574,7 @@ get_indices <- function(x)
 prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL)
 {
   n_obs <- nROW(data)
-  if(attr(pfc, "zero_cons"))
-  {
-    pfc <- 
-      lapply(pfc, orthog_smooth, TRUE)
-  }
-  input_cov_new <- make_cov(pfc, data, pred = pred)
+  input_cov_new <- make_cov(pfc, data, pred = FALSE)
   if(pred & !is.null(data))
     pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)

@@ -35,8 +35,8 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
   L <- NULL
   for(nm in nms){
     
-    if(#"(Intercept)" %in% nml & 
-       zero_cons)
+    if("(Intercept)" %in% nml & zero_cons
+       )
       L <- matrix(rep(1,NROW(pcf$smoothterms[[nm]][[1]]$X)), ncol=1)
     
     if(nm %in% nml){
@@ -47,18 +47,22 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
       
     }
     
-    if(!is.null(L)){
-      
-      X_and_P <- orthog_structured_smooths(
-        pcf$smoothterms[[nm]][[1]]$X,
-        pcf$smoothterms[[nm]][[1]]$S,
-        L
-      )
-      
-      pcf$smoothterms[[nm]][[1]]$X <- X_and_P[[1]]
-      pcf$smoothterms[[nm]][[1]]$S <- X_and_P[[2]]
-      
-    }
+    # if(!is.null(L)){
+    #   
+    #   X_and_P <- orthog_structured_smooths(
+    #     pcf$smoothterms[[nm]][[1]]$X,
+    #     pcf$smoothterms[[nm]][[1]]$S,
+    #     L
+    #   )
+    #   
+    #   pcf$smoothterms[[nm]][[1]]$X <- X_and_P[[1]]
+    #   pcf$smoothterms[[nm]][[1]]$S <- X_and_P[[2]]
+    #   
+    # }
+    
+    if(!is.null(L))
+      pcf$smoothterms[[nm]][[1]]$X <- 
+        orthog_structured(pcf$smoothterms[[nm]][[1]]$X, L) 
     
   }
   

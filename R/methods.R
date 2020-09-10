@@ -725,7 +725,7 @@ cv <- function(
                         x = prepare_newdata(
                           x$init_params$parsed_formulae_contents,
                           train_data,
-                          pred = TRUE,
+                          pred = FALSE,
                           index = train_ind),
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
@@ -733,7 +733,7 @@ cv <- function(
                           prepare_newdata(
                             x$init_params$parsed_formulae_contents,
                             test_data,
-                            pred = TRUE,
+                            pred = FALSE,
                             index = test_ind),
                           subset_fun(x$init_params$y,test_ind)
                         ),
@@ -868,7 +868,7 @@ get_distribution <- function(
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
-    newdata_processed <- prepare_data(x, data, pred=TRUE)
+    newdata_processed <- prepare_data(x, data, pred=FALSE)
     disthat <- x$model(newdata_processed)
   }
   return(disthat)

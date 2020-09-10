@@ -79,6 +79,7 @@
 #' See \code{?mgcv::smoothCon} for more details.
 #' @param zero_constraint_for_smooths logical; the same as absorb_cons, 
 #' but done explicitly. If true a constraint is put on each smooth to have zero mean.
+#' Such a constaint is already in the basis for spline objects from mgcv.
 #' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated up
 #' front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
 #' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
@@ -172,7 +173,7 @@ deepregression <- function(
   offset = NULL,
   offset_val = NULL,
   absorb_cons = FALSE,
-  zero_constraint_for_smooths = TRUE,
+  zero_constraint_for_smooths = FALSE,
   orthog_type = c("tf", "manual"),
   hat1 = FALSE,
   sp_scale = 1,
@@ -304,8 +305,6 @@ deepregression <- function(
   
   parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
                                      zero_cons = zero_constraint_for_smooths)
-
-  attr(parsed_formulae_contents,"zero_cons") <- TRUE
   
   # get columns per term
   ncol_deep <- lapply(lapply(
