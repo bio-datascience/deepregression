@@ -88,6 +88,10 @@
 #' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
 #' a conditional transformation model (CTM) is fitted.
 #' @param y_basis_fun,y_basis_fun_prime basis functions for y transformation for CTM case
+#' @param split_between_shift_and_theta if \code{family == 'transformation_model'} and
+#' \code{!is.null(train_together)}, \code{split_between_shift_and_theta} is supposed
+#' to define how many of the last layer's hidden units are used for the shift
+#' term and how many for the theta term (an integer vector of length 2).
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -180,6 +184,7 @@ deepregression <- function(
   y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
                                                  supp = range(y)) / diff(range(y)),
+  split_between_shift_and_theta = NULL,
   # compress = TRUE,
   ...
 )
@@ -429,6 +434,8 @@ deepregression <- function(
       split_fun = split_fun,
       orthog_fun = orthog_fun,
       order_bsp = order_bsp,
+      train_together = train_together_ind(train_together),
+      split_between_shift_and_theta = split_between_shift_and_theta,
       ...
     )
     
@@ -984,6 +991,8 @@ deepregression_init <- function(
 #' @param split_fun see \code{?deepregression}
 #' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
 #' a conditional transformation model (CTM) is fitted.
+#' @param train_together see \code{?deepregression}
+#' @param split_between_shift_and_theta see \code{?deepregression}
 #' 
 #' @export 
 #'
@@ -1003,7 +1012,9 @@ deeptransformation_init <- function(
   orthogX = NULL,
   split_fun = split_model,
   order_bsp,
-  use_bias_in_structured = FALSE
+  use_bias_in_structured = FALSE,
+  train_together = NULL,
+  split_between_shift_and_theta = NULL
 )
 {
   
@@ -1049,14 +1060,6 @@ deeptransformation_init <- function(
   # inputs for BSP trafo of Y, both n x tilde{M}
   input_theta_y <- layer_input(shape = list(order_bsp+1L))
   input_theta_y_prime <- layer_input(shape = list(order_bsp+1L))
-  
-  # list_deep
-  list_deep <- lapply(ncol_deep[1:nr_params], function(param_list){
-    lapply(names(param_list), function(nn){
-      if(is.null(nn)) return(NULL) else
-        list_deep[[nn]]
-    })
-  })
   
   structured_parts <- vector("list", 2)
   
@@ -1130,14 +1133,42 @@ deeptransformation_init <- function(
       }
   }
 
-  # splitting is not done for CTMs
-
+  
+  if(!is.null(train_together) && !is.null(list_deep) & 
+     !(length(list_deep)==1 & is.null(list_deep[[1]])))
+    list_deep_shared <- list_deep[sapply(names(list_deep),function(nnn)
+      !nnn%in%names(ncol_deep[1:nr_params]))] else
+        list_deep_shared <- NULL
+  
+  list_deep <- lapply(ncol_deep[1:nr_params], function(param_list){
+    lapply(names(param_list), function(nn){
+      if(is.null(nn)) return(NULL) else
+        list_deep[[nn]]
+    })
+  })
+  
   # define deep predictor
   deep_parts <- lapply(1:length(list_deep), function(i)
     if(is.null(inputs_deep[[i]]) | length(inputs_deep[[i]])==0) 
       return(NULL) else 
         lapply(1:length(list_deep[[i]]), function(j)
           list_deep[[i]][[j]](inputs_deep[[i]][[j]])))
+  
+  if(!is.null(train_together) && !is.null(list_deep_shared) & 
+      any(!sapply(inputs_deep, is.null))){
+    
+    shared_parts <- lapply(unique(unlist(train_together)), function(i)
+      list_deep_shared[[i]](
+        inputs_deep[[nr_params + i]][[1]]
+      ))
+    
+    deep_parts[[1]] <- lapply(shared_parts, function(spa) spa[
+      ,1:as.integer(split_between_shift_and_theta[1]),drop=F])
+    deep_parts[[2]] <- lapply(shared_parts, function(spa) spa[
+      ,(as.integer(split_between_shift_and_theta[1])+1L):
+        (as.integer(sum(split_between_shift_and_theta))),drop=F])
+    
+  }
   
   ############################################################
   ################# Apply Orthogonalization ##################
@@ -1148,11 +1179,15 @@ deeptransformation_init <- function(
   # the deep part is projected into the orthogonal space of the
   # structured part
   
+  deep_top_shift <- NULL
+  if(!is.null(deep_parts[[1]]))  
+    deep_top_shift <- list(function(x) layer_dense(x, units = 1, 
+                                                   activation = "linear"))[
+                                                     rep(1,length(deep_parts[[1]]))]
+  
   ## shift term
   final_eta_pred <- combine_model_parts(deep = deep_parts[[1]],
-                                        deep_top = if(is.null(deep_parts[[1]])) NULL else 
-                                          function(x) layer_dense(x, units = 1, 
-                                                                  activation = "linear"),
+                                        deep_top = deep_top_shift,
                                         struct = structured_parts[[1]],
                                         ox = ox[[1]],
                                         orthog_fun = orthog_fun,
@@ -1240,23 +1275,25 @@ deeptransformation_init <- function(
   model <- keras_model(inputs = inputList,
                        outputs = modeled_terms)
   
+  nrtw <- length(model$trainable_weights)
+  
   # add penalty for interaction term
   if(is.null(list_structured[[2]]))
   {
     if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
       
-      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[1]])
+      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[nrtw-1L]])
       
     }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
       
-      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[1]])
+      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[nrtw-1L]])
       
       
     }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
       
       reg = function(x) tf$keras$regularizers$l1_l2(
         l1=lambda_lasso,
-        l2=lambda_ridge)(model$trainable_weights[[1]])
+        l2=lambda_ridge)(model$trainable_weights[[nrtw-1L]])
       
     }else{
      
@@ -1269,12 +1306,12 @@ deeptransformation_init <- function(
 
       bigP <- list_structured[[2]]
       if(length(bigP@x)==0) reg = NULL else
-        reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[2]], k_dot(
+        reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[nrtw]], k_dot(
           # tf$constant(
           sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),
                                   "CsparseMatrix")),
           # dtype = "float32"),
-          model$trainable_weights[[2]]),
+          model$trainable_weights[[nrtw]]),
           axes=2) # 1-based
         )
     
