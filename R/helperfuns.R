@@ -8,7 +8,7 @@ extract_from_special <- function(x)
 # convert sparse matrix to sparse tensor
 sparse_mat_to_tensor <- function(X)
 {
-
+  
   missing_ind <- setdiff(c("i","j","p"), slotNames(X))
   if(missing_ind=="j")
     j = findInterval(seq(X@x)-1,X@p[-1])
@@ -17,7 +17,7 @@ sparse_mat_to_tensor <- function(X)
   tf$SparseTensor(indices = lapply(1:length(i), function(ind) c(i[ind], j[ind])),
                   values = X@x,
                   dense_shape = as.integer(X@Dim))
-
+  
 }
 
 NCOL0 <- function(x)
@@ -225,13 +225,13 @@ get_contents <- function(lf, data, df,
       if(grepl("d\\(",j) | any(net_w_dot))
         ff <- gsub("\\.", paste(variable_names, collapse=","), ff) else
           ff <- gsub(".", paste(variable_names, collapse="+"), ff)
-        return(get_contents(lf = as.formula(paste0("~ ", ff)),
-                            data = data,
-                            df = df,
-                            variable_names = variable_names,
-                            intercept = intercept,
-                            network_names = network_names,
-                            defaultSmoothing = defaultSmoothing))
+      return(get_contents(lf = as.formula(paste0("~ ", ff)),
+                          data = data,
+                          df = df,
+                          variable_names = variable_names,
+                          intercept = intercept,
+                          network_names = network_names,
+                          defaultSmoothing = defaultSmoothing))
     }
     whatsleft <- setdiff(vars, variable_names)
     if(length(whatsleft) > 0){
@@ -239,6 +239,9 @@ get_contents <- function(lf, data, df,
                   j, " not found"))
     }
   }
+  
+  ##################################### linear start #########################################
+  
   #
   terms <- sapply(trmstrings, function(trm) as.call(parse(text=trm))[[1]],
                   simplify=FALSE)
@@ -269,9 +272,13 @@ get_contents <- function(lf, data, df,
       linterms <- data.frame("(Intercept)" = rep(1,nROW(data))) else
         linterms <- cbind("(Intercept)" = rep(1,nROW(data)),
                           as.data.frame(linterms))# else
-
+  
   attr(linterms, "names") <- names(linterms)
-
+  
+  ##################################### linear end #########################################
+  
+  ##################################### smooths start #########################################
+  
   # get gam terms
   spec <- attr(tf, "specials")
   sTerms <- terms[unlist(spec[names(spec) %in% c("s", "te", "ti")])]
@@ -299,35 +306,46 @@ get_contents <- function(lf, data, df,
     if(is.null(df)) df <- pmax(min(sapply(smoothterms, 
                                           function(x) if(length(x)>1) 
                                             sum(sapply(x, "[[", "df")) else 
-                                            x[[1]]$df)) - null_space_penalty, 1)
+                                              x[[1]]$df)) - null_space_penalty, 1)
+    # check correct length when df is a vector
+    smooths_w_pen <- sapply(smoothterms,function(x) is.null(x[[1]]$sp))
+    if(length(df)>1)
+      stopifnot(sum(smooths_w_pen)==length(df)) else
+        df <- rep(df, sum(smooths_w_pen))
+    
     if(is.null(defaultSmoothing))
-      defaultSmoothing = function(st){
+      defaultSmoothing = function(st, this_df){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
         if(length(st[[1]]$S)==1 & length(st)==1) S <- st[[1]]$S[[1]] else if(length(st[[1]]$S)!=1)
           S <- Reduce("+", st[[1]]$S) else S <- Matrix::bdiag(lapply(st,function(x)x$S[[1]]))
-        if(length(st)==1) X <- st[[1]]$X else X <- do.call("cbind", lapply(st,"[[","X"))
-        st[[1]]$sp = DRO(X, df = df, dmat = S, hat1 = hat1)["lambda"]/sp_scale + null_space_penalty
-        return(st)
+          if(length(st)==1) X <- st[[1]]$X else X <- do.call("cbind", lapply(st,"[[","X"))
+          st[[1]]$sp = DRO(X, df = this_df, dmat = S, hat1 = hat1)["lambda"]/sp_scale + null_space_penalty
+          return(st)
       }
-    smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))] <-
-      lapply(smoothterms[sapply(smoothterms,function(x) is.null(x[[1]]$sp))],
-             defaultSmoothing)
+    smoothterms[smooths_w_pen] <- 
+      lapply(1:sum(smooths_w_pen),
+             function(i) 
+               defaultSmoothing(
+                 smoothterms[smooths_w_pen][[i]],
+                 df[i]
+               )
+      )
     attr(smoothterms, "names") <-
       unlist(lapply(names_sTerms,
-             function(x){
-               vars <- extract_from_special(x)
-               vars <- vars[!grepl("=", vars, fixed=T) | grepl("by.*\\=",vars)]
-               # rep <- FALSE
-               # if(any(grepl("by.*\\=",vars))){
-               #   fac <- trimws(gsub("by.*\\=(.*)","\\1",vars[grepl("by.*\\=",vars)]))
-               #   rep <- TRUE
-               #   }
-               # vars[grepl("by.*\\=",vars)] <- 
-               # gsub("(\\s+)\\=(\\s+)","_",vars[grepl("by.*\\=",vars)])
-               #ret <- 
-                 paste(vars, collapse=",")
-               # if(rep) paste0(ret, 1:nlevels(data[[fac]])) else ret
-             }))
+                    function(x){
+                      vars <- extract_from_special(x)
+                      vars <- vars[!grepl("=", vars, fixed=T) | grepl("by.*\\=",vars)]
+                      # rep <- FALSE
+                      # if(any(grepl("by.*\\=",vars))){
+                      #   fac <- trimws(gsub("by.*\\=(.*)","\\1",vars[grepl("by.*\\=",vars)]))
+                      #   rep <- TRUE
+                      #   }
+                      # vars[grepl("by.*\\=",vars)] <- 
+                      # gsub("(\\s+)\\=(\\s+)","_",vars[grepl("by.*\\=",vars)])
+                      #ret <- 
+                      paste(vars, collapse=",")
+                      # if(rep) paste0(ret, 1:nlevels(data[[fac]])) else ret
+                    }))
     # values in smooth construct list have the following items
     # (see also ?mgcv::smooth.construct)
     #
@@ -340,7 +358,11 @@ get_contents <- function(lf, data, df,
   }else{
     smoothterms <- NULL
   }
-
+  
+  ##################################### smooths end #########################################
+  
+  ##################################### deep start #########################################
+  
   # get deep terms
   dterms <- sapply(paste0(network_names,"\\("), function(x) trmstrings[grepl(x,trmstrings)])
   if(all(sapply(dterms,length)==0)){
@@ -352,10 +374,10 @@ get_contents <- function(lf, data, df,
         attr(deepterms, "names") <- names(deepterms)
       }else{
         deepterms <- data[extract_from_special(dt)]
-
+        
         if(length(extract_from_special(dt))>1)
           deepterms <- as.data.frame(deepterms)
-
+        
       }
       attr(deepterms, "names") <- names(deepterms)
       return(deepterms)
@@ -364,21 +386,23 @@ get_contents <- function(lf, data, df,
       names(deepterms) <- rep(network_names, length(deepterms)) else
         names(deepterms) <- network_names[sapply(dterms,length)>0]
   }
-
+  
+  ##################################### deep end #########################################
+  
   ret <- list(linterms = linterms,
               smoothterms = smoothterms,
               deepterms = deepterms)
-
+  
   attributes(ret) <-
     c(attributes(ret),
-    list(formula = lf,
-         df = df,
-         variable_names = variable_names,
-         network_names = network_names,
-         intercept = intercept,
-         defaultSmoothing = defaultSmoothing)
+      list(formula = lf,
+           df = df,
+           variable_names = variable_names,
+           network_names = network_names,
+           intercept = intercept,
+           defaultSmoothing = defaultSmoothing)
     )
-
+  
   return(ret)
 }
 
@@ -396,7 +420,7 @@ make_cov <- function(pcf, newdata=NULL,
                        tf$constant(x, dtype="float32"),
                      pred = !is.null(newdata),
                      zc = FALSE){
-
+  
   if(is.null(newdata)){
     input_cov <- lapply(pcf, function(x){
       if(is.null(x$deepterms)) return(NULL) else
@@ -413,11 +437,11 @@ make_cov <- function(pcf, newdata=NULL,
             return(newdata[names(y)])
           }
         })
-
+        
       }else if(is.list(x$deepterms) & all(sapply(x$deepterms, class)=="data.frame")){
-
+        
         return(lapply(x$deepterms, function(y) data.frame(newdata[names(y)])))
-
+        
       }else{ return(NULL) }
     })
   }
@@ -427,10 +451,10 @@ make_cov <- function(pcf, newdata=NULL,
   if(sum(input_cov_isdf)>0)
     input_cov[which(input_cov_isdf)] <-
     lapply(input_cov[which(input_cov_isdf)], as.matrix)
-
+  
   # if(!is.null(newdata) & pred)
   #   pcfnew <- get_contents_newdata(pcf, newdata)
-
+  
   input_cov <- c(input_cov,
                  lapply(1:length(pcf), function(i){
                    x = pcf[[i]]
@@ -451,83 +475,83 @@ make_cov <- function(pcf, newdata=NULL,
                          ret <- model.matrix(~ 0 + ., data = newdata[names(x$linterms)])
                        }
                      }
-                     if(!is.null(x$smoothterms))
-                     {
-                       # put all terms that 
-                       # names_sTerms <- names(x$smoothterms)
-                       # byfac <- intersect(names(newdata),
-                       #                    unique(gsub(".*,by_(.*)([0-9]+)$","\\1", names_sTerms)))
-                       # if(length(byfac)>0){
-                       #   tog_list <- vector("list", length(byfac))
-                       #   for(j in 1:length(byfac)){
-                       #     bf <- byfac[j]
-                       #     byf <- paste0(",by_", bf)
-                       #     these_s <- grepl(byf, names(x$smoothterms))
-                       #     var_before <- unique(gsub(paste0("(.*)",byf,".*"),"\\1",
-                       #                               names(x$smoothterms)))
-                       #     tog_list[[j]] <- vector("list", length(var_before))
-                       #     for(k in 1:length(var_before)){
-                       #       vb <- var_before[k]
-                       #       these_s_v <- grepl(paste0(vb,",by_",bf), names(x$smoothterms))
-                       #       tog_list[[j]][[k]] <- which(these_s & these_s_v)
-                       #     }
-                       #   }
-                       #   tog_list <- unlist(tog_list, recursive = F)
-                       #   xsm <- x$smoothterms[!these_s]
-                       #   for(tl in tog_list){
-                       #     xsm <- c(xsm, list(x$smoothterms[tl]))
-                       #   }
-                       # }
-                       if(!is.null(newdata)){
-                         Xp <- lapply(x$smoothterms, function(sm)
-                         {
-                           if(length(sm)==1){ 
-                             sm <- sm[[1]]
-                             sterms <- sm$term
-                             Lcontent <- sm$Lcontent
-                             pm <- PredictMat(sm,as.data.frame(newdata[sterms]))
-                             if(length(Lcontent)>0)
-                             {
-                               if("int" %in% Lcontent)
-                                 thisL <- matrix(rep(1,NROW(newdata[[1]])), ncol=1)
-                               if("lin" %in% Lcontent)
-                                 thisL <- cbind(thisL, newdata[[sterms]])
-                             }else thisL <- NULL
-                             if(is.null(thisL))
-                                return(pm) else
-                                 return(
-                                   orthog_structured_smooths(
-                                     S = pm, P = NULL, L = thisL
-                                   )
+                   if(!is.null(x$smoothterms))
+                   {
+                     # put all terms that 
+                     # names_sTerms <- names(x$smoothterms)
+                     # byfac <- intersect(names(newdata),
+                     #                    unique(gsub(".*,by_(.*)([0-9]+)$","\\1", names_sTerms)))
+                     # if(length(byfac)>0){
+                     #   tog_list <- vector("list", length(byfac))
+                     #   for(j in 1:length(byfac)){
+                     #     bf <- byfac[j]
+                     #     byf <- paste0(",by_", bf)
+                     #     these_s <- grepl(byf, names(x$smoothterms))
+                     #     var_before <- unique(gsub(paste0("(.*)",byf,".*"),"\\1",
+                     #                               names(x$smoothterms)))
+                     #     tog_list[[j]] <- vector("list", length(var_before))
+                     #     for(k in 1:length(var_before)){
+                     #       vb <- var_before[k]
+                     #       these_s_v <- grepl(paste0(vb,",by_",bf), names(x$smoothterms))
+                     #       tog_list[[j]][[k]] <- which(these_s & these_s_v)
+                     #     }
+                     #   }
+                     #   tog_list <- unlist(tog_list, recursive = F)
+                     #   xsm <- x$smoothterms[!these_s]
+                     #   for(tl in tog_list){
+                     #     xsm <- c(xsm, list(x$smoothterms[tl]))
+                     #   }
+                     # }
+                     if(!is.null(newdata)){
+                       Xp <- lapply(x$smoothterms, function(sm)
+                       {
+                         if(length(sm)==1){ 
+                           sm <- sm[[1]]
+                           sterms <- sm$term
+                           Lcontent <- sm$Lcontent
+                           pm <- PredictMat(sm,as.data.frame(newdata[sterms]))
+                           if(length(Lcontent)>0)
+                           {
+                             if("int" %in% Lcontent)
+                               thisL <- matrix(rep(1,NROW(newdata[[1]])), ncol=1)
+                             if("lin" %in% Lcontent)
+                               thisL <- cbind(thisL, newdata[[sterms]])
+                           }else thisL <- NULL
+                           if(is.null(thisL))
+                             return(pm) else
+                               return(
+                                 orthog_structured_smooths(
+                                   S = pm, P = NULL, L = thisL
                                  )
-                           }else{
-                             sterms <- c(sm[[1]]$term, sm[[1]]$by)
-                             do.call("cbind", lapply(sm, function(smm)
-                               applySumToZero(PredictMat(smm,as.data.frame(newdata[sterms])),
-                                              apply = FALSE)))
-                           }
-
-                         })
+                               )
+                         }else{
+                           sterms <- c(sm[[1]]$term, sm[[1]]$by)
+                           do.call("cbind", lapply(sm, function(smm)
+                             applySumToZero(PredictMat(smm,as.data.frame(newdata[sterms])),
+                                            apply = FALSE)))
+                         }
+                         
+                       })
                        # }else if(!is.null(newdata) & pred){
                        #   Xp <- lapply(pcfnew[[i]]$smoothterms, function(x) 
                        #     do.call("cbind", lapply(x, "[[", "X")))
-                       }else{
-                         Xp <- lapply(x$smoothterms, function(x)  
-                           do.call("cbind", lapply(x, "[[", "X")))
-                       }
-                       st <- do.call("cbind", Xp)
-                       if(!is.null(ret)){
-                         ret <- cbind(as.data.frame(ret), st)
-
-                       }else{
-                         ret <- st
-                       }
-                       ret <- array(as.matrix(ret),
-                                    dim = c(nrow(ret),ncol(ret)))
+                     }else{
+                       Xp <- lapply(x$smoothterms, function(x)  
+                         do.call("cbind", lapply(x, "[[", "X")))
                      }
-                     return(ret)
+                     st <- do.call("cbind", Xp)
+                     if(!is.null(ret)){
+                       ret <- cbind(as.data.frame(ret), st)
+                       
+                     }else{
+                       ret <- st
+                     }
+                     ret <- array(as.matrix(ret),
+                                  dim = c(nrow(ret),ncol(ret)))
+                   }
+                   return(ret)
                  }))
-
+  
   # just use the ones with are actually modeled
   input_cov <- input_cov[!sapply(input_cov, function(x) is.null(x) |
                                    (length(x)==1 && is.null(x[[1]])) |
@@ -545,12 +569,12 @@ make_cov <- function(pcf, newdata=NULL,
   input_cov[!sapply(input_cov,is.factor)] <-
     lapply(input_cov[!sapply(input_cov,is.factor)], convertfun)
   return(input_cov)
-
+  
 }
 
 get_names <- function(x)
 {
-
+  
   lret <- list(linterms = NULL,
                smoothterms = NULL,
                deepterms = NULL)
@@ -581,7 +605,7 @@ get_indices <- function(x)
                                         cumsum(bsdims[-length(bsdims)]))
       if(length(bsdims) > 0) end <- c(end, max(c(end,0)) +
                                         cumsum(bsdims))
-
+      
       return(data.frame(start=ind, end=end,
                         type=c(rep("lin",ncollin),
                                rep("smooth",length(bsdims))))
@@ -591,9 +615,6 @@ get_indices <- function(x)
 prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
 {
   n_obs <- nROW(data)
-<<<<<<< HEAD
-  input_cov_new <- make_cov(pfc, data, pred = FALSE)
-=======
   if(attr(pfc, "zero_cons") & is.null(data))
   {
     pfc <- 
@@ -602,7 +623,6 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
   }
   input_cov_new <- make_cov(pfc, data, pred = pred, 
                             zc = attr(pfc, "zero_cons"))
->>>>>>> c667291030cef133af00d9bf392e98749e4552aa
   if(pred & !is.null(data))
     pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)
@@ -634,7 +654,7 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
 
 coefkeras <- function(model)
 {
-
+  
   layer_names <- sapply(model$layers, "[[", "name")
   layers_names_structured <- layer_names[
     grep("structured_", layer_names)
@@ -645,7 +665,7 @@ coefkeras <- function(model)
 
 make_cv_list_simple <- function(data_size, folds, seed = 42, shuffle = TRUE)
 {
-
+  
   set.seed(seed)
   suppressWarnings(
     mysplit <- split(sample(1:data_size),
@@ -654,20 +674,20 @@ make_cv_list_simple <- function(data_size, folds, seed = 42, shuffle = TRUE)
   lapply(mysplit, function(test_ind)
     list(train_ind = setdiff(1:data_size, test_ind),
          test_ind = test_ind))
-
+  
 }
 
 extract_cv_result <- function(res, name_loss = "loss", name_val_loss = "val_loss"){
-
+  
   losses <- sapply(res, "[[", "metrics")
   trainloss <- data.frame(losses[name_loss,])
   validloss <- data.frame(losses[name_val_loss,])
   weightshist <- lapply(res, "[[", "weighthistory")
-
+  
   return(list(trainloss=trainloss,
               validloss=validloss,
               weight=weightshist))
-
+  
 }
 
 #' Plot CV results from deepregression
@@ -681,19 +701,19 @@ extract_cv_result <- function(res, name_loss = "loss", name_val_loss = "val_loss
 #' @export
 #'
 plot.drCV <- function(x, what=c("loss","weight"), ...){
-
+  
   .pardefault <- par()
   cres <- extract_cv_result(x)
-
+  
   what <- match.arg(what)
-
+  
   if(what=="loss"){
-
+    
     loss <- cres$trainloss
     mean_loss <- apply(loss, 1, mean)
     vloss <- cres$validloss
     mean_vloss <- apply(vloss, 1, mean)
-
+    
     par(mfrow=c(1,2))
     matplot(loss, type="l", col="black", ..., ylab="loss", xlab="epoch")
     points(1:(nrow(loss)), mean_loss, type="l", col="red", lwd=2)
@@ -703,15 +723,15 @@ plot.drCV <- function(x, what=c("loss","weight"), ...){
     points(1:(nrow(vloss)), mean_vloss, type="l", col="red", lwd=2)
     abline(v=which.min(mean_vloss), lty=2)
     suppressWarnings(par(.pardefault))
-
+    
   }else{
-
+    
     stop("Not implemented yet.")
-
+    
   }
-
+  
   invisible(NULL)
-
+  
 }
 
 
@@ -719,9 +739,9 @@ stop_iter_cv_result <- function(res, thisFUN = mean,
                                 loss = "validloss",
                                 whichFUN = which.min)
 {
-
+  
   whichFUN(apply(extract_cv_result(res)[[loss]], 1, FUN=thisFUN))
-
+  
 }
 
 #' Generate folds for CV out of one hot encoded matrix
@@ -737,23 +757,23 @@ stop_iter_cv_result <- function(res, thisFUN = mean,
 #' @export
 make_folds <- function(mat, val_train=0, val_test=1)
 {
-
+  
   apply(mat, 2, function(x){
     list(train = which(x %in% val_train),
          test = which(x %in% val_test))
   })
-
+  
 }
 
 subset_array <- function(x, index)
 {
-
+  
   dimx <- dim(x)
   if(is.null(dimx)) dimx = 1
   eval(parse(text=paste0("x[index",
                          paste(rep(",", length(dimx)-1),collapse=""),
                          ",drop=FALSE]")))
-
+  
 }
 
 # nrow for list
@@ -772,7 +792,7 @@ nestNCOL <- function(x)
   
   res <- list()
   for(i in 1:length(x)){
-   
+    
     if(is.list(x[[i]]) & length(x[[i]])>=1 & !is.null(x[[i]][[1]])){
       res[[i]] <- nestNCOL(x[[i]])
     }else if((is.list(x[[i]]) & length(x[[i]])==0) | is.null(x[[i]][[1]])){
@@ -780,7 +800,7 @@ nestNCOL <- function(x)
     }else{
       res[[i]] <- NCOL(x[[i]]) 
     }
-     
+    
   }
   
   return(res)
@@ -788,7 +808,7 @@ nestNCOL <- function(x)
 
 ncol_lint <- function(z)
 {
-
+  
   if(is.null(z)) return(0)
   z_num <- NCOL(z[,!sapply(z,is.factor),drop=F])
   facs <- sapply(z,is.factor)
@@ -796,21 +816,21 @@ ncol_lint <- function(z)
     z_fac <- 0
   if(length(z_fac)==0) z_fac <- 0 else z_fac <- z_fac-1
   return(sum(c(z_num, z_fac)))
-
+  
 }
 
 unlist_order_preserving <- function(x)
 {
-
+  
   x_islist <- sapply(x, is.list)
   if(any(x_islist)){
-
+    
     for(w in which(x_islist)){
-
+      
       beginning <- if(w>1) x[1:(w-1)] else list()
       end <- if(w<length(x))
         x[(w+1):length(x)] else list()
-
+      
       is_data_frame <- is.data.frame(x[[w]])
       if(is_data_frame) dfxw <- as.matrix(x[[w]])
       len_bigger_one <- !is_data_frame & length(x[[w]])>1 & is.list(x[[w]])
@@ -818,13 +838,13 @@ unlist_order_preserving <- function(x)
         x <- append(beginning, x[[w]])
       x <- append(x, end)
       if(len_bigger_one) return(unlist_order_preserving(x))
-
+      
     }
-
+    
   }
-
+  
   return(x)
-
+  
 }
 
 get_family_name <- function(dist) gsub(".*(^|/)(.*)/$", "\\2", dist$name)
@@ -835,14 +855,14 @@ frm_to_text <- function(form) Reduce(paste, deparse(form))
 
 train_together_ind <- function(train_together)
 {
- 
+  
   if(is.list(train_together) & length(train_together )==0) return(NULL) 
   nulls <- sapply(train_together, is.null)
   nets <- unique(train_together[!nulls])
   apply(sapply(nets, function(nn) 
     sapply(train_together, 
            function(tt) if(is.null(tt)) FALSE else nn==tt)), 1, which)
-
+  
   
 }
 
@@ -858,7 +878,7 @@ sum_cols_smooth <- function(x)
            sum(sapply(x, function(y) NCOL(y$X))))
   
 }
-  
+
 applySumToZero <- function(X, apply=TRUE)
 {
   if(apply)

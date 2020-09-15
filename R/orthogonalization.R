@@ -40,9 +40,9 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
     
     if(#"(Intercept)" %in% nml & 
       !grepl("by", nm) & 
-       zero_cons)
+      zero_cons)
     {
-
+      
       L <- matrix(rep(1,NROW(pcf$smoothterms[[nm]][[1]]$X)), ncol=1)
       Lcontent <- c("int")
       
@@ -53,11 +53,11 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
       if(!is.null(L))
         L <- cbind(L, pcf$linterms[,nm]) else
           L <- pcf$linterms[,nm]
-      Lcontent <- c(Lcontent, "lin")
+        Lcontent <- c(Lcontent, "lin")
         
     }
     
-
+    
     if(!is.null(L)){
       
       X_and_P <- orthog_structured_smooths(
@@ -75,7 +75,7 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
       pcf$smoothterms[[nm]][[1]]$Lcontent <- Lcontent
       
     }
-
+    
   }
   
   return(pcf)
@@ -89,7 +89,7 @@ make_orthog <- function(
   returnX = FALSE
 )
 {
-
+  
   if(is.null(pcf$deepterms)) return(NULL)
   n_obs <- nROW(pcf)
   if(n_obs==0){
@@ -102,12 +102,12 @@ make_orthog <- function(
   if(!is.null(nms$smoothterms))
     struct_nms <- c(nms$linterms, #unlist(strsplit(nms$smoothterms,",")),
                     nms$smoothterms) else
-      struct_nms <- nms$linterms
+                      struct_nms <- nms$linterms
   if(is.null(pcf$linterms) & is.null(pcf$smoothterms))
     return(NULL)
   
   qList <- lapply(nmsd, function(nn){
-      
+    
     # number of columns removed due to collinearity
     rem_cols <- 0
     # if there is any smooth 
@@ -181,7 +181,7 @@ orthog <- function(Y, Q)
   X_XtXinv_Xt <- tf$linalg$matmul(Q,tf$linalg$matrix_transpose(Q))
   Yorth <- Y - tf$linalg$matmul(X_XtXinv_Xt, Y)
   return(Yorth)
-
+  
 }
 
 orthog_tf <- function(Y, X)
@@ -197,48 +197,48 @@ orthog_nt <- function(Y,X) Y <- X%*%solve(crossprod(X))%*%crossprod(X,Y)
 
 split_model <- function(model, where)
 {
-
+  
   fun_as_string <- Reduce(paste, deparse(body(model)))
   split_fun <- strsplit(fun_as_string, "%>%")[[1]]
   length_model <- length(split_fun) - 1
-
+  
   if(where < 0) where <- length_model + where
   # as input is also part of split_fun
   where <- where + 1
-
+  
   # define functions as strings
   first_part <- paste(split_fun[1:where], collapse = "%>%")
   second_part <- paste(split_fun[c(1,(where+1):(length_model+1))], collapse = "%>%")
-
+  
   # define functions with strings
   first_part <- eval(parse(text = paste0('function(x) ', first_part)))
   second_part <- eval(parse(text = paste0('function(x) ', second_part)))
-
+  
   return(list(first_part, second_part))
-
+  
 }
 
 ### R6 class, not used atm
 
 if(FALSE){
-
+  
   Orthogonalizer <- R6::R6Class("Orthogonalizer",
-
+                                
                                 lock_objects = FALSE,
                                 inherit = KerasLayer,
-
+                                
                                 public = list(
-
+                                  
                                   output_dim = NULL,
-
+                                  
                                   kernel = NULL,
-
+                                  
                                   initialize = function(inputs) {
-
+                                    
                                     self$inputs <- inputs
-
+                                    
                                   },
-
+                                  
                                   call = function(inputs, training=NULL) {
                                     if(is.null(training))
                                       return(inputs[[1]]) else
@@ -246,14 +246,14 @@ if(FALSE){
                                   }
                                 )
   )
-
+  
   layer_orthog <- function(inputs, ...) {
     create_layer(layer_class = Orthogonalizer,
                  args = list(inputs = inputs)
     )
   }
-
-
+  
+  
 }
 
 combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
@@ -264,9 +264,9 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
     if(is.null(shared)) return(struct) else
       return(
         layer_add(list(shared,struct))
-        )
-      
-  
+      )
+    
+    
   }else if(is.null(struct) || (is.list(struct) && length(struct)==0)){
     
     if(length(deep)==1){ 
@@ -283,11 +283,11 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
       return(
         layer_add(
           lapply(1:length(deep), function(j) deep_top[[j]](deep[[j]])))) else
-                                return(
-                                  layer_add(list(shared,
-                                                 layer_add(lapply(1:length(deep), 
-                                                                  function(j) deep_top[[j]](deep[[j]])))))
-                                )
+            return(
+              layer_add(list(shared,
+                             layer_add(lapply(1:length(deep), 
+                                              function(j) deep_top[[j]](deep[[j]])))))
+            )
     
   }else{
     
@@ -321,7 +321,7 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
                                      return(deep_top[[j]](deep[[j]])) else
                                        deep_top[[j]](orthog_fun(deep[[j]], 
                                                                 ox[[j]]))
-                                   }), 
+                                 }), 
                           struct))
       )
     }
@@ -334,5 +334,5 @@ drop_constant <- function(X){
   return(list(X[,!this_notok], 
               sum(this_notok))
   )
-
+  
 }

@@ -34,12 +34,12 @@ plot.deepregression <- function(
   if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
   if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
   plus_number_lin_eff <- sum(this_ind$type=="lin")
-
+  
   plotData <- vector("list", length(which))
   org_feature_names <- 
     names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
   phi <- x$model$get_layer(paste0("structured_nonlinear_",
-                                       which_param))$get_weights()
+                                  which_param))$get_weights()
   if(length(phi)>1){
     if(use_posterior){
       phi <- matrix(phi[[1]], ncol=2, byrow=F)
@@ -51,7 +51,7 @@ plot.deepregression <- function(
   }
   
   for(w in which){
-
+    
     nam <- org_feature_names[w]
     this_ind_this_w <- do.call("Map",
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
@@ -86,7 +86,7 @@ plot.deepregression <- function(
       {
         if(use_posterior){
           plot(plotData[[w]]$mean_partial_effect[order(plotData[[w]]$value)] ~ 
-                          sort(plotData[[w]]$value),
+                 sort(plotData[[w]]$value),
                main = paste0("s(", nam, ")"),
                xlab = nam,
                ylab = "partial effect",
@@ -102,12 +102,12 @@ plot.deepregression <- function(
                      sort(plotData[[w]]$value), type="l", lty=2)
           })
         }else{
-            plot(partial_effect[order(value),1] ~ sort(value[,1]),
-                 data = plotData[[w]][c("value", "partial_effect")],
-                 main = paste0("s(", nam, ")"),
-                 xlab = nam,
-                 ylab = "partial effect",
-                 ...)
+          plot(partial_effect[order(value),1] ~ sort(value[,1]),
+               data = plotData[[w]][c("value", "partial_effect")],
+               main = paste0("s(", nam, ")"),
+               xlab = nam,
+               ylab = "partial effect",
+               ...)
         }
       }else if(nrcols==2){
         sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
@@ -138,7 +138,7 @@ plot.deepregression <- function(
       }
     }
   }
-
+  
   invisible(plotData)
 }
 
@@ -190,14 +190,14 @@ plot.deeptrafo <- function(
     BX <- 
       x$init_params$parsed_formulae_contents[[
         which_param]]$smoothterms[[nam]][[1]]$X
-
+    
     plotData[[w]] <-
-        list(org_feature_name = nam,
-             value = sapply(strsplit(nam,",")[[1]], function(xx)
-               x$init_params$data[[xx]]),
-             design_mat = BX,
-             coef = phi[this_ind_this_w,],
-             partial_effects = BX%*%phi[this_ind_this_w,])
+      list(org_feature_name = nam,
+           value = sapply(strsplit(nam,",")[[1]], function(xx)
+             x$init_params$data[[xx]]),
+           design_mat = BX,
+           coef = phi[this_ind_this_w,],
+           partial_effects = BX%*%phi[this_ind_this_w,])
     
     if(plot){
       if(which_param==1){
@@ -279,7 +279,7 @@ prepare_data <- function(
 {
   if(length(data)>1 & is.list(data) & !is.null(x$init_params$offset))
   {
-
+    
     message("Using the second list item of data as offset.")
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
@@ -320,7 +320,7 @@ predict.deepregression <- function(
   ...
 )
 {
-
+  
   if(is.null(newdata)){
     yhat <- object$model(unname(object$init_params$input_cov))
   }else{
@@ -329,12 +329,12 @@ predict.deepregression <- function(
     newdata_processed <- prepare_data(object, newdata, pred=TRUE)
     yhat <- object$model(newdata_processed)
   }
-
-
+  
+  
   if(!is.null(apply_fun))
     return(convert_fun(apply_fun(yhat))) else
       return(convert_fun(yhat))
-
+  
 }
 
 #' Predict based on a deeptrafo object
@@ -406,7 +406,7 @@ predict.deeptrafo <- function(
     ret <- switch (type,
                    trafo = (ytransf %>% as.matrix),
                    pdf = ((tfd_normal(0,1) %>% tfd_prob(ytransf) %>% 
-                            as.matrix)*as.matrix(yprimeTrans)),
+                             as.matrix)*as.matrix(yprimeTrans)),
                    cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf) %>% 
                             as.matrix),
                    grid_trafo = grid_eval,
@@ -417,9 +417,9 @@ predict.deeptrafo <- function(
     )
     
     return(ret)
-  
+    
   }
-
+  
   return(trafo_fun)
   
 }
@@ -552,7 +552,7 @@ fit.deepregression <- function(
     args <- append(args, 
                    x$init_params$ellipsis[
                      !names(x$init_params$ellipsis) %in% names(args)])
-
+  
   
   ret <- do.call(fit_fun,
                  args)
@@ -587,7 +587,7 @@ coef.deepregression <- function(
     lret[[i]] <- list(structured_linear = NULL,
                       structured_lasso = NULL,
                       structured_nonlinear = NULL)
-
+    
     lret[[i]]$structured_linear <-
       if(sl %in% layer_names)
         object$model$get_layer(sl)$get_weights()[[1]] else
@@ -606,10 +606,10 @@ coef.deepregression <- function(
     }else{
       lret[[i]]$structured_nonlinear <- NULL
     }
-
+    
   }
   return(lret)
-
+  
 }
 
 #' Print function for deepregression model
@@ -688,7 +688,7 @@ cv <- function(
       subset_fun <- function(y,ind) subset_array(y,ind)
   
   res <- mylapply(cv_folds, function(this_fold){
-  
+    
     if(print_folds) cat("Fitting Fold ", folds_iter, " ... ")
     st1 <- Sys.time()
     
@@ -725,28 +725,18 @@ cv <- function(
                         x = prepare_newdata(
                           x$init_params$parsed_formulae_contents,
                           train_data,
-<<<<<<< HEAD
-                          pred = FALSE,
-                          index = train_ind),
-=======
                           pred = TRUE,
                           index = train_ind,
                           cv = TRUE),
->>>>>>> c667291030cef133af00d9bf392e98749e4552aa
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
                           prepare_newdata(
                             x$init_params$parsed_formulae_contents,
                             test_data,
-<<<<<<< HEAD
-                            pred = FALSE,
-                            index = test_ind),
-=======
                             pred = TRUE,
                             index = test_ind,
                             cv = TRUE),
->>>>>>> c667291030cef133af00d9bf392e98749e4552aa
                           subset_fun(x$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,
@@ -761,7 +751,7 @@ cv <- function(
     
     if(stop_if_nan && any(is.nan(ret$metrics$validloss)))
       stop("Fold ", folds_iter, " with NaN's in ")
-  
+    
     if(print_folds) folds_iter <<- folds_iter + 1
     
     this_mod$set_weights(old_weights)
@@ -880,7 +870,7 @@ get_distribution <- function(
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
-    newdata_processed <- prepare_data(x, data, pred=FALSE)
+    newdata_processed <- prepare_data(x, data, pred=TRUE)
     disthat <- x$model(newdata_processed)
   }
   return(disthat)
@@ -914,9 +904,9 @@ log_score <- function(
       if(missing(this_y)) stop("Must provide this_y for transformation models and new data.")
       newdata_processed <- list(unname(
         lapply(c(newdata_processed,
-          list(x$init_params$y_basis_fun(this_y)),
-          list(x$init_params$y_basis_fun_prime(this_y))),
-          function(y) tf$cast(y, tf$float32))),
+                 list(x$init_params$y_basis_fun(this_y)),
+                 list(x$init_params$y_basis_fun_prime(this_y))),
+               function(y) tf$cast(y, tf$float32))),
         tf$constant(matrix(this_y, 
                            ncol=1), 
                     dtype = "float32")
@@ -939,7 +929,7 @@ log_score <- function(
   }
   return(summary_fun(convert_fun(
     disthat %>% ind_fun() %>% tfd_log_prob(this_y)
-    )))
+  )))
 }
 
 get_shift <- function(x)
@@ -959,6 +949,6 @@ get_theta <- function(x)
   reshape_softplus_cumsum(
     as.matrix(x$model$weights[[nrtw]] + 0), 
     order_bsp_p1 = x$init_params$order_bsp + 1
-    )
+  )
   
 }
