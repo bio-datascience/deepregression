@@ -725,16 +725,28 @@ cv <- function(
                         x = prepare_newdata(
                           x$init_params$parsed_formulae_contents,
                           train_data,
+<<<<<<< HEAD
                           pred = FALSE,
                           index = train_ind),
+=======
+                          pred = TRUE,
+                          index = train_ind,
+                          cv = TRUE),
+>>>>>>> c667291030cef133af00d9bf392e98749e4552aa
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
                           prepare_newdata(
                             x$init_params$parsed_formulae_contents,
                             test_data,
+<<<<<<< HEAD
                             pred = FALSE,
                             index = test_ind),
+=======
+                            pred = TRUE,
+                            index = test_ind,
+                            cv = TRUE),
+>>>>>>> c667291030cef133af00d9bf392e98749e4552aa
                           subset_fun(x$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,
@@ -894,20 +906,34 @@ log_score <- function(
                                                       ncol=1), 
                                                dtype = "float32"))
     disthat <- x$model(this_data)
-    if(is_trafo)
-      return(summary_fun(
-        convert_fun(
-          tfd_normal(loc = 0, scale = 1) %>% 
-            tfd_log_prob(disthat[,2,drop=F] + 
-                           disthat[,1,drop=F])
-        ))
-      )
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
     newdata_processed <- prepare_data(x, data, pred=TRUE)
+    if(is_trafo){
+      if(missing(this_y)) stop("Must provide this_y for transformation models and new data.")
+      newdata_processed <- list(unname(
+        lapply(c(newdata_processed,
+          list(x$init_params$y_basis_fun(this_y)),
+          list(x$init_params$y_basis_fun_prime(this_y))),
+          function(y) tf$cast(y, tf$float32))),
+        tf$constant(matrix(this_y, 
+                           ncol=1), 
+                    dtype = "float32")
+      )
+    }
     disthat <- x$model(newdata_processed)
   }
+  
+  if(is_trafo)
+    return(summary_fun(
+      convert_fun(
+        tfd_normal(loc = 0, scale = 1) %>% 
+          tfd_log_prob(disthat[,2,drop=F] + 
+                         disthat[,1,drop=F])
+      ))
+    )
+  
   if(is.null(this_y)){
     this_y <- x$init_params$y
   }
@@ -920,7 +946,8 @@ get_shift <- function(x)
 {
   
   stopifnot("deeptrafo" %in% class(x))
-  c(-1* (as.matrix(x$model$weights[[1]] + 0)))
+  nrtw <- length(x$model$trainable_weights)
+  c(-1* (as.matrix(x$model$weights[[nrtw-1]] + 0)))
   
 }
 
@@ -928,8 +955,9 @@ get_theta <- function(x)
 {
   
   stopifnot("deeptrafo" %in% class(x))
+  nrtw <- length(x$model$trainable_weights)
   reshape_softplus_cumsum(
-    as.matrix(x$model$weights[[2]] + 0), 
+    as.matrix(x$model$weights[[nrtw]] + 0), 
     order_bsp_p1 = x$init_params$order_bsp + 1
     )
   
