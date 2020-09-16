@@ -13,8 +13,8 @@ deepregression(
     "half_cauchy", "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian",
     "laplace", "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
     "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
-    "truncated_normal", "uniform", "zip"),
-  train_together = FALSE,
+    "truncated_normal", "uniform", "zip", "transformation_model"),
+  train_together = list(),
   data,
   df = NULL,
   lambda_lasso = NULL,
@@ -38,8 +38,17 @@ deepregression(
   extend_output_dim = 0,
   offset = NULL,
   offset_val = NULL,
-  absorb_cons = TRUE,
-  zero_constraint_for_smooths = FALSE,
+  absorb_cons = FALSE,
+  zero_constraint_for_smooths = TRUE,
+  orthog_type = c("tf", "manual"),
+  hat1 = FALSE,
+  sp_scale = 1,
+  order_bsp = NULL,
+  y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
+  y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, supp =
+    range(y))/diff(range(y)),
+  split_between_shift_and_theta = NULL,
+  additional_penalty = NULL,
   ...
 )
 }
@@ -65,12 +74,20 @@ See the examples for more details.}
 \item{family}{a character specifying the distribution. For information on 
 possible distribution and parameters, see \code{\link{make_tfd_dist}}}
 
-\item{train_together}{logical; whether or not to train all parameters in 
-one deep network.}
+\item{train_together}{a list of formulae of the same length as \code{list_of_formulae} 
+specifying the deep predictors that should be trained together and then the results are; 
+fed into different distribution parameters; use the same name for the deep predictor to
+indicate for which distribution parameter they should be used. For example, if the second
+and fourth list entry are \code{~ lstm_mod(text)} then the jointly learned \code{lstm_mod} 
+network is added to the linear predictor of the second and fourth distribution parameter.
+Those network names should then be excluded from the \code{list_of_formulae}}
 
 \item{data}{data.frame or named list with input features}
 
-\item{df}{degrees of freedom for all non-linear structural terms}
+\item{df}{degrees of freedom for all non-linear structural terms;
+either one common value or a list of the same length as number of parameters and
+each list item a vector of the same length as number of smooth terms in the 
+respective formula}
 
 \item{lambda_lasso}{smoothing parameter for lasso regression; 
 can be combined with ridge}
@@ -108,9 +125,9 @@ the via the ellipsis to the initialization function
 
 \item{seed}{integer value used as a seed in data splitting}
 
-\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), no mixture distribution is fitted.
-If >= 2, a network is constructed that outputs a multivariate response for each of the mixture 
-components.}
+\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), 
+no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
+a multivariate response for each of the mixture components.}
 
 \item{split_fun}{a function separating the deep neural network in two parts
 so that the orthogonalization can be applied to the first part before 
@@ -136,8 +153,9 @@ log-likelihood. Per default independence is assumed by applying \code{tfd_indepe
 additive constant. If set to a value > 0, a multivariate response with dimension
 \code{1 + extend_output_dim} is defined.}
 
-\item{offset}{a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each parameter,
-in case an offset should be added to the additive predictor; if NULL, no offset is used}
+\item{offset}{a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each 
+parameter, in case an offset should be added to the additive predictor; 
+if NULL, no offset is used}
 
 \item{offset_val}{a list analogous to offset for the validation data}
 
@@ -146,6 +164,28 @@ See \code{?mgcv::smoothCon} for more details.}
 
 \item{zero_constraint_for_smooths}{logical; the same as absorb_cons, 
 but done explicitly. If true a constraint is put on each smooth to have zero mean.}
+
+\item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated up
+front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
+The first only works well for larger batch sizes or ideally batch_size == NROW(y)}
+
+\item{hat1}{logical; if TRUE, the smoothing parameter is defined by the trace of the hat
+matrix sum(diag(H)), else sum(diag(2*H-HH))}
+
+\item{sp_scale}{positive constant; for scaling the DRO calculated penalty (1 per default)}
+
+\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL, 
+a conditional transformation model (CTM) is fitted.}
+
+\item{y_basis_fun, y_basis_fun_prime}{basis functions for y transformation for CTM case}
+
+\item{split_between_shift_and_theta}{if \code{family == 'transformation_model'} and
+\code{!is.null(train_together)}, \code{split_between_shift_and_theta} is supposed
+to define how many of the last layer's hidden units are used for the shift
+term and how many for the theta term (an integer vector of length 2).}
+
+\item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be 
+a \code{function(x)}, where \code{x} is actually not used and}
 
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }

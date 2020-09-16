@@ -4,6 +4,7 @@
 \alias{plot.deepregression}
 \alias{prepare_data}
 \alias{predict.deepregression}
+\alias{predict.deeptrafo}
 \alias{fitted.deepregression}
 \alias{fit.deepregression}
 \alias{coef.deepregression}
@@ -24,7 +25,7 @@
   ...
 )
 
-prepare_data(x, data, pred = FALSE)
+prepare_data(x, data, pred = TRUE)
 
 \method{predict}{deepregression}(
   object,
@@ -33,6 +34,8 @@ prepare_data(x, data, pred = FALSE)
   convert_fun = as.matrix,
   ...
 )
+
+\method{predict}{deeptrafo}(object, newdata = NULL, ...)
 
 \method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
 
@@ -45,6 +48,7 @@ prepare_data(x, data, pred = FALSE)
   save_weights = FALSE,
   auc_callback = FALSE,
   val_data = NULL,
+  callbacks = list(),
   ...
 )
 
@@ -135,6 +139,8 @@ that coefficients have both a mean and a variance}
 \item{value}{the quantile value(s)}
 }
 \value{
+
+
 Returns an object \code{drCV}, a list, one list element for each fold
 containing the model fit and the \code{weighthistory}.
 }
@@ -144,6 +150,8 @@ Generic functions for deepregression models
 Function to prepare data for deepregression use
 
 Predict based on a deepregression object
+
+Predict based on a deeptrafo object
 
 Function to extract fitted distribution
 

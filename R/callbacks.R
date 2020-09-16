@@ -53,19 +53,18 @@ auc_roc <- R6::R6Class("AUC",
 ################################################################################################
 
 # np <- import("numpy", convert = T)
-# auc.tf.out <- function(y_true, y_pred) {
-#   
-#   auc.numpy.out <- function(y_true, y_pred){
-#     out <- Metrics::auc(predicted = y_pred, actual = y_true)
-#     return(tf$constant(out, "double"))
-#   }
-#   
-#   return(tf$numpy_function(func = auc.numpy.out, 
-#                            inp = c(y_true,y_pred), 
-#                            Tout = tf$double))
-# }
-# 
-# auc_metric <- custom_metric(name = "auc", metric_fn = auc.tf.out)
+
+auc_metric <- custom_metric(name = "auc", metric_fn = function(y_true, y_pred) {
+  
+  auc.numpy.out <- function(y_true, y_pred){
+    out <- Metrics::auc(predicted = y_pred, actual = y_true)
+    return(tf$constant(out, "double"))
+  }
+  
+  return(tf$numpy_function(func = auc.numpy.out,
+                           inp = c(y_true,y_pred),
+                           Tout = tf$double))
+})
 ################################################################################################
 
 # overwrite keras:::KerasMetricsCallback class

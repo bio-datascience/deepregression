@@ -13,7 +13,7 @@ deepregression_init(
   use_bias_in_structured = FALSE,
   nr_params = 2,
   lss = TRUE,
-  train_together = FALSE,
+  train_together = NULL,
   lambda_lasso = NULL,
   lambda_ridge = NULL,
   family,
@@ -33,7 +33,8 @@ deepregression_init(
   split_fun = split_model,
   ind_fun = function(x) x,
   extend_output_dim = 0,
-  offset = NULL
+  offset = NULL,
+  additional_penalty = NULL
 )
 }
 \arguments{
@@ -65,8 +66,7 @@ structured layer}
 \item{lss}{whether or not to model the whole distribution 
 (lss in the style of location, scale and shape approaches)}
 
-\item{train_together}{logical, whether or not to train distribution parameters
-within one network or using separete networks (the latter is the default)}
+\item{train_together}{see \code{?deepregression}}
 
 \item{lambda_lasso}{penalty parameter for l1 penalty of structured layers}
 
@@ -112,6 +112,11 @@ the via the ellipsis to the initialization function}
 
 \item{offset}{list of logicals corresponding to the paramters;
 defines per parameter if an offset should be added to the predictor}
+
+\item{additional_penalty}{to specify any additional penalty, provide a function
+that takes the \code{model$trainable_weights} as input and applies the
+additional penalty. In order to get the correct index for the trainable
+weights, you can run the model once and check its structure.}
 }
 \description{
 Initializing Deep Distributional Regression Models

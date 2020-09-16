@@ -105,8 +105,8 @@
 #' @importFrom Metrics auc
 #' @importFrom tfruns is_run_active view_run_metrics update_run_metrics write_run_metadata
 #' @importFrom graphics abline filled.contour matplot par points
-#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var
-#' @importFrom methods slotNames is
+#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var dbeta
+#' @importFrom methods slotNames is as
 #' 
 #' @export 
 #'
