@@ -95,6 +95,8 @@
 #' \code{!is.null(train_together)}, \code{split_between_shift_and_theta} is supposed
 #' to define how many of the last layer's hidden units are used for the shift
 #' term and how many for the theta term (an integer vector of length 2).
+#' @param additional_penalty a penalty that is added to the negative log-likelihood; must be 
+#' a \code{function(x)}, where \code{x} is actually not used and
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -188,6 +190,7 @@ deepregression <- function(
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
                                                  supp = range(y)) / diff(range(y)),
   split_between_shift_and_theta = NULL,
+  additional_penalty = NULL,
   # compress = TRUE,
   ...
 )
@@ -479,6 +482,7 @@ deepregression <- function(
       extend_output_dim = extend_output_dim,
       offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
       orthog_fun = orthog_fun,
+      additional_penalty = additional_penalty,
       ...
     )
     #############################################################
@@ -568,7 +572,10 @@ deepregression <- function(
 #' @param extend_output_dim see \code{?deepregression}
 #' @param offset list of logicals corresponding to the paramters;
 #' defines per parameter if an offset should be added to the predictor
-#' @param additional_loss to specify any additional loss
+#' @param additional_penalty to specify any additional penalty, provide a function
+#' that takes the \code{model$trainable_weights} as input and applies the
+#' additional penalty. In order to get the correct index for the trainable
+#' weights, you can run the model once and check its structure. 
 #' 
 #' @export 
 #'
@@ -602,7 +609,7 @@ deepregression_init <- function(
   ind_fun = function(x) x,
   extend_output_dim = 0,
   offset = NULL,
-  additional_loss = NULL
+  additional_penalty = NULL
 )
 {
   
@@ -960,9 +967,12 @@ deepregression_init <- function(
   negloglik <- function(y, model) 
     - weights * (model %>% ind_fun() %>% tfd_log_prob(y))
   
-  if(!is.null(additional_loss)){
+  if(!is.null(additional_penalty)){
     
-    model$add_loss(additional_loss)
+    add_loss <- function(x) additional_penalty(
+      model$trainable_weight
+    )
+    model$add_loss(add_loss)
     
   }
   

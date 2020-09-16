@@ -1,0 +1,59 @@
+---
+output: rmarkdown::github_document
+---
+
+deepregression
+======
+[![Build Status](https://travis-ci.com/davidruegamer/deepregression.svg?token=UQrq5mDFv9MYhofnJ2xn&branch=master)](https://travis-ci.com/davidruegamer/deepregression)
+
+
+```{r setup, include=FALSE, cache=TRUE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+# Installation
+
+Since the repository is still private, clone the repository to your local machine
+and run the following
+
+```{r, include=FALSE, message=FALSE}
+library(devtools)
+load_all("R")
+```
+
+Also make sure you have installed all the dependencies:
+
+* Matrix
+* dplyr
+* keras
+* mgcv
+* reticulate
+* tensorflow
+* tfprobability
+
+In the future, the package can be installed as follows:
+
+To install the latest version of deepregression:
+
+```{r, eval=FALSE}
+library(devtools)
+install_github("davidruegamer/deepregression")
+```
+
+# How to cite this?
+
+Until published, please cite the following preprint:
+
+```
+@article{rugamer2020unifying,
+  title={A Unifying Network Architecture for Semi-Structured Deep Distributional Learning},
+  author={R{\"u}gamer, David and Kolb, Chris and Klein, Nadja},
+  journal={arXiv preprint arXiv:2002.05777},
+  year={2020}
+}
+```
+
+# How to use this?
+
+See [the tutorial](vignettes/tutorial.md) for a detailed introduction.
+
