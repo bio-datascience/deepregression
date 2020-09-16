@@ -725,7 +725,7 @@ cv <- function(
                         x = prepare_newdata(
                           x$init_params$parsed_formulae_contents,
                           train_data,
-                          pred = TRUE,
+                          pred = FALSE,
                           index = train_ind,
                           cv = TRUE),
                         y = subset_fun(x$init_params$y,train_ind),
@@ -734,7 +734,7 @@ cv <- function(
                           prepare_newdata(
                             x$init_params$parsed_formulae_contents,
                             test_data,
-                            pred = TRUE,
+                            pred = FALSE,
                             index = test_ind,
                             cv = TRUE),
                           subset_fun(x$init_params$y,test_ind)

@@ -87,7 +87,7 @@
 #' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
 #' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 #' matrix sum(diag(H)), else sum(diag(2*H-HH))
-#' @param sp_scale positive constat; for scaling the DRO calculated penalty (1 per default)
+#' @param sp_scale positive constant; for scaling the DRO calculated penalty (1 per default)
 #' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
 #' a conditional transformation model (CTM) is fitted.
 #' @param y_basis_fun,y_basis_fun_prime basis functions for y transformation for CTM case
@@ -289,7 +289,7 @@ deepregression <- function(
     list_of_formulae <- c(list_of_formulae, unique(train_together[!nulls]))
     
   }
-  if(!is.list(df)) df <- list(df)[rep(1,length(list_of_formulae))]
+  if(!is.null(df) && !is.list(df)) df <- list(df)[rep(1,length(list_of_formulae))]
   
   cat("Preparing additive formula(e)...")
   # parse formulae
@@ -568,6 +568,7 @@ deepregression <- function(
 #' @param extend_output_dim see \code{?deepregression}
 #' @param offset list of logicals corresponding to the paramters;
 #' defines per parameter if an offset should be added to the predictor
+#' @param additional_loss to specify any additional loss
 #' 
 #' @export 
 #'
@@ -600,7 +601,8 @@ deepregression_init <- function(
   split_fun = split_model,
   ind_fun = function(x) x,
   extend_output_dim = 0,
-  offset = NULL
+  offset = NULL,
+  additional_loss = NULL
 )
 {
   
@@ -957,6 +959,12 @@ deepregression_init <- function(
   # log probability of the model
   negloglik <- function(y, model) 
     - weights * (model %>% ind_fun() %>% tfd_log_prob(y))
+  
+  if(!is.null(additional_loss)){
+    
+    model$add_loss(additional_loss)
+    
+  }
   
   # compile the model using the defined optimizer,
   # the negative log-likelihood as loss funciton
