@@ -10,7 +10,8 @@ vignette: >
 ---
 
 ```{r, include=FALSE}
-devtools::load_all("../R/")
+# devtools::load_all("../R/")
+library(deepregression)
 ```
 
 
