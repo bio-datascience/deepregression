@@ -11,17 +11,13 @@ env:
 repos:
   CRAN: https://cloud.r-project.org
 #
-addons:
-  apt:
-    packages:
-      - python2.7
-      - python-numpy
-      - python-scipy
-      - python-virtualenv
-      - python3-venv
 
-before_install:
-  - pip install numpy tensorflow==2.0.0 tensorflow_probability==0.8.0 keras==2.3
+before_script:
+  - sudo apt-get update
+  - sudo apt-get install python3 python3-pip
+  - pip3 install --upgrade --ignore-installed --user travis virtualenv
+  - pip3 install tensorflow==2.0.0 tensorflow_probability==0.8.0 keras==2.3
+  - R CMD INSTALL .
 
 # Set one of you dependencies from github
 r_github_packages: 
