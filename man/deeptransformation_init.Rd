@@ -67,6 +67,9 @@ non-zero while the others must be zero.}
 \item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL, 
 a conditional transformation model (CTM) is fitted.}
 
+\item{use_bias_in_structured}{whether or not to use a bias in structured
+layers}
+
 \item{train_together}{see \code{?deepregression}}
 
 \item{split_between_shift_and_theta}{see \code{?deepregression}}

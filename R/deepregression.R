@@ -1018,6 +1018,8 @@ deepregression_init <- function(
 #' @param split_fun see \code{?deepregression}
 #' @param order_bsp NULL or integer; order of Bernstein polynomials; if not NULL, 
 #' a conditional transformation model (CTM) is fitted.
+#' @param use_bias_in_structured whether or not to use a bias in structured
+#' layers
 #' @param train_together see \code{?deepregression}
 #' @param split_between_shift_and_theta see \code{?deepregression}
 #' 

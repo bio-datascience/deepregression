@@ -125,6 +125,8 @@ per default \code{as.matrix}}
 
 \item{val_data}{optional specified validation data}
 
+\item{callbacks}{a list of callbacks for fitting}
+
 \item{variational}{logical, if TRUE, the function takes into account
 that coefficients have both a mean and a variance}
 
@@ -139,7 +141,9 @@ that coefficients have both a mean and a variance}
 \item{value}{the quantile value(s)}
 }
 \value{
-
+returns a function with two parameters: the actual response
+and \code{type} in \code{c('trafo', 'pdf', 'cdf')} determining the
+returned value
 
 Returns an object \code{drCV}, a list, one list element for each fold
 containing the model fit and the \code{weighthistory}.

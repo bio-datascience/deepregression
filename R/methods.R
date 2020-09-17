@@ -343,7 +343,7 @@ predict.deepregression <- function(
 #' @param newdata optional new data, either data.frame or list
 #' @param ... not used atm
 #' @return returns a function with two parameters: the actual response
-#' and \code{type %in% c("trafo", "pdf", "cdf")} determining the
+#' and \code{type} in \code{c('trafo', 'pdf', 'cdf')} determining the
 #' returned value
 #'
 #' @export
@@ -464,6 +464,7 @@ fit <- function (x, ...) {
 #' @param save_weights logical, whether to save weights in each epoch.
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param val_data optional specified validation data
+#' @param callbacks a list of callbacks for fitting
 #' @param ... further arguments passed to 
 #' \code{keras:::fit.keras.engine.training.Model}
 #' 

@@ -3,6 +3,7 @@
 
 [![Build
 Status](https://travis-ci.com/davidruegamer/deepregression.svg?token=UQrq5mDFv9MYhofnJ2xn&branch=master)](https://travis-ci.com/davidruegamer/deepregression)
+[![MIT license](http://img.shields.io/badge/license-MIT-brightgreen.svg)](http://opensource.org/licenses/MIT)
 
 # Installation
 
