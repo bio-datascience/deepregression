@@ -1,8 +1,12 @@
 ---
-title: '`deepregression` Tutorial'
+title: 
 author: "David Ruegamer"
 date: "9/15/2020"
 output: rmarkdown::github_document
+vignette: >
+  %\VignetteEngine{knitr::knitr}
+  %\VignetteIndexEntry{'`deepregression` Tutorial'}
+  \usepackage[UTF-8]{inputenc}
 ---
 
 ```{r, include=FALSE}
@@ -342,7 +346,7 @@ Apart from custom distribution, which also allow bijective transformations of fu
 
 `deepregression` can be used to fit *Neural Mixture Distributional Regression* models, a large class of mixture models fitted in a neural network. Example codes can be found [here](...)
 
-### Transformation models
+### Transformation Models
 
 The `deepregression` package also allows to fit *Deep Conditional Transformation Models*, a large class of transformation models fitted in a neural network. Example codes can be found [here](...)
 
