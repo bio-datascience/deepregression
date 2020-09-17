@@ -11,6 +11,7 @@ vignette: >
 
 ```{r, include=FALSE}
 # devtools::load_all("../R/")
+# reticulate::install_miniconda()
 source("../R/check_and_install.R")
 check_and_install(force = TRUE)
 library(deepregression)
