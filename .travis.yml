@@ -19,6 +19,9 @@ before_script:
   - python3 -m pip install --upgrade pip
   - pip install six tensorflow==2.0.0 tensorflow_probability==0.8.0 keras==2.3
 
+install:
+- R -e 'install.packages("reticulate"); reticulate::install_miniconda()'
+
 # Set one of you dependencies from github
 r_github_packages: 
   - r-lib/testthat
