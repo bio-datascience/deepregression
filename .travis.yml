@@ -20,7 +20,7 @@ before_script:
   - pip install six tensorflow==2.0.0 tensorflow_probability==0.8.0 keras==2.3
 
 install:
-- R -e 'install.packages("reticulate"); reticulate::install_miniconda()'
+- R -e 'install.packages("reticulate"); reticulate::install_miniconda(); install.packages("knitr")'
 
 # Set one of you dependencies from github
 r_github_packages: 
