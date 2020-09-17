@@ -1,5 +1,5 @@
 .onLoad <- function(libname, pkgname) {
-  # reticulate::configure_environment(pkgname)
+  reticulate::configure_environment(pkgname)
 
   # Use TF
   suppressMessages(try(keras::use_implementation("tensorflow"), silent = TRUE))
