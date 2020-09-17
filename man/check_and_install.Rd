@@ -4,7 +4,10 @@
 \alias{check_and_install}
 \title{Function to check python environment and install necessary packages}
 \usage{
-check_and_install()
+check_and_install(force = FALSE)
+}
+\arguments{
+\item{force}{if TRUE, forces the installations}
 }
 \value{
 Function that checks if a Python environment is available

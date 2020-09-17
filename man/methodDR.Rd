@@ -42,8 +42,8 @@ prepare_data(x, data, pred = TRUE)
 \method{fit}{deepregression}(
   x,
   early_stopping = FALSE,
-  verbose = FALSE,
-  view_metrics = TRUE,
+  verbose = TRUE,
+  view_metrics = FALSE,
   patience = 20,
   save_weights = FALSE,
   auc_callback = FALSE,

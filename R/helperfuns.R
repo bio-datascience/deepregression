@@ -734,7 +734,13 @@ plot.drCV <- function(x, what=c("loss","weight"), ...){
   
 }
 
-
+#' Function to get the stoppting iteration from CV
+#' @param res result of cv call
+#' @param thisFUN aggregating function applied over folds
+#' @param loss which loss to use for decision
+#' @param whichFUN which function to use for decision
+#' 
+#' @export
 stop_iter_cv_result <- function(res, thisFUN = mean,
                                 loss = "validloss",
                                 whichFUN = which.min)
