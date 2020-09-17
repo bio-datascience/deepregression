@@ -12,6 +12,7 @@ vignette: >
 ```{r, include=FALSE}
 library(deepregression)
 packages_needed <- c("ggplot2", "reshape2", "MASS", "gamlss.data", "distr")
+r = getOption("repos")
 r["CRAN"] = "https://cloud.r-project.org"
 options(repos = r)
 for(p in packages_needed)
