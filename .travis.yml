@@ -30,8 +30,6 @@ apt_packages:
 # print installation log
 after_failure:
   - ./travis-tool.sh dump_logs
-after_success:
-  - Rscript -e 'deepregression::check_and_install()'
 
 # after_success:
 #   - Rscript -e 'library(covr); coveralls()'

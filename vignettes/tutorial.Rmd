@@ -11,6 +11,8 @@ vignette: >
 
 ```{r, include=FALSE}
 # devtools::load_all("../R/")
+source("../R/check_and_install.R")
+check_and_install()
 library(deepregression)
 ```
 
