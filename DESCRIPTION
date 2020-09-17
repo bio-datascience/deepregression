@@ -21,7 +21,8 @@ Config/reticulate:
   )
 Suggests: 
     rsvd,
-    testthat
+    testthat,
+    knitr
 Imports: 
     tensorflow,
     tfprobability,
