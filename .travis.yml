@@ -18,7 +18,6 @@ before_script:
   - pip install --upgrade --ignore-installed --user travis virtualenv
   - python3 -m pip install --upgrade pip
   - pip install six tensorflow==2.0.0 tensorflow_probability==0.8.0 keras==2.3
-  - R CMD INSTALL .
 
 # Set one of you dependencies from github
 r_github_packages: 
