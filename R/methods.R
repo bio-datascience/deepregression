@@ -861,6 +861,8 @@ quantile.deepregression <- function(
 #' @param x the fitted deepregression object
 #' @param data an optional data set
 #' 
+#' @export
+#' 
 get_distribution <- function(
   x,
   data=NULL

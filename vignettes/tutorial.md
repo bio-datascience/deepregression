@@ -1,5 +1,3 @@
-`deepregression` Tutorial
-================
 David Ruegamer
 9/15/2020
 
@@ -46,17 +44,14 @@ David Ruegamer
 9.  [Real World Applications](#real-world-applications)
     1.  [Deep Mixed Model for Wage Panel
         Data](#deep-mixed-model-for-wage-panel-data)
-    2.  [Deep Quantile Regression on Motorcycle
-        Data](#deep-quantile-regression-on-motorcycle-data)
-    3.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer
+    2.  [High-Dimensional Ridge and Lasso Regression on Colon Cancer
         Data](#high-dimensional-ridge-and-lasso-regression)
-    4.  [Mixture of Normal Distributions for Acidity
+    3.  [Mixture of Normal Distributions for Acidity
         Modeling](#mixture-of-normal-distributions-for-acidity-modeling)
-    5.  [Unstructured Data Examples](#unstructured-data-examples)
-        1.  [MNIST Pictures with Binarized Response](#mnist-zeros)
-        2.  [MNIST Pictures with Multinomial
+    4.  [Unstructured Data Examples](#unstructured-data-examples)
+        1.  [MNIST Pictures with Multinomial
             Response](#mnist-multinomial)
-        3.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
+        2.  [Sentiment Analysis using IMDB Reviews](#text-as-input)
 
 ## Introduction
 
@@ -509,7 +504,7 @@ classes with additional support.
 Regression* models, a large class of mixture models fitted in a neural
 network. Example codes can be found [here](...)
 
-### Transformation models
+### Transformation Models
 
 The `deepregression` package also allows to fit *Deep Conditional
 Transformation Models*, a large class of transformation models fitted in
@@ -577,8 +572,8 @@ mod <- deepregression(
     ## Translating data into tensors... Done.
 
 ``` r
-# fit model (may take a few minutes)
-mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
+# fit model (only do a few iterations for demonstration)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% fitted()
 true_mean <- true_mean_fun(x) - b0
@@ -706,35 +701,18 @@ mod <- deepregression(
     ## Translating data into tensors... Done.
 
 ``` r
-cvres <- mod %>% cv(epochs=100)
+cvres <- mod %>% cv(epochs=10, cv_folds = 2) # should be 100
 ```
 
-    ## Warning in cv(., epochs = 100): No folds for CV given, using k = 10.
-
     ## Fitting Fold  1  ... 
-    ## Done in 13.89965  secs 
+    ## Done in 1.886221  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 14.30155  secs 
-    ## Fitting Fold  3  ... 
-    ## Done in 12.57315  secs 
-    ## Fitting Fold  4  ... 
-    ## Done in 16.97161  secs 
-    ## Fitting Fold  5  ... 
-    ## Done in 13.62727  secs 
-    ## Fitting Fold  6  ... 
-    ## Done in 13.21907  secs 
-    ## Fitting Fold  7  ... 
-    ## Done in 13.04092  secs 
-    ## Fitting Fold  8  ... 
-    ## Done in 14.12489  secs 
-    ## Fitting Fold  9  ... 
-    ## Done in 13.09685  secs 
-    ## Fitting Fold  10  ... 
-    ## Done in 13.5196  secs
+    ## Done in 1.201748  secs
 
 ![](tutorial_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
-Get the optimal stopping iteration and train the whole model again:
+Set the stopping iteration to the CV optimal value (which in this case
+is not optimal at all) and train the whole model again:
 
 ``` r
 bestiter <- stop_iter_cv_result(cvres)
@@ -822,40 +800,42 @@ mod <- deepregression(
 
 ``` r
 # fit model
-mod %>% fit(epochs=2000, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # summary(mod)
 # coefficients
 mod %>% coef()
 ```
 
-    ## [[1]]
-    ## [[1]]$structured_nonlinear
+    ## $loc
+    ## $loc$structured_nonlinear
     ##              [,1]
-    ##  [1,]  1.61720479
-    ##  [2,]  0.02109396
-    ##  [3,] -3.70767689
-    ##  [4,] -0.52890521
-    ##  [5,]  0.80098391
-    ##  [6,]  0.13482420
-    ##  [7,]  0.41771194
-    ##  [8,] -0.52294433
-    ##  [9,]  2.07955623
-    ## [10,]  1.96462476
-    ## [11,] -0.75330287
-    ## [12,]  0.52502024
-    ## [13,] -0.34661877
-    ## [14,]  0.03931050
-    ## [15,]  0.33382276
-    ## [16,] -0.66388595
-    ## [17,] -0.79700339
-    ## [18,] -0.82549095
-    ## [19,]  1.91479743
+    ##  [1,]  1.58205628
+    ##  [2,]  0.11276428
+    ##  [3,]  0.25292113
+    ##  [4,] -1.73701227
+    ##  [5,] -0.71387345
+    ##  [6,]  0.01231863
+    ##  [7,] -0.19778168
+    ##  [8,]  1.12555909
+    ##  [9,]  0.20988908
+    ## [10,]  0.40071750
+    ## [11,]  0.29019636
+    ## [12,]  0.38217679
+    ## [13,] -0.09791963
+    ## [14,]  0.14401445
+    ## [15,] -0.10553771
+    ## [16,] -0.25747177
+    ## [17,] -0.14548227
+    ## [18,] -0.24182341
+    ## [19,] -0.23769771
+    ## [20,]  0.26387900
+    ## [21,]  0.58406848
     ## 
     ## 
-    ## [[2]]
-    ## [[2]]$structured_linear
+    ## $scale
+    ## $scale$structured_linear
     ##          [,1]
-    ## [1,] 2.034517
+    ## [1,] 2.027907
 
 ``` r
 # plot model
@@ -948,7 +928,7 @@ mod <- deepregression(
 
 ``` r
 # fit model
-mod %>% fit(epochs=500, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=50, verbose = FALSE, view_metrics = FALSE)
 # plot model
 mod %>% plot()
 ```
@@ -960,26 +940,27 @@ mod %>% plot()
 mod %>% coef()
 ```
 
-    ## [[1]]
-    ## [[1]]$structured_nonlinear
-    ##             [,1]
-    ##  [1,]  0.7594570
-    ##  [2,]  0.2057472
-    ##  [3,] -3.0111439
-    ##  [4,] -0.6054791
-    ##  [5,]  0.2887591
-    ##  [6,]  0.2128939
-    ##  [7,]  0.8159912
-    ##  [8,] -0.4124516
-    ##  [9,]  1.0301316
-    ## [10,]  1.4862767
+    ## $loc
+    ## $loc$structured_nonlinear
+    ##              [,1]
+    ##  [1,]  0.50494635
+    ##  [2,]  0.43030229
+    ##  [3,]  0.30985567
+    ##  [4,] -1.50870478
+    ##  [5,] -0.35846949
+    ##  [6,] -0.20183145
+    ##  [7,] -0.25461638
+    ##  [8,]  0.51991725
+    ##  [9,] -0.02557333
+    ## [10,] -0.50427777
+    ## [11,] -0.14930376
     ## 
     ## 
-    ## [[2]]
-    ## [[2]]$structured_linear
-    ##            [,1]
-    ## [1,] 0.01261504
-    ## [2,] 2.03382659
+    ## $scale
+    ## $scale$structured_linear
+    ##          [,1]
+    ## [1,] 0.258820
+    ## [2,] 1.603872
 
 ### Zero-inflated Poisson Distribution
 
@@ -1016,7 +997,7 @@ mod <- deepregression(y,
 
 ``` r
 # fit the model
-mod %>% fit(epochs = 50, view_metrics=FALSE)
+mod %>% fit(epochs = 50, view_metrics=FALSE, verbose=FALSE)
 
 # get distribution
 mydist <- mod %>% get_distribution()
@@ -1026,12 +1007,12 @@ as.matrix(mydist$components[[0]]$rate + 0) %>% head()
 ```
 
     ##          [,1]
-    ## [1,] 1.905122
-    ## [2,] 1.849455
-    ## [3,] 2.059416
-    ## [4,] 1.953474
-    ## [5,] 1.818133
-    ## [6,] 1.941461
+    ## [1,] 1.884163
+    ## [2,] 1.864342
+    ## [3,] 1.937222
+    ## [4,] 1.901079
+    ## [5,] 1.853021
+    ## [6,] 1.896901
 
 ``` r
 # probability for inflation / non-inflation
@@ -1039,12 +1020,12 @@ as.array(mydist$cat$probs + 0)[,1,] %>% head()
 ```
 
     ##           [,1]      [,2]
-    ## [1,] 0.7312489 0.2687511
-    ## [2,] 0.7312489 0.2687511
-    ## [3,] 0.7312489 0.2687511
-    ## [4,] 0.7312489 0.2687511
-    ## [5,] 0.7312489 0.2687511
-    ## [6,] 0.7312489 0.2687511
+    ## [1,] 0.7248085 0.2751915
+    ## [2,] 0.7248085 0.2751915
+    ## [3,] 0.7248085 0.2751915
+    ## [4,] 0.7248085 0.2751915
+    ## [5,] 0.7248085 0.2751915
+    ## [6,] 0.7248085 0.2751915
 
 ## Real World Application
 
@@ -1055,15 +1036,45 @@ Rupert’ data, a balanced panel dataset with 595 individuals and 4165
 observations, where each individual is observed for 7 years. This data
 set is also used in Tran et al. (2018) for within subject prediction of
 the log of wage in the years 6 and 7 after training on years 1 to 5.
-They report an MSE of
-0.05.
+They report an MSE of 0.05.
+
+``` r
+library(dplyr)
+```
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following object is masked from 'package:testthat':
+    ## 
+    ##     matches
+
+    ## The following objects are masked from 'package:distr':
+    ## 
+    ##     location, n
+
+    ## The following object is masked from 'package:sfsmisc':
+    ## 
+    ##     last
+
+    ## The following object is masked from 'package:MASS':
+    ## 
+    ##     select
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
 
 ``` r
 data <- read.csv("http://people.stern.nyu.edu/wgreene/Econometrics/cornwell&rupert.csv")
 data$ID <- as.factor(data$ID)
 
-train <- data %>% filter(YEAR < 6)
-test <- data %>% filter(YEAR >= 6)
+train <- data %>% dplyr::filter(YEAR < 6)
+test <- data %>% dplyr::filter(YEAR >= 6)
 
 deep_mod <- function(x) x %>% 
   layer_dense(units = 5, activation = "relu", use_bias = FALSE) %>%
@@ -1095,111 +1106,15 @@ mod <- deepregression(y = train$LWAGE,
     ## Translating data into tensors... Done.
 
 ``` r
-cvres <- mod %>% cv(epochs = 200)
-```
-
-    ## Fitting Fold  1  ... 
-    ## Done in 30.28406  secs 
-    ## Fitting Fold  2  ... 
-    ## Done in 38.45885  secs
-
-![](tutorial_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
-
-``` r
-mod %>% fit(epochs = stop_iter_cv_result(cvres), view_metrics=FALSE)
+#cvres <- mod %>% cv(epochs = 200)
+bestiter <- 10 # stop_iter_cv_result(cvres)
+mod %>% fit(epochs = bestiter, view_metrics=FALSE, verbose=FALSE)
 pred <- mod %>% predict(test)
 
 mean((pred-test$LWAGE)^2)
 ```
 
-    ## [1] 0.03616595
-
-### Deep Quantile Regression on Motorcycle Data
-
-``` r
-#### Apply deep distributional regression to 
-#### Silverman's Motorcycle data, 
-#### and use distributional regression to compare
-#### with quantile regression
-library(MASS)
-```
-
-    ## 
-    ## Attaching package: 'MASS'
-
-    ## The following object is masked from 'package:deepregression':
-    ## 
-    ##     select
-
-``` r
-data("mcycle")
-set.seed(42)
-
-train_ind <- sample(1:nrow(mcycle), 90)
-train <- mcycle[train_ind,]
-test <- mcycle[setdiff(1:nrow(mcycle),train_ind),]
-
-deep_mod <- function(x) x %>% 
-  layer_dense(units = 50, activation = "tanh", use_bias = TRUE) %>%
-  layer_dense(units = 10, activation = "linear") %>%
-  layer_dense(units = 1, activation = "linear")
-
-mod_deep <- deepregression(y = train$accel, 
-                           list_of_formulae = list(loc = ~ 0 + d(times),
-                                                   scale = ~ 1 + times),
-                           list_of_deep_models = list(d = deep_mod),
-                           data = train,
-                           family = "normal",
-                           cv_folds = 10)
-```
-
-    ## Preparing additive formula(e)... Done.
-    ## Translating data into tensors... Done.
-
-``` r
-st <- Sys.time()
-
-mod_deep %>% fit(epochs = 5000, view_metrics=FALSE)
-
-et <- Sys.time()
-
-pred <- mod_deep %>% predict(test)
-
-(rmse <- sqrt(mean((pred-test$accel)^2)))
-```
-
-    ## [1] 23.37316
-
-``` r
-#### get mean and quantiles
-mean <- mod_deep %>% mean(data = mcycle)
-q40 <- mod_deep %>% quantile(data = mcycle, value = 0.4)
-q60 <- mod_deep %>% quantile(data = mcycle, value = 0.6)
-q10 <- mod_deep %>% quantile(data = mcycle, value = 0.1)
-q90 <- mod_deep %>% quantile(data = mcycle, value = 0.9)
-
-#### for plotting
-fitdf <- cbind(mcycle, data.frame(mean = mean,
-                                  q40 = q40,
-                                  q60 = q60,
-                                  q10 = q10,
-                                  q90 = q90)
-)
-
-library(reshape2)
-library(ggplot2)
-
-fitdf %>% 
-  ggplot() + 
-  geom_point(aes(x=times, y=accel)) + 
-  geom_line(aes(x=times, y=mean), col="red", linetype = 1) + 
-  geom_line(aes(x=times, y=q40), col="red", linetype = 2) + 
-  geom_line(aes(x=times, y=q60), col="red", linetype = 2) + 
-  geom_line(aes(x=times, y=q10), col="red", linetype = 3) + 
-  geom_line(aes(x=times, y=q90), col="red", linetype = 4) + theme_bw()
-```
-
-![](tutorial_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+    ## [1] 0.08201111
 
 ### Mixture of Normal Distributions for Acidity Modeling
 
@@ -1241,42 +1156,29 @@ mod <- deepregression(acidity$y-mean(acidity$y),
     ## Translating data into tensors... Done.
 
 ``` r
-cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
-```
-
-    ## Fitting Fold  1  ... 
-    ## Done in 21.015  secs 
-    ## Fitting Fold  2  ... 
-    ## Done in 19.74279  secs 
-    ## Fitting Fold  3  ... 
-    ## Done in 19.15605  secs 
-    ## Fitting Fold  4  ... 
-    ## Done in 18.8541  secs 
-    ## Fitting Fold  5  ... 
-    ## Done in 19.25034  secs
-
-![](tutorial_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
-
-``` r
-mod %>% fit(epochs = stop_iter_cv_result(cvres), 
-            validation_split = NULL, view_metrics = FALSE)
+# cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
+bestiter <- 49 # stop_iter_cv_result(cvres)
+mod %>% fit(epochs = bestiter, 
+            validation_split = NULL, 
+            view_metrics = FALSE,
+            verbose = FALSE)
 coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1] -0.7798421 -1.1782069  1.1028823
+    ## [1]  1.0893598 -0.1630008 -0.7867351
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.3200210 1.3587809 0.5546787
+    ## [1] 0.5779888 1.6348824 0.3208240
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.56908689 0.01653395 0.41437916
+    ## [1] 0.42067895 0.01989955 0.55942150
 
 ``` r
 library(distr)
@@ -1290,59 +1192,9 @@ plot(mixDist, to.draw.arg="d", ylim=c(0,1.4))
 with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-20-2.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 ### Unstructured Data Examples
-
-#### MNIST zeros
-
-``` r
-mnist <- dataset_mnist()
-x_train <- mnist$train$x
-y_train <- mnist$train$y
-x_test <- mnist$test$x
-y_test <- mnist$test$y
-
-# reshape
-dim(x_train) <- c(nrow(x_train), 784)
-dim(x_test) <- c(nrow(x_test), 784)
-# rescale
-x_train <- x_train / 255
-x_test <- x_test / 255
-# convert to data.frame
-x_train <- as.data.frame(x_train)
-x_test <- as.data.frame(x_test)
-y_train <- as.integer(y_train==0)
-y_test <- as.integer(y_test==0)
-
-# deep model
-nn_model <- function(x) x %>%
-  layer_dense(units = 256, activation = "relu", input_shape = c(784)) %>%
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = "relu") %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 1)
-
-
-mod <- deepregression(y = y_train,
-                      list_of_formulae = list(logit = ~ 0 + nn_model(.)),
-                      list_of_deep_models = list(nn_model = nn_model),
-                      data = x_train,
-                      family = "bernoulli")
-```
-
-    ## Preparing additive formula(e)... Done.
-    ## Translating data into tensors... Done.
-
-``` r
-# model does not need to have many epochs as 
-# the 0 is easily detected using some specific pixels
-mod %>% fit(epochs = 5, view_metrics=FALSE)
-pred <- mod %>% predict(x_test)
-boxplot(pred ~ y_test, ylab="Predicted Probability", xlab = "True Label")
-```
-
-![](tutorial_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 #### MNIST Multinomial
 
@@ -1350,7 +1202,7 @@ The non-binarized MNIST example demonstrates the capabilities of the
 framework to handle multinomial (or in general multivariate) responses.
 
 ``` r
-mnist <- dataset_mnist()
+mnist <- keras::dataset_mnist()
 x_train <- mnist$train$x
 y_train <- mnist$train$y
 x_test <- mnist$test$x
@@ -1365,8 +1217,8 @@ x_test <- x_test / 255
 # convert to data.frame
 x_train <- as.data.frame(x_train)
 x_test <- as.data.frame(x_test)
-y_train <- to_categorical(y_train)
-y_test <- to_categorical(y_test)
+y_train <- keras::to_categorical(y_train)
+y_test <- keras::to_categorical(y_test)
 
 # deep model
 nn_model <- function(x) x %>%
@@ -1390,8 +1242,8 @@ mod <- deepregression(y = y_train,
 ``` r
 # model does not need to have many epochs as 
 # the 0 is easily detected using some specific pixels
-cvres <- mod %>% fit(epochs = 50, validation_split = NULL, steps_per_epoch=1,
-                     view_metrics = FALSE)
+cvres <- mod %>% fit(epochs = 10, validation_split = NULL, steps_per_epoch=1,
+                     view_metrics = FALSE, verbose=FALSE)
 # currenty has some issues when using actual batch training,
 # see also: https://github.com/keras-team/keras/issues/11749
 pred <- mod %>% predict(x_test)
@@ -1403,16 +1255,16 @@ table(data.frame(pred=apply(pred,1,which.max)-1,
 
     ##     truth
     ## pred    0    1    2    3    4    5    6    7    8    9
-    ##    0  970    0    8    0    0    3    9    2    4    6
-    ##    1    0 1121    1    0    0    0    3    7    2    6
-    ##    2    2    2  989   10    4    1    1   15    4    2
-    ##    3    1    2    5  971    0    9    1    2   15    9
-    ##    4    0    0    2    0  957    3    7    1    5   15
-    ##    5    2    0    1   14    0  856    4    0    8    2
-    ##    6    2    4    6    0    5   10  930    0    7    1
-    ##    7    2    0    6    7    1    1    0  990    6   10
-    ##    8    1    6   13    7    2    6    3    1  922    6
-    ##    9    0    0    1    1   13    3    0   10    1  952
+    ##    0  938    0   15    3    2    7   22    1   11    8
+    ##    1    0 1119   15    3    3    8    6   26   42    8
+    ##    2    6    3  910   25    6    6    9   30   21    2
+    ##    3    2    3   23  896    0   37    0    1   35   11
+    ##    4    4    0   13    1  914   32   13   15   39  178
+    ##    5   13    0    1   39    1  765   20    0   62    7
+    ##    6   15    4   20    3   11   13  885    2   10    1
+    ##    7    1    0   17   14    0    3    0  896   14   12
+    ##    8    1    5   16   15    5   17    3    1  705    6
+    ##    9    0    1    2   11   40    4    0   56   35  776
 
 #### Text as Input
 
@@ -1423,13 +1275,13 @@ but just a small example with 1000 words.
 
 ``` r
 nr_words = 1000
-imdb <- dataset_imdb(num_words = nr_words)
+imdb <- keras::dataset_imdb(num_words = nr_words)
 train_data <- imdb$train$x
 train_labels <- imdb$train$y
 test_data <- imdb$test$x
 test_labels <- imdb$test$y
 
-word_index <- dataset_imdb_word_index()  
+word_index <- keras::dataset_imdb_word_index()  
 reverse_word_index <- names(word_index)
 names(reverse_word_index) <- word_index
 
@@ -1489,9 +1341,9 @@ mod <- deepregression(y = y_train,
 ``` r
 # as an example only use 3 epochs (lstms usualy need 
 # not so many epochs anyway)
-mod %>% fit(epochs = 20, view_metrics=FALSE, batch_size = 500)
+mod %>% fit(epochs = 20, view_metrics=FALSE, batch_size = 250, verbose=FALSE)
 pred <- mod %>% predict(as.data.frame(x_test))
 boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->

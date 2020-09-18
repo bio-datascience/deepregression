@@ -11,12 +11,14 @@ vignette: >
 
 ```{r, include=FALSE}
 library(deepregression)
-packages_needed <- c("ggplot2", "reshape2", "MASS", "gamlss.data", "distr")
 r = getOption("repos")
 r["CRAN"] = "https://cloud.r-project.org"
 options(repos = r)
-for(p in packages_needed)
-  if(!require(p)) install.packages(p)
+if(!require(ggplot2)) install.packages("ggplot2")
+if(!require(reshape2)) install.packages("reshape2")
+if(!require(MASS)) install.packages("MASS")
+if(!require(gamlss.data)) install.packages("gamlss.data")
+if(!require(distr)) install.packages("distr")
 ```
 
 
@@ -60,13 +62,11 @@ for(p in packages_needed)
     f. [Zero-inflated Distributions](#zero-inflated-poisson-distribution)
 9. [Real World Applications](#real-world-applications)
     a. [Deep Mixed Model for Wage Panel Data](#deep-mixed-model-for-wage-panel-data)
-    b. [Deep Quantile Regression on Motorcycle Data](#deep-quantile-regression-on-motorcycle-data)
-    c. [High-Dimensional Ridge and Lasso Regression on Colon Cancer Data](#high-dimensional-ridge-and-lasso-regression)
-    d. [Mixture of Normal Distributions for Acidity Modeling](#mixture-of-normal-distributions-for-acidity-modeling)
-    e. [Unstructured Data Examples](#unstructured-data-examples)
-        i. [MNIST Pictures with Binarized Response](#mnist-zeros)
-        ii. [MNIST Pictures with Multinomial Response](#mnist-multinomial)
-        iii. [Sentiment Analysis using IMDB Reviews](#text-as-input)
+    b. [High-Dimensional Ridge and Lasso Regression on Colon Cancer Data](#high-dimensional-ridge-and-lasso-regression)
+    c. [Mixture of Normal Distributions for Acidity Modeling](#mixture-of-normal-distributions-for-acidity-modeling)
+    d. [Unstructured Data Examples](#unstructured-data-examples)
+        i. [MNIST Pictures with Multinomial Response](#mnist-multinomial)
+        ii. [Sentiment Analysis using IMDB Reviews](#text-as-input)
     
 
 ## Introduction
@@ -410,8 +410,8 @@ mod <- deepregression(
   list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
   list_of_deep_models = list(d = deep_model)
 )
-# fit model (may take a few minutes)
-mod %>% fit(epochs=1000, verbose = FALSE, view_metrics = FALSE)
+# fit model (only do a few iterations for demonstration)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% fitted()
 true_mean <- true_mean_fun(x) - b0
@@ -515,10 +515,10 @@ mod <- deepregression(
   family = "bernoulli",
   df = 10 # use no penalization for spline
 )
-cvres <- mod %>% cv(epochs=100)
+cvres <- mod %>% cv(epochs=10, cv_folds = 2) # should be 100
 ```
 
-Get the optimal stopping iteration and train the whole model again:
+Set the stopping iteration to the CV optimal value (which in this case is not optimal at all) and train the whole model again:
 ```{r, cache = TRUE}
 bestiter <- stop_iter_cv_result(cvres)
 # fit model
@@ -595,7 +595,7 @@ mod <- deepregression(
   df = 10
 )
 # fit model
-mod %>% fit(epochs=2000, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 # summary(mod)
 # coefficients
 mod %>% coef()
@@ -676,7 +676,7 @@ mod <- deepregression(
   family = "normal"
 )
 # fit model
-mod %>% fit(epochs=500, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=50, verbose = FALSE, view_metrics = FALSE)
 # plot model
 mod %>% plot()
 # get coefficients
@@ -708,7 +708,7 @@ mod <- deepregression(y,
                       list_of_deep_models = NULL, 
                       family = "zip")
 # fit the model
-mod %>% fit(epochs = 50, view_metrics=FALSE)
+mod %>% fit(epochs = 50, view_metrics=FALSE, verbose=FALSE)
 
 # get distribution
 mydist <- mod %>% get_distribution()
@@ -727,11 +727,12 @@ as.array(mydist$cat$probs + 0)[,1,] %>% head()
 This example applies deep distributional regression to the 'Cornwell and Rupert' data, a balanced panel dataset with 595 individuals and 4165 observations, where each individual is observed for 7 years. This data set is also used in Tran et al. (2018) for within subject prediction of the log of wage in the years 6 and 7 after training on years 1 to 5. They report an MSE of 0.05.
 
 ```{r, cache = TRUE}
+library(dplyr)
 data <- read.csv("http://people.stern.nyu.edu/wgreene/Econometrics/cornwell&rupert.csv")
 data$ID <- as.factor(data$ID)
 
-train <- data %>% filter(YEAR < 6)
-test <- data %>% filter(YEAR >= 6)
+train <- data %>% dplyr::filter(YEAR < 6)
+test <- data %>% dplyr::filter(YEAR >= 6)
 
 deep_mod <- function(x) x %>% 
   layer_dense(units = 5, activation = "relu", use_bias = FALSE) %>%
@@ -758,78 +759,14 @@ mod <- deepregression(y = train$LWAGE,
                       cv_folds = cv_folds
                         )
 
-cvres <- mod %>% cv(epochs = 200)
-mod %>% fit(epochs = stop_iter_cv_result(cvres), view_metrics=FALSE)
+#cvres <- mod %>% cv(epochs = 200)
+bestiter <- 10 # stop_iter_cv_result(cvres)
+mod %>% fit(epochs = bestiter, view_metrics=FALSE, verbose=FALSE)
 pred <- mod %>% predict(test)
 
 mean((pred-test$LWAGE)^2)
 ```
 
-### Deep Quantile Regression on Motorcycle Data
-
-```{r, cache = FALSE}
-#### Apply deep distributional regression to 
-#### Silverman's Motorcycle data, 
-#### and use distributional regression to compare
-#### with quantile regression
-library(MASS)
-data("mcycle")
-set.seed(42)
-
-train_ind <- sample(1:nrow(mcycle), 90)
-train <- mcycle[train_ind,]
-test <- mcycle[setdiff(1:nrow(mcycle),train_ind),]
-
-deep_mod <- function(x) x %>% 
-  layer_dense(units = 50, activation = "tanh", use_bias = TRUE) %>%
-  layer_dense(units = 10, activation = "linear") %>%
-  layer_dense(units = 1, activation = "linear")
-
-mod_deep <- deepregression(y = train$accel, 
-                           list_of_formulae = list(loc = ~ 0 + d(times),
-                                                   scale = ~ 1 + times),
-                           list_of_deep_models = list(d = deep_mod),
-                           data = train,
-                           family = "normal",
-                           cv_folds = 10)
-
-st <- Sys.time()
-
-mod_deep %>% fit(epochs = 5000, view_metrics=FALSE)
-
-et <- Sys.time()
-
-pred <- mod_deep %>% predict(test)
-
-(rmse <- sqrt(mean((pred-test$accel)^2)))
-
-#### get mean and quantiles
-mean <- mod_deep %>% mean(data = mcycle)
-q40 <- mod_deep %>% quantile(data = mcycle, value = 0.4)
-q60 <- mod_deep %>% quantile(data = mcycle, value = 0.6)
-q10 <- mod_deep %>% quantile(data = mcycle, value = 0.1)
-q90 <- mod_deep %>% quantile(data = mcycle, value = 0.9)
-
-#### for plotting
-fitdf <- cbind(mcycle, data.frame(mean = mean,
-                                  q40 = q40,
-                                  q60 = q60,
-                                  q10 = q10,
-                                  q90 = q90)
-)
-
-library(reshape2)
-library(ggplot2)
-
-fitdf %>% 
-  ggplot() + 
-  geom_point(aes(x=times, y=accel)) + 
-  geom_line(aes(x=times, y=mean), col="red", linetype = 1) + 
-  geom_line(aes(x=times, y=q40), col="red", linetype = 2) + 
-  geom_line(aes(x=times, y=q60), col="red", linetype = 2) + 
-  geom_line(aes(x=times, y=q10), col="red", linetype = 3) + 
-  geom_line(aes(x=times, y=q90), col="red", linetype = 4) + theme_bw()
-```
 
 ### Mixture of Normal Distributions for Acidity Modeling
 
@@ -862,9 +799,12 @@ mod <- deepregression(acidity$y-mean(acidity$y),
                       dist_fun = mix_dist_maker())
 
 
-cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
-mod %>% fit(epochs = stop_iter_cv_result(cvres), 
-            validation_split = NULL, view_metrics = FALSE)
+# cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
+bestiter <- 49 # stop_iter_cv_result(cvres)
+mod %>% fit(epochs = bestiter, 
+            validation_split = NULL, 
+            view_metrics = FALSE,
+            verbose = FALSE)
 coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 (stds <- exp(coefinput[c(5:7)]))
@@ -883,55 +823,12 @@ with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
 
 ### Unstructured Data Examples
 
-#### MNIST zeros
-
-```{r, cache = TRUE}
-mnist <- dataset_mnist()
-x_train <- mnist$train$x
-y_train <- mnist$train$y
-x_test <- mnist$test$x
-y_test <- mnist$test$y
-
-# reshape
-dim(x_train) <- c(nrow(x_train), 784)
-dim(x_test) <- c(nrow(x_test), 784)
-# rescale
-x_train <- x_train / 255
-x_test <- x_test / 255
-# convert to data.frame
-x_train <- as.data.frame(x_train)
-x_test <- as.data.frame(x_test)
-y_train <- as.integer(y_train==0)
-y_test <- as.integer(y_test==0)
-
-# deep model
-nn_model <- function(x) x %>%
-  layer_dense(units = 256, activation = "relu", input_shape = c(784)) %>%
-  layer_dropout(rate = 0.4) %>%
-  layer_dense(units = 128, activation = "relu") %>%
-  layer_dropout(rate = 0.3) %>%
-  layer_dense(units = 1)
-
-
-mod <- deepregression(y = y_train,
-                      list_of_formulae = list(logit = ~ 0 + nn_model(.)),
-                      list_of_deep_models = list(nn_model = nn_model),
-                      data = x_train,
-                      family = "bernoulli")
-
-# model does not need to have many epochs as 
-# the 0 is easily detected using some specific pixels
-mod %>% fit(epochs = 5, view_metrics=FALSE)
-pred <- mod %>% predict(x_test)
-boxplot(pred ~ y_test, ylab="Predicted Probability", xlab = "True Label")
-```
-
 #### MNIST Multinomial
 
 The non-binarized MNIST example demonstrates the capabilities of the framework to handle multinomial (or in general multivariate) responses.
 
 ```{r, cache = TRUE}
-mnist <- dataset_mnist()
+mnist <- keras::dataset_mnist()
 x_train <- mnist$train$x
 y_train <- mnist$train$y
 x_test <- mnist$test$x
@@ -946,8 +843,8 @@ x_test <- x_test / 255
 # convert to data.frame
 x_train <- as.data.frame(x_train)
 x_test <- as.data.frame(x_test)
-y_train <- to_categorical(y_train)
-y_test <- to_categorical(y_test)
+y_train <- keras::to_categorical(y_train)
+y_test <- keras::to_categorical(y_test)
 
 # deep model
 nn_model <- function(x) x %>%
@@ -966,8 +863,8 @@ mod <- deepregression(y = y_train,
 
 # model does not need to have many epochs as 
 # the 0 is easily detected using some specific pixels
-cvres <- mod %>% fit(epochs = 50, validation_split = NULL, steps_per_epoch=1,
-                     view_metrics = FALSE)
+cvres <- mod %>% fit(epochs = 10, validation_split = NULL, steps_per_epoch=1,
+                     view_metrics = FALSE, verbose=FALSE)
 # currenty has some issues when using actual batch training,
 # see also: https://github.com/keras-team/keras/issues/11749
 pred <- mod %>% predict(x_test)
@@ -983,13 +880,13 @@ We use IMDB Reviews for sentiment analysis to predict 1 = positive or 0 = negati
 
 ```{r, cache = TRUE}
 nr_words = 1000
-imdb <- dataset_imdb(num_words = nr_words)
+imdb <- keras::dataset_imdb(num_words = nr_words)
 train_data <- imdb$train$x
 train_labels <- imdb$train$y
 test_data <- imdb$test$x
 test_labels <- imdb$test$y
 
-word_index <- dataset_imdb_word_index()  
+word_index <- keras::dataset_imdb_word_index()  
 reverse_word_index <- names(word_index)
 names(reverse_word_index) <- word_index
 
@@ -1042,7 +939,7 @@ mod <- deepregression(y = y_train,
 
 # as an example only use 3 epochs (lstms usualy need 
 # not so many epochs anyway)
-mod %>% fit(epochs = 20, view_metrics=FALSE, batch_size = 500)
+mod %>% fit(epochs = 20, view_metrics=FALSE, batch_size = 250, verbose=FALSE)
 pred <- mod %>% predict(as.data.frame(x_test))
 boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
