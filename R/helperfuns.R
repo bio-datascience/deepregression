@@ -310,7 +310,7 @@ get_contents <- function(lf, data, df,
     # check correct length when df is a vector
     smooths_w_pen <- sapply(smoothterms,function(x) is.null(x[[1]]$sp))
     if(length(df)>1)
-      stopifnot(sum(smooths_w_pen)==length(df)) else
+      stopifnot(sum(smooths_w_pen)==length(df)) else if(length(smoothterms)>1 & sum(smooths_w_pen)>0)
         df <- rep(df, sum(smooths_w_pen))
     
     if(is.null(defaultSmoothing))
@@ -322,7 +322,8 @@ get_contents <- function(lf, data, df,
           st[[1]]$sp = DRO(X, df = this_df, dmat = S, hat1 = hat1)["lambda"]/sp_scale + null_space_penalty
           return(st)
       }
-    smoothterms[smooths_w_pen] <- 
+    if(sum(smooths_w_pen)>0)
+      smoothterms[smooths_w_pen] <- 
       lapply(1:sum(smooths_w_pen),
              function(i) 
                defaultSmoothing(

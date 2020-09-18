@@ -115,8 +115,7 @@
 #' 
 #' data = data.frame(matrix(rnorm(10*100), c(100,10)))
 #' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
-#' formula <- ~ 1 + deep_model(x1,x2,x3) +
-#' s(xa, sp = 1) + x1
+#' formula <- ~ 1 + deep_model(x1,x2,x3) + s(xa, sp = 1) + x1
 #'
 #' deep_model <- function(x) x %>%
 #' layer_dense(units = 32, activation = "relu", use_bias = FALSE) %>%
