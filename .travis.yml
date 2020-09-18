@@ -21,7 +21,7 @@ before_script:
 
 install:
 - R -e 'install.packages("reticulate"); reticulate::install_miniconda(); install.packages("knitr")'
-- R -e 'install.packages(c("tensorflow", "tfprobability", "keras", "dplyr", "R6", "Metrics", "tfruns", "mgcv"))'
+- R -e 'install.packages(c("tensorflow", "tfprobability", "keras", "dplyr", "R6", "Metrics", "tfruns", "mgcv", "rsvd", "testthat"))'
 
 # Set one of you dependencies from github
 r_github_packages: 
