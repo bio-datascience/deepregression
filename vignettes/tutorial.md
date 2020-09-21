@@ -25,6 +25,7 @@ David Ruegamer
 6.  [Neural Network Settings](#neural-network-settings)
     1.  [Shared DNN](#shared-dnn)
     2.  [Optimizer and Learning Rate](#optimizer-and-learning-rate)
+    3.  [Orthogonalization](#orthogonalization)
 7.  [Advanced Usage](#advanced-usage)
     1.  [Bayesian Regression](#bayesian-regression)
     2.  [Offsets](#offsets)
@@ -33,6 +34,7 @@ David Ruegamer
     5.  [Other Model Classes](#other-model-classes)
         1.  [Mixture Models](#mixture-models)
         2.  [Transformation Models](#transformation-models)
+    6.  [Custom Orthogonalization](#custom-orthogonalization)
 8.  [Toy Examples](#toy-examples)
     1.  [Deep Additive Regression](#deep-additive-regression)
     2.  [Deep Logistic Regression](#deep-logistic-regression)
@@ -438,6 +440,29 @@ deepregression(..., optimizer = optimizer_adadelta(lr = 3, decay = 0.1))
 
 This overwrites the `learning_rate` argument of `deepregression`.
 
+### Orthogonalization
+
+In `deepregression` per default orthogonalizes the DNNs in predictor
+formulas if they are given the same term as present in a structured
+partial effect. For example, for
+
+``` r
+deepregression(
+  ...,
+  list_of_formulae = list(logit = ~ 1 + x + s(z) + s(w) + q + deep_mod(x,y,z)),
+  list_of_deep_models = list(deep_mod = deep_model)
+)
+```
+
+the `deep_mod` is orthogonalized w.r.t. `x` and the design matrix of
+`s(z)`, but not w.r.t. `q` or the design matrix of `s(w)`, nor `y`.
+Orthogonalization is done to ensure identifiability of the the
+structured terms, but can also be deactivated using `orthogonalize =
+FALSE`. Per default, orthogonalization extracts the terms automatically
+which overlap in the DNNs and the structured model formula. For expert
+use there is also a custom orthogonalization (see [Custom
+Orthogonalization](#custom-orthogonalization))
+
 ## Advanced Usage
 
 `deepregression` allows for several advanced user inputs.
@@ -509,6 +534,27 @@ network. Example codes can be found [here](...)
 The `deepregression` package also allows to fit *Deep Conditional
 Transformation Models*, a large class of transformation models fitted in
 a neural network. Example codes can be found [here](...)
+
+### Custom Orthogonalization
+
+If there is reason to orthogonalize a DNN w.r.t. a model term that is
+not explicitly present, the `%OZ%`-operator can be used. For example,
+
+``` r
+deepregression(
+  ...,
+  list_of_formulae = list(logit = ~ 1 + deep_mod(x,y,z) %OZ% (x + s(z)) + s(w) + q),
+  list_of_deep_models = list(deep_mod = deep_model)
+)
+```
+
+would orthogonalize the network in the same way as in the previous
+[Orthogonalization](#orthogonalization) example, but without having `x`
+or `s(z)` as an actual predictor in the formula. Left of the operator, a
+DNN has to be given. On the right of the operator either a single model
+term (such as `x`, `s(x)`, `te(x,z)`) or a combination of model terms
+using brackets (as in the example above) separated with `+` must be
+supplied.
 
 ## Toy Examples
 
@@ -584,7 +630,7 @@ points(c(as.matrix(mean)) ~ x, col = "red")
 legend("bottomright", col=1:2, pch = 1, legend=c("true mean", "deep prediction"))
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 This is just for demonstration that a neural network can also capture
 non-linearities, but often requires a lot of effort to get proper smooth
@@ -672,7 +718,7 @@ ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))
   ylab("partial effect s(x)") + theme_bw()
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 # since we are usually only interested in the final result,
@@ -705,11 +751,11 @@ cvres <- mod %>% cv(epochs=10, cv_folds = 2) # should be 100
 ```
 
     ## Fitting Fold  1  ... 
-    ## Done in 1.886221  secs 
+    ## Done in 1.579051  secs 
     ## Fitting Fold  2  ... 
-    ## Done in 1.201748  secs
+    ## Done in 1.099053  secs
 
-![](tutorial_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 Set the stopping iteration to the CV optimal value (which in this case
 is not optimal at all) and train the whole model again:
@@ -723,7 +769,7 @@ mod %>% plot()
 points(sin(10*(sort(x))) ~ sort(x), col = "red", type="l", ylim=c(0,1))
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ### GAMLSS
 
@@ -806,36 +852,34 @@ mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
 mod %>% coef()
 ```
 
-    ## $loc
-    ## $loc$structured_nonlinear
+    ## [[1]]
+    ## [[1]]$structured_nonlinear
     ##              [,1]
-    ##  [1,]  1.58205628
-    ##  [2,]  0.11276428
-    ##  [3,]  0.25292113
-    ##  [4,] -1.73701227
-    ##  [5,] -0.71387345
-    ##  [6,]  0.01231863
-    ##  [7,] -0.19778168
-    ##  [8,]  1.12555909
-    ##  [9,]  0.20988908
-    ## [10,]  0.40071750
-    ## [11,]  0.29019636
-    ## [12,]  0.38217679
-    ## [13,] -0.09791963
-    ## [14,]  0.14401445
-    ## [15,] -0.10553771
-    ## [16,] -0.25747177
-    ## [17,] -0.14548227
-    ## [18,] -0.24182341
-    ## [19,] -0.23769771
-    ## [20,]  0.26387900
-    ## [21,]  0.58406848
+    ##  [1,]  1.62146640
+    ##  [2,]  0.48366538
+    ##  [3,] -2.38512802
+    ##  [4,] -0.77210301
+    ##  [5,] -0.02427807
+    ##  [6,] -0.08192946
+    ##  [7,]  0.73934132
+    ##  [8,]  0.43060657
+    ##  [9,]  0.40252650
+    ## [10,]  0.15566026
+    ## [11,]  0.01690309
+    ## [12,] -0.10902073
+    ## [13,] -0.01107935
+    ## [14,] -0.46997577
+    ## [15,] -0.28232029
+    ## [16,] -0.08464167
+    ## [17,] -0.22759320
+    ## [18,]  0.28605318
+    ## [19,]  0.39069128
     ## 
     ## 
-    ## $scale
-    ## $scale$structured_linear
+    ## [[2]]
+    ## [[2]]$structured_linear
     ##          [,1]
-    ## [1,] 2.027907
+    ## [1,] 2.024265
 
 ``` r
 # plot model
@@ -845,7 +889,7 @@ plot(z^2 ~ z)
 mod %>% plot()
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 # get fitted values
@@ -854,7 +898,7 @@ par(mfrow=c(1,1))
 plot(meanpred[,1] ~ x)
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-16-2.png)<!-- -->
 
 ### Deep GAMLSS
 
@@ -933,34 +977,33 @@ mod %>% fit(epochs=50, verbose = FALSE, view_metrics = FALSE)
 mod %>% plot()
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 # get coefficients
 mod %>% coef()
 ```
 
-    ## $loc
-    ## $loc$structured_nonlinear
+    ## [[1]]
+    ## [[1]]$structured_nonlinear
     ##              [,1]
-    ##  [1,]  0.50494635
-    ##  [2,]  0.43030229
-    ##  [3,]  0.30985567
-    ##  [4,] -1.50870478
-    ##  [5,] -0.35846949
-    ##  [6,] -0.20183145
-    ##  [7,] -0.25461638
-    ##  [8,]  0.51991725
-    ##  [9,] -0.02557333
-    ## [10,] -0.50427777
-    ## [11,] -0.14930376
+    ##  [1,]  0.67609823
+    ##  [2,] -0.07861418
+    ##  [3,] -1.43900073
+    ##  [4,] -0.77573609
+    ##  [5,] -0.22893305
+    ##  [6,] -0.15451908
+    ##  [7,]  0.50099188
+    ##  [8,]  0.27190116
+    ##  [9,] -0.39989737
+    ## [10,]  0.44732609
     ## 
     ## 
-    ## $scale
-    ## $scale$structured_linear
-    ##          [,1]
-    ## [1,] 0.258820
-    ## [2,] 1.603872
+    ## [[2]]
+    ## [[2]]$structured_linear
+    ##             [,1]
+    ## [1,] 0.009654002
+    ## [2,] 2.025900126
 
 ### Zero-inflated Poisson Distribution
 
@@ -1007,12 +1050,12 @@ as.matrix(mydist$components[[0]]$rate + 0) %>% head()
 ```
 
     ##          [,1]
-    ## [1,] 1.884163
-    ## [2,] 1.864342
-    ## [3,] 1.937222
-    ## [4,] 1.901079
-    ## [5,] 1.853021
-    ## [6,] 1.896901
+    ## [1,] 1.823505
+    ## [2,] 1.778853
+    ## [3,] 1.946170
+    ## [4,] 1.862115
+    ## [5,] 1.753633
+    ## [6,] 1.852537
 
 ``` r
 # probability for inflation / non-inflation
@@ -1020,12 +1063,12 @@ as.array(mydist$cat$probs + 0)[,1,] %>% head()
 ```
 
     ##           [,1]      [,2]
-    ## [1,] 0.7248085 0.2751915
-    ## [2,] 0.7248085 0.2751915
-    ## [3,] 0.7248085 0.2751915
-    ## [4,] 0.7248085 0.2751915
-    ## [5,] 0.7248085 0.2751915
-    ## [6,] 0.7248085 0.2751915
+    ## [1,] 0.7306829 0.2693171
+    ## [2,] 0.7306829 0.2693171
+    ## [3,] 0.7306829 0.2693171
+    ## [4,] 0.7306829 0.2693171
+    ## [5,] 0.7306829 0.2693171
+    ## [6,] 0.7306829 0.2693171
 
 ## Real World Application
 
@@ -1040,36 +1083,6 @@ They report an MSE of 0.05.
 
 ``` r
 library(dplyr)
-```
-
-    ## 
-    ## Attaching package: 'dplyr'
-
-    ## The following object is masked from 'package:testthat':
-    ## 
-    ##     matches
-
-    ## The following objects are masked from 'package:distr':
-    ## 
-    ##     location, n
-
-    ## The following object is masked from 'package:sfsmisc':
-    ## 
-    ##     last
-
-    ## The following object is masked from 'package:MASS':
-    ## 
-    ##     select
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     filter, lag
-
-    ## The following objects are masked from 'package:base':
-    ## 
-    ##     intersect, setdiff, setequal, union
-
-``` r
 data <- read.csv("http://people.stern.nyu.edu/wgreene/Econometrics/cornwell&rupert.csv")
 data$ID <- as.factor(data$ID)
 
@@ -1114,7 +1127,7 @@ pred <- mod %>% predict(test)
 mean((pred-test$LWAGE)^2)
 ```
 
-    ## [1] 0.08201111
+    ## [1] 0.05144408
 
 ### Mixture of Normal Distributions for Acidity Modeling
 
@@ -1166,19 +1179,19 @@ coefinput <- unlist(mod$model$get_weights())
 (means <- coefinput[c(2:4)])
 ```
 
-    ## [1]  1.0893598 -0.1630008 -0.7867351
+    ## [1] -0.04558545 -0.85112649  1.36544180
 
 ``` r
 (stds <- exp(coefinput[c(5:7)]))
 ```
 
-    ## [1] 0.5779888 1.6348824 0.3208240
+    ## [1] 0.8233951 0.2804566 0.3782972
 
 ``` r
 (pis <- softmax(coefinput[8:10]*coefinput[1]))
 ```
 
-    ## [1] 0.42067895 0.01989955 0.55942150
+    ## [1] 0.3105731 0.4275322 0.2618947
 
 ``` r
 library(distr)
@@ -1192,7 +1205,7 @@ plot(mixDist, to.draw.arg="d", ylim=c(0,1.4))
 with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ### Unstructured Data Examples
 
@@ -1255,16 +1268,16 @@ table(data.frame(pred=apply(pred,1,which.max)-1,
 
     ##     truth
     ## pred    0    1    2    3    4    5    6    7    8    9
-    ##    0  938    0   15    3    2    7   22    1   11    8
-    ##    1    0 1119   15    3    3    8    6   26   42    8
-    ##    2    6    3  910   25    6    6    9   30   21    2
-    ##    3    2    3   23  896    0   37    0    1   35   11
-    ##    4    4    0   13    1  914   32   13   15   39  178
-    ##    5   13    0    1   39    1  765   20    0   62    7
-    ##    6   15    4   20    3   11   13  885    2   10    1
-    ##    7    1    0   17   14    0    3    0  896   14   12
-    ##    8    1    5   16   15    5   17    3    1  705    6
-    ##    9    0    1    2   11   40    4    0   56   35  776
+    ##    0  921    0   12    3    1   10   22    2    8   10
+    ##    1    0 1116   12    2    3   10    5   27   32    8
+    ##    2    6    4  904   25    6    8   10   18   19    2
+    ##    3    3    5   34  906    1   74    0    6   57   16
+    ##    4    1    0   12    0  866   16    5    4   21   76
+    ##    5   24    0    2   26    0  700   13    0   64    6
+    ##    6   23    3   18    5   18   19  900    3   19    1
+    ##    7    1    1   20   16    0    9    0  909   12   15
+    ##    8    1    6   15   15    8   39    3    1  710    8
+    ##    9    0    0    3   12   79    7    0   58   32  867
 
 #### Text as Input
 
@@ -1346,4 +1359,4 @@ pred <- mod %>% predict(as.data.frame(x_test))
 boxplot(pred ~ y_test,  ylab="Predicted Probability", xlab = "True Label")
 ```
 
-![](tutorial_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](tutorial_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->

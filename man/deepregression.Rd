@@ -41,6 +41,7 @@ deepregression(
   absorb_cons = FALSE,
   zero_constraint_for_smooths = TRUE,
   orthog_type = c("tf", "manual"),
+  orthogonalize = TRUE,
   hat1 = FALSE,
   sp_scale = 1,
   order_bsp = NULL,
@@ -165,9 +166,11 @@ See \code{?mgcv::smoothCon} for more details.}
 \item{zero_constraint_for_smooths}{logical; the same as absorb_cons, 
 but done explicitly. If true a constraint is put on each smooth to have zero mean.}
 
-\item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated up
-front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
-The first only works well for larger batch sizes or ideally batch_size == NROW(y)}
+\item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated 
+before model fitting, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
+The first only works well for larger batch sizes or ideally batch_size == NROW(y).}
+
+\item{orthogonalize}{logical; if set to \code{FALSE}, orthogonalization is deactivated}
 
 \item{hat1}{logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 matrix sum(diag(H)), else sum(diag(2*H-HH))}
@@ -197,8 +200,7 @@ library(deepregression)
 
 data = data.frame(matrix(rnorm(10*100), c(100,10)))
 colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
-formula <- ~ 1 + deep_model(x1,x2,x3) +
-s(xa, sp = 1) + x1
+formula <- ~ 1 + deep_model(x1,x2,x3) + s(xa, sp = 1) + x1
 
 deep_model <- function(x) x \%>\%
 layer_dense(units = 32, activation = "relu", use_bias = FALSE) \%>\%

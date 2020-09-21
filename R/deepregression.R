@@ -82,9 +82,10 @@
 #' See \code{?mgcv::smoothCon} for more details.
 #' @param zero_constraint_for_smooths logical; the same as absorb_cons, 
 #' but done explicitly. If true a constraint is put on each smooth to have zero mean.
-#' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated up
-#' front, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
-#' The first only works well for larger batch sizes or ideally batch_size == NROW(y)
+#' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated 
+#' before model fitting, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
+#' The first only works well for larger batch sizes or ideally batch_size == NROW(y). 
+#' @param orthogonalize logical; if set to \code{FALSE}, orthogonalization is deactivated
 #' @param hat1 logical; if TRUE, the smoothing parameter is defined by the trace of the hat
 #' matrix sum(diag(H)), else sum(diag(2*H-HH))
 #' @param sp_scale positive constant; for scaling the DRO calculated penalty (1 per default)
@@ -182,6 +183,7 @@ deepregression <- function(
   absorb_cons = FALSE,
   zero_constraint_for_smooths = TRUE,
   orthog_type = c("tf", "manual"),
+  orthogonalize = TRUE,
   hat1 = FALSE,
   sp_scale = 1,
   order_bsp = NULL,
@@ -356,9 +358,11 @@ deepregression <- function(
   cat("Translating data into tensors...")
   input_cov <- make_cov(parsed_formulae_contents)
   cat(" Done.\n")
-  ox <- lapply(parsed_formulae_contents, make_orthog, 
-               retcol = FALSE,
-               returnX = (orthog_type=="tf"))
+  if(orthogonalize)
+    ox <- lapply(parsed_formulae_contents, make_orthog, 
+                 retcol = FALSE,
+                 returnX = (orthog_type=="tf")) else
+                   ox <- list(NULL)[rep(1,length(parsed_formulae_contents))]
   
   input_cov <- unname(c(input_cov, 
                         unlist(lapply(ox[!sapply(ox,is.null)],
@@ -505,7 +509,8 @@ deepregression <- function(
                   ind_structterms = ind_structterms,
                   param_names = param_names,
                   ellipsis = list(...),
-                  family = family
+                  family = family,
+                  orthogonalize = orthogonalize
                 ))
   
   class(ret) <- "deepregression"

@@ -4,7 +4,7 @@
   if(!reticulate::py_module_available("tensorflow"))
   {
     
-    if(!py_module_available(six)) reticulate::py_install("six")
+    if(!py_module_available("six")) reticulate::py_install("six")
     
     try({
       tensorflow::install_tensorflow(version = "2.0.0")

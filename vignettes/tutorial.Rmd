@@ -45,6 +45,7 @@ if(!require(distr)) install.packages("distr")
 6. [Neural Network Settings](#neural-network-settings)
     a. [Shared DNN](#shared-dnn)
     b. [Optimizer and Learning Rate](#optimizer-and-learning-rate)
+    c. [Orthogonalization](#orthogonalization)
 7. [Advanced Usage](#advanced-usage)
     a. [Bayesian Regression](#bayesian-regression)
     b. [Offsets](#offsets)
@@ -53,6 +54,7 @@ if(!require(distr)) install.packages("distr")
     e. [Other Model Classes](#other-model-classes)
         i. [Mixture Models](#mixture-models)
         ii. [Transformation Models](#transformation-models)
+    f. [Custom Orthogonalization](#custom-orthogonalization)
 8. [Toy Examples](#toy-examples)
     a. [Deep Additive Regression](#deep-additive-regression)
     b. [Deep Logistic Regression](#deep-logistic-regression)
@@ -310,6 +312,18 @@ deepregression(..., optimizer = optimizer_adadelta(lr = 3, decay = 0.1))
 
 This overwrites the `learning_rate` argument of `deepregression`.
 
+### Orthogonalization
+
+In `deepregression` per default orthogonalizes the DNNs in predictor formulas if they are given the same term as present in a structured partial effect. For example, for
+```{r, eval=FALSE}
+deepregression(
+  ...,
+  list_of_formulae = list(logit = ~ 1 + x + s(z) + s(w) + q + deep_mod(x,y,z)),
+  list_of_deep_models = list(deep_mod = deep_model)
+)
+```
+the `deep_mod` is orthogonalized w.r.t. `x` and the design matrix of `s(z)`, but not w.r.t. `q` or the design matrix of `s(w)`, nor `y`. Orthogonalization is done to ensure identifiability of the the structured terms, but can also be deactivated using `orthogonalize = FALSE`. Per default, orthogonalization extracts the terms automatically which overlap in the DNNs and the structured model formula. For expert use there is also a custom orthogonalization (see [Custom Orthogonalization](#custom-orthogonalization))
+
 ## Advanced Usage
 
 `deepregression` allows for several advanced user inputs.
@@ -355,6 +369,18 @@ Apart from custom distribution, which also allow bijective transformations of fu
 ### Transformation Models
 
 The `deepregression` package also allows to fit *Deep Conditional Transformation Models*, a large class of transformation models fitted in a neural network. Example codes can be found [here](...)
+
+### Custom Orthogonalization
+
+If there is reason to orthogonalize a DNN w.r.t. a model term that is not explicitly present, the `%OZ%`-operator can be used. For example,
+```{r, eval=FALSE}
+deepregression(
+  ...,
+  list_of_formulae = list(logit = ~ 1 + deep_mod(x,y,z) %OZ% (x + s(z)) + s(w) + q),
+  list_of_deep_models = list(deep_mod = deep_model)
+)
+```
+would orthogonalize the network in the same way as in the previous [Orthogonalization](#orthogonalization) example, but without having `x` or `s(z)` as an actual predictor in the formula. Left of the operator, a DNN has to be given. On the right of the operator either a single model term (such as `x`, `s(x)`, `te(x,z)`) or a combination of model terms using brackets (as in the example above) separated with `+` must be supplied.
 
 ## Toy Examples
 

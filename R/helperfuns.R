@@ -370,6 +370,15 @@ get_contents <- function(lf, data, df,
     deepterms <- NULL
   }else{
     deepterms <- lapply(dterms[sapply(dterms,length)>0], function(dt){
+      if(grepl("%OZ%",dt)){
+       dt_split <- trimws(strsplit(dt, "%OZ%")[[1]])
+       dt <- dt_split[[1]]
+       dtoz <- dt_split[[2]]
+      }else{
+        dtoz <- NULL
+      }
+      ##### the actual deep part
+      
       if(is.data.frame(data)){
         deepterms <- data[,extract_from_special(dt),drop=FALSE]
         attr(deepterms, "names") <- names(deepterms)
@@ -381,6 +390,39 @@ get_contents <- function(lf, data, df,
         
       }
       attr(deepterms, "names") <- names(deepterms)
+      
+      ##### end actual deep part
+      
+      if(!is.null(dtoz)){
+        dtoz <- trimws(strsplit(gsub("^\\((.*)\\)$","\\1",dtoz),"\\+")[[1]])
+        manoz <- lapply(dtoz, function(ddd){
+          if(any(sapply(c("s\\(","ti\\(","te\\("), function(t) grepl(t,ddd))))
+          {
+            
+            terms_w_s <- extract_from_special(ddd)
+            terms_w_s <- sapply(terms_w_s, function(y){ 
+              if(grepl("by.*\\=",y)) return(trimws(gsub("by.*\\=(.*)","\\1",y))) else return(y)})
+            terms_w_s <- terms_w_s[!grepl("=", terms_w_s, fixed=T)]
+            st <- smoothCon(eval(parse(text = ddd)),
+                            data=data.frame(data[unname(unlist(terms_w_s))]),
+                            knots=NULL, absorb.cons = absorb_cons,
+                            null.space.penalty = null_space_penalty)
+            if(length(st)==1) X <- st[[1]]$X else 
+              X <- do.call("cbind", lapply(st,"[[","X"))
+            return(X)
+          }else{
+            if(is.data.frame(data))
+              return(data[,ddd,drop=TRUE]) else
+                return(data[[ddd]])
+          }
+        })
+        manoz <- do.call("cbind", manoz)
+        
+        attr(deepterms,"manoz") <- manoz
+        
+      }else{
+        attr(deepterms,"manoz") <- NULL
+      }
       return(deepterms)
     })
     if(length(network_names)==1)

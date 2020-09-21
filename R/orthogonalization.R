@@ -30,9 +30,9 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
   
   nml <- attr(pcf$linterms, "names")
   nms <- attr(pcf$smoothterms, "names")
-  if(!is.null(nms) && grepl(",by_",nms)){
-    warning("Orthogonalization for s-terms with by-Term currently not supported.")
-  }
+  # if(!is.null(nms) && grepl(",by_",nms)){
+  #   warning("Orthogonalization for s-terms with by-Term currently not supported.")
+  # }
   L <- NULL
   for(nm in nms){
     
@@ -99,14 +99,17 @@ make_orthog <- function(
   }
   nms <- lapply(pcf[c("linterms","smoothterms")], function(x)attr(x,"names"))
   nmsd <- lapply(pcf$deepterms, function(x) attr(x,"names"))
+  manoz <- lapply(pcf$deepterms, function(x) attr(x,"manoz"))
   if(!is.null(nms$smoothterms))
     struct_nms <- c(nms$linterms, #unlist(strsplit(nms$smoothterms,",")),
                     nms$smoothterms) else
                       struct_nms <- nms$linterms
-  if(is.null(pcf$linterms) & is.null(pcf$smoothterms))
+  if(is.null(pcf$linterms) & is.null(pcf$smoothterms) & is.null(manoz))
     return(NULL)
   
-  qList <- lapply(nmsd, function(nn){
+  qList <- lapply(1:length(nmsd), function(i){
+    
+    nn <- nmsd[[i]]
     
     # number of columns removed due to collinearity
     rem_cols <- 0
@@ -114,7 +117,9 @@ make_orthog <- function(
     X <- matrix(rep(1,n_obs), ncol=1) 
     # Ps <- list()
     # lambdas <- c()
-    if(length(intersect(nn, struct_nms)) > 0){
+    if(length(intersect(nn, struct_nms)) > 0 | !is.null(manoz[[i]])){
+      
+      if(!is.null(manoz[[i]])) X <- cbind(X, manoz[[i]])
       
       for(nm in nn){
         
