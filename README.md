@@ -8,9 +8,15 @@ Status](https://travis-ci.com/davidruegamer/deepregression.svg?token=UQrq5mDFv9M
 # Installation
 
 Since the repository is still private, clone the repository to your
-local machine and run the following
+local machine and either install the package locally or use
+``` r
+devtools::load_all("davidruegamer/deepregression")
+```
+which is often more reliable due to some open issues.
 
-Also make sure you have installed all the dependencies:
+# Requirements
+
+The requirements are given in the `DESCRIPTION`. If you load the package manually using `devtools`, make sure the following packages are availabe:
 
   - Matrix
   - dplyr
@@ -20,14 +26,7 @@ Also make sure you have installed all the dependencies:
   - tensorflow
   - tfprobability
 
-In the future, the package can be installed as follows:
-
-To install the latest version of deepregression:
-
-``` r
-library(devtools)
-install_github("davidruegamer/deepregression")
-```
+If you setup a Python environment for the first time, install `reticulate` and run the `check_and_install` function from the `deepregression` package. This tries to install miniconda, TF 2.0, TFP 0.8 and keras 2.3, which seems to be the most reliable setup for `deepregression` at the moment.
 
 # How to cite this?
 

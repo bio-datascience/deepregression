@@ -235,8 +235,11 @@ get_contents <- function(lf, data, df,
     }
     whatsleft <- setdiff(vars, variable_names)
     if(length(whatsleft) > 0){
-      stop(paste0("data for ", paste(whatsleft, collapse = ","), " in ",
-                  j, " not found"))
+      if(grepl(":", whatsleft))
+        stop("Linear interactions such as ", whatsleft[1], 
+             " have to be defined manually at the moment.") else
+               stop(paste0("data for ", paste(whatsleft, collapse = ","), " in ",
+                           j, " not found"))
     }
   }
   

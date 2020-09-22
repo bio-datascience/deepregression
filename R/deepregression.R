@@ -171,6 +171,7 @@ deepregression <- function(
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991-5-4,
+  tf_seed = NULL,
   mixture_dist = 0,
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
@@ -426,6 +427,10 @@ deepregression <- function(
   # define orthogonalization function
   if(orthog_type == "tf")
     orthog_fun <- orthog_tf else orthog_fun <- orthog
+  
+  # TF seed -> does not work atm
+  # if(!is.null(tf_seed))
+  #   try(tensorflow:::use_session_with_seed(tf_seed), silent = TRUE)
   
   # check if transformation models
   
