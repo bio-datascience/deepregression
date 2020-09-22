@@ -1031,6 +1031,8 @@ deepregression_init <- function(
 #' layers
 #' @param train_together see \code{?deepregression}
 #' @param split_between_shift_and_theta see \code{?deepregression}
+#' @param interact_pred_trafo specifies a transformation function applied
+#' to the interaction predictor using a layer lambda (e.g. to ensure positivity)
 #' 
 #' @export 
 #'
@@ -1052,7 +1054,8 @@ deeptransformation_init <- function(
   order_bsp,
   use_bias_in_structured = FALSE,
   train_together = NULL,
-  split_between_shift_and_theta = NULL
+  split_between_shift_and_theta = NULL,
+  interact_pred_trafo = NULL
 )
 {
   
@@ -1261,6 +1264,9 @@ deeptransformation_init <- function(
     interact_pred <- layer_concatenate(list(inputs_struct[[2]],deep_part_ia))
     
   }
+  
+  if(!is.null(interact_pred_trafo))
+    interact_pred <- interact_pred %>% layer_lambda(f = interact_pred_trafo)
   
   ## thetas
   AoB <- tf_row_tensor(input_theta_y, interact_pred)
