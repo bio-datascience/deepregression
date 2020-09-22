@@ -349,6 +349,7 @@ deepregression <- function(
     get_layers_from_s(parsed_formulae_contents[[i]], i,
                       variational = variational,
                       posterior_fun = posterior_fun,
+                      output_dim = output_dim,
                       trafo = 
                         (family == "transformation_model" & 
                            i == 2)

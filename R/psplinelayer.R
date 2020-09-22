@@ -193,6 +193,7 @@ k <- keras:::keras
 #' and posteriors as defined in \code{posterior_fun} are created
 #' @param diffuse_scale diffuse scale prior for scalar weights
 #' @param posterior_fun function defining the variational posterior
+#' @param output_dim the number of units for the layer
 #' @param ... further arguments passed to \code{args} used in \code{create_layer}
 #' 
 #' 
@@ -209,6 +210,7 @@ layer_spline <- function(object,
                          # prior_fun = NULL,
                          posterior_fun = NULL,
                          diffuse_scale = 1000,
+                         output_dim = 1L,
                          ...) {
   
   if(variational){
@@ -233,7 +235,7 @@ layer_spline <- function(object,
     
     args <- c(list(input_shape = input_shape),
               name = name,
-              units = 1L,
+              units = output_dim,
               trainable = trainable,
               kernel_regularizer=regul,
               use_bias=use_bias,
@@ -306,7 +308,8 @@ layer_spline <- function(object,
 
 #### get layer based on smoothCon object
 get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
-                              posterior_fun=NULL, trafo=FALSE#, prior_fun=NULL
+                              posterior_fun=NULL, trafo=FALSE, #, prior_fun=NULL
+                              output_dim = 1
                               )
 {
 
@@ -379,6 +382,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                lambdas = lambdas,
                Ps = Ps,
                variational = variational,
-               posterior_fun = posterior_fun)
+               posterior_fun = posterior_fun,
+               output_dim = output_dim)
 
 }
