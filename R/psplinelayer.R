@@ -225,7 +225,7 @@ layer_spline <- function(object,
   if(sum(lambdas)==0 | variational)
     regul <- NULL else
       regul <- function(x)
-        k_mean(k_batch_dot(x, k_dot(
+        k_sum(k_batch_dot(x, k_dot(
           # tf$constant(
           sparse_mat_to_tensor(bigP),
           # dtype = "float32"),
