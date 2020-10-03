@@ -199,9 +199,11 @@ plot.deeptrafo <- function(
            coef = phi[this_ind_this_w,],
            partial_effects = BX%*%phi[this_ind_this_w,])
     
-    if(plot){
+    nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
+    
+    if(plot | nrcols == 2){
       if(which_param==1){
-        nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
+        
         if(nrcols==1)
         {
           
@@ -221,8 +223,18 @@ plot.deeptrafo <- function(
           df <- as.data.frame(expand.grid(this_x,
                                           this_y))
           colnames(df) <- sTerm$term
-          pred <- PredictMat(sTerm, data = df)%*%phi[this_ind_this_w,]
+          pmat <- PredictMat(sTerm, data = df)
+          if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+            pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
+          pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
+          
+          if(!plot)
+            return(list(df = df,
+                        design_mat = pmat,
+                        coef = phi[this_ind_this_w,],
+                        pred = pred))
+          
           filled.contour(
             this_x,
             this_y,
