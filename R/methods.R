@@ -247,6 +247,32 @@ plot.deeptrafo <- function(
           )
           # warning("Plotting of effects with ", nrcols, " 
           #         covariate inputs not supported yet.")
+        }else if(nrcols==3){
+          
+          if(plot) warning("Will only return the plot data for 3d effects.")
+          
+          sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
+          this_x <- do.call(seq, c(as.list(range(plotData[[w]]$value[,1])),
+                                   list(l=grid_length)))
+          this_y <- do.call(seq, c(as.list(range(plotData[[w]]$value[,2])),
+                                   list(l=grid_length)))
+          this_z <- do.call(seq, c(as.list(range(plotData[[w]]$value[,3])),
+                                   list(l=grid_length)))
+          df <- as.data.frame(expand.grid(this_x,
+                                          this_y,
+                                          this_z))
+          colnames(df) <- sTerm$term
+          pmat <- PredictMat(sTerm, data = df)
+          if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+            pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
+          pred <- pmat%*%phi[this_ind_this_w,]
+          #this_z <- plotData[[w]]$partial_effect
+          
+          return(list(df = df,
+                      design_mat = pmat,
+                      coef = phi[this_ind_this_w,],
+                      pred = pred))
+          
         }else{
           warning("Plotting of effects with ", nrcols, 
                   " covariate inputs not supported.")
