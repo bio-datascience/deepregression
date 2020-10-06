@@ -418,7 +418,7 @@ predict.deeptrafo <- function(
     if(type=="interaction"){
      
       if(is.null(newdata))
-        newdata <- object$init_params$data else
+        newdata <- object$init_params$data
        
       return(cbind(interaction = as.matrix(aTtheta),
                    as.data.frame(newdata)))
