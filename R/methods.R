@@ -381,8 +381,8 @@ predict.deepregression <- function(
 #' @param newdata optional new data, either data.frame or list
 #' @param ... not used atm
 #' @return returns a function with two parameters: the actual response
-#' and \code{type} in \code{c('trafo', 'pdf', 'cdf')} determining the
-#' returned value
+#' and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')} 
+#' determining the returned value
 #'
 #' @export
 #' @rdname methodDR
@@ -390,6 +390,7 @@ predict.deepregression <- function(
 predict.deeptrafo <- function(
   object,
   newdata = NULL,
+  which = NULL,
   ...
 )
 {
@@ -403,7 +404,8 @@ predict.deeptrafo <- function(
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf"), grid = FALSE)
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction"), 
+                        which = NULL, grid = FALSE)
   {
     type <- match.arg(type)
     
@@ -413,6 +415,15 @@ predict.deeptrafo <- function(
     mod_output <- object$model(list(inpCov, tf$cast(matrix(y, ncol=1), tf$float32)))
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
+    if(type=="interaction"){
+     
+      if(is.null(newdata))
+        newdata <- object$init_params$data else
+       
+      return(cbind(interaction = as.matrix(aTtheta),
+                   as.data.frame(newdata)))
+      
+    }
     ytransf <- aTtheta + w_eta
     yprimeTrans <- mod_output[, 3, drop = FALSE]
     theta <- get_theta(object)
