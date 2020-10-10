@@ -198,7 +198,7 @@ deepregression <- function(
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
                                                  supp = range(y)) / diff(range(y)),
   split_between_shift_and_theta = NULL,
-  addconst_interaction = 10,
+  addconst_interaction = 0,
   additional_penalty = NULL,
   # compress = TRUE,
   ...
