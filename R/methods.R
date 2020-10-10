@@ -416,12 +416,12 @@ predict.deeptrafo <- function(
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction"), 
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction", "shift"), 
                         which = NULL, grid = FALSE)
   {
     type <- match.arg(type)
     
-    # if(!is.null(minval)) y <- y - minval
+    # if(!is.null(minval)) y <- y - sum(minval*get_theta(object))
     
     ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
     aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)
@@ -429,6 +429,8 @@ predict.deeptrafo <- function(
     mod_output <- object$model(list(inpCov, tf$cast(matrix(y, ncol=1), tf$float32)))
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
+    # if(!is.null(minval))
+    #   aTtheta <- aTtheta - sum(minval*get_theta(object))
     if(type=="interaction"){
      
       if(is.null(newdata))
@@ -438,8 +440,20 @@ predict.deeptrafo <- function(
                    as.data.frame(newdata)))
       
     }
+    
+    if(type=="shift"){
+      
+      if(is.null(newdata))
+        newdata <- object$init_params$data
+      
+      return(cbind(shift = as.matrix(w_eta),
+                   as.data.frame(newdata)))
+      
+    }
     ytransf <- aTtheta + w_eta
     yprimeTrans <- mod_output[, 3, drop = FALSE]
+    # if(!is.null(minval))
+    #   yprimeTrans + sum(minval*get_theta(object))
     theta <- get_theta(object)
     if(grid)
     {

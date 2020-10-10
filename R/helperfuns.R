@@ -596,7 +596,7 @@ make_cov <- function(pcf, newdata=NULL,
                    dim = c(nrow(ret),ncol(ret)))
     }
     
-    if(i==2 & !is.null(attr(x,"minval")))
+    if(i==2 & !is.null(attr(x,"minval")) & pred)
       ret <- ret - attr(x, "minval")
     input_cov <- c(input_cov, list(ret))
   

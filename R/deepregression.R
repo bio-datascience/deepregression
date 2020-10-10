@@ -198,7 +198,7 @@ deepregression <- function(
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
                                                  supp = range(y)) / diff(range(y)),
   split_between_shift_and_theta = NULL,
-  addconst_interaction = 0,
+  addconst_interaction = NULL,
   additional_penalty = NULL,
   # compress = TRUE,
   ...
@@ -337,7 +337,7 @@ deepregression <- function(
     # ensure positivity of interaction
     parsed_formulae_contents[[2]] <- correct_min_val(parsed_formulae_contents[[2]], 
                                                      addconst_interaction)
-    minval <- attr(parsed_formulae_contents[[2]], "minval")
+    addconst_interaction <- attr(parsed_formulae_contents[[2]], "minval")
     # if(minval<0) y <- y - minval
   }
 
@@ -472,6 +472,7 @@ deepregression <- function(
       order_bsp = order_bsp,
       train_together = train_together_ind(train_together),
       split_between_shift_and_theta = split_between_shift_and_theta,
+      addconst_interaction = addconst_interaction,
       ...
     )
     
@@ -1071,7 +1072,8 @@ deeptransformation_init <- function(
   use_bias_in_structured = FALSE,
   train_together = NULL,
   split_between_shift_and_theta = NULL,
-  interact_pred_trafo = NULL
+  interact_pred_trafo = NULL,
+  addconst_interaction = NULL
 )
 {
   
@@ -1328,14 +1330,44 @@ deeptransformation_init <- function(
     aTtheta <- AoB %>% thetas_layer()
     aPrimeTtheta <- AprimeoB %>% thetas_layer()
     
+    if(!is.null(addconst_interaction))
+    {
+
+      correction <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
+                                tf_row_tensor_left_part(input_theta_y, interact_pred)) %>% 
+        thetas_layer()
+      correction_prime <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
+                                      tf_row_tensor_left_part(input_theta_y_prime, interact_pred)) %>% 
+        thetas_layer()
+      
+      aTtheta <- tf$add(aTtheta, correction)
+      aPrimeTtheta <- tf$add(aPrimeTtheta, correction_prime)
+
+    }
+    
   }
   
-  
-  modeled_terms <- layer_concatenate(list(
-    final_eta_pred,
-    aTtheta,
-    aPrimeTtheta
-  ))
+  if(!is.null(addconst_interaction))
+  {
+    
+    modeled_terms <- layer_concatenate(list(
+      final_eta_pred,
+      aTtheta,
+      aPrimeTtheta,
+      correction,
+      correction_prime
+      # tf$add(tf$multiply(tf$constant(matrix(0),dtype="float32"), aTtheta), correction)
+    ))
+    
+  }else{
+    
+    modeled_terms <- layer_concatenate(list(
+      final_eta_pred,
+      aTtheta,
+      aPrimeTtheta
+    ))
+    
+  }
   
   neg_ll <- function(y, model) {
     
