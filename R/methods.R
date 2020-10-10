@@ -436,9 +436,15 @@ predict.deeptrafo <- function(
       if(is.null(newdata))
         newdata <- object$init_params$data
        
-      return(cbind(interaction = as.matrix(aTtheta),
-                   as.data.frame(newdata)))
+      ret <- cbind(interaction = as.matrix(aTtheta),
+                   as.data.frame(newdata)
+      )
       
+      if(ncol(mod_output)==5)
+        ret <- cbind(ret, correction = as.matrix(mod_output[,4,drop=FALSE]))
+      
+      return(ret)
+
     }
     
     if(type=="shift"){
@@ -446,7 +452,7 @@ predict.deeptrafo <- function(
       if(is.null(newdata))
         newdata <- object$init_params$data
       
-      return(cbind(shift = as.matrix(w_eta),
+      return(cbind(shift = -as.matrix(w_eta),
                    as.data.frame(newdata)))
       
     }

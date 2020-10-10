@@ -518,6 +518,8 @@ make_cov <- function(pcf, newdata=NULL,
         if(any(sapply(x$linterms,is.factor))){
           ret <- model.matrix(~ 1 + ., data = newdata[names(x$linterms)])[,-1]
         }else{
+          if("X.Intercept." %in% names(x$linterms))
+            names(x$linterms)[which("X.Intercept." %in% names(x$linterms))] <- "(Intercept)"
           ret <- model.matrix(~ 0 + ., data = newdata[names(x$linterms)])
         }
       }
