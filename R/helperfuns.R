@@ -598,6 +598,10 @@ make_cov <- function(pcf, newdata=NULL,
                    return(ret)
                  }))
   
+  # for trafo models
+  if(!is.null(attr(pcf[[2]],"minval")))
+    pcf[[2]] <- correct_min_val(pcf[[2]])
+  
   # just use the ones with are actually modeled
   input_cov <- input_cov[!sapply(input_cov, function(x) is.null(x) |
                                    (length(x)==1 && is.null(x[[1]])) |

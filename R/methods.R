@@ -334,6 +334,11 @@ prepare_data <- function(
       x$init_params$parsed_formulae_contents,
       data, pred=pred)
     
+    # for trafo models
+    if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
+      return(list(data=newdata_processed, 
+                  minval=attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
+    
   }
   return(newdata_processed)
 }
@@ -401,6 +406,13 @@ predict.deeptrafo <- function(
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
     inpCov <- prepare_data(object, newdata, pred=TRUE)
+    if(length(inpCov)==2 && !is.null(names(inpCov)) && names(inpCov)[2]=="minval")
+    {
+      minval <- inpCov[[2]]
+      inpCov <- inpCov[[1]]
+    }else{
+      minval <- NULL
+    }
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
   
@@ -408,6 +420,8 @@ predict.deeptrafo <- function(
                         which = NULL, grid = FALSE)
   {
     type <- match.arg(type)
+    
+    # if(!is.null(minval)) y <- y - minval
     
     ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
     aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)

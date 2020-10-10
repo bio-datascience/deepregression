@@ -96,6 +96,12 @@
 #' \code{!is.null(train_together)}, \code{split_between_shift_and_theta} is supposed
 #' to define how many of the last layer's hidden units are used for the shift
 #' term and how many for the theta term (an integer vector of length 2).
+#' @param addconst_interaction positive constant; 
+#' a constant added to the additive predictor of the interaction term.
+#' If \code{NULL}, terms are left unchanged. If 0 and predictors have negative values in their
+#' design matrix, the minimum value of all predictors is added to ensure positivity. 
+#' If > 0, the minimum value plus the \code{addconst_interaction} is added to each predictor
+#' in the interaction term.
 #' @param additional_penalty a penalty that is added to the negative log-likelihood; must be 
 #' a \code{function(x)}, where \code{x} is actually not used and
 #' @param ... further arguments passed to the \code{deepregression\_init} function
@@ -192,6 +198,7 @@ deepregression <- function(
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
                                                  supp = range(y)) / diff(range(y)),
   split_between_shift_and_theta = NULL,
+  addconst_interaction = 10,
   additional_penalty = NULL,
   # compress = TRUE,
   ...
@@ -326,6 +333,14 @@ deepregression <- function(
   
   attr(parsed_formulae_contents,"zero_cons") <- TRUE
   
+  if(family=="transformation_model" & !is.null(addconst_interaction)){   
+    # ensure positivity of interaction
+    parsed_formulae_contents[[2]] <- correct_min_val(parsed_formulae_contents[[2]], 
+                                                     addconst_interaction)
+    minval <- attr(parsed_formulae_contents[[2]], "minval")
+    # if(minval<0) y <- y - minval
+  }
+
   # get columns per term
   ncol_deep <- lapply(lapply(
     parsed_formulae_contents, "[[", "deepterms"), function(x){
@@ -1266,20 +1281,54 @@ deeptransformation_init <- function(
     
   }
   
-  if(!is.null(interact_pred_trafo))
-    interact_pred <- interact_pred %>% layer_lambda(f = interact_pred_trafo)
-  
-  ## thetas
-  AoB <- tf_row_tensor(input_theta_y, interact_pred)
-  AprimeoB <- tf_row_tensor(input_theta_y_prime, interact_pred)
-  
-  thetas_layer <- layer_mono_multi(input_shape = 
-                                     list(NULL, (order_bsp+1L)*
-                                            (ncol(interact_pred)[[1]])),
-                                   dim_bsp = c(order_bsp+1L))
-  
-  aTtheta <- AoB %>% thetas_layer()
-  aPrimeTtheta <- AprimeoB %>% thetas_layer()
+  if(!is.null(interact_pred_trafo)){
+    
+    # define Gamma weights
+    thetas_layer <- layer_mono_multi_trafo(input_shape = 
+                                             list(NULL, (order_bsp+1L)*
+                                                    (ncol(interact_pred)[[1]])),
+                                           dim_bsp = c(order_bsp+1L))
+    
+    rho_part <- tf_row_tensor_right_part(input_theta_y, interact_pred) %>% 
+      thetas_layer() %>% 
+      layer_lambda(f = interact_pred_trafo)
+    
+    # rho_part <- tf$add(
+    #   tf$constant(matrix(
+    #     c(rep(neg_shift_bsp, (ncol(interact_pred)[[1]])),
+    #       rep(0, (ncol(interact_pred)[[1]])*order_bsp)
+    #     ), nrow=1), dtype="float32"),
+    #   rho_part)
+    
+    aTtheta <- tf$matmul(
+      tf$multiply(tf_row_tensor_left_part(input_theta_y,
+                                          interact_pred),
+                  rho_part),
+      tf$ones(shape = c((order_bsp+1L)*(ncol(interact_pred)[[1]]),1))
+    )
+    aPrimeTtheta <- tf$matmul(
+      tf$multiply(tf_row_tensor_left_part(input_theta_y_prime,
+                                          interact_pred),
+                  rho_part),
+      tf$ones(shape = c((order_bsp+1L)*(ncol(interact_pred)[[1]]),1))
+    )
+    
+  }else{
+    
+    # define Gamma weights
+    thetas_layer <- layer_mono_multi(input_shape = 
+                                       list(NULL, (order_bsp+1L)*
+                                              (ncol(interact_pred)[[1]])),
+                                     dim_bsp = c(order_bsp+1L))
+      
+    ## thetas
+    AoB <- tf_row_tensor(input_theta_y, interact_pred)
+    AprimeoB <- tf_row_tensor(input_theta_y_prime, interact_pred)
+    
+    aTtheta <- AoB %>% thetas_layer()
+    aPrimeTtheta <- AprimeoB %>% thetas_layer()
+    
+  }
   
   
   modeled_terms <- layer_concatenate(list(
@@ -1320,25 +1369,28 @@ deeptransformation_init <- function(
   model <- keras_model(inputs = inputList,
                        outputs = modeled_terms)
   
-  nrtw <- length(model$trainable_weights)
+  mono_layer_ind <- grep(
+    "constraint_mono_layer",
+    sapply(model$trainable_weights, function(x) x$name)
+  )
   
   # add penalty for interaction term
   if(is.null(list_structured[[2]]))
   {
     if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
       
-      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[nrtw-1L]])
+      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[mono_layer_ind]])
       
     }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
       
-      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[nrtw-1L]])
+      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[mono_layer_ind]])
       
       
     }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
       
       reg = function(x) tf$keras$regularizers$l1_l2(
         l1=lambda_lasso,
-        l2=lambda_ridge)(model$trainable_weights[[nrtw-1L]])
+        l2=lambda_ridge)(model$trainable_weights[[mono_layer_ind]])
       
     }else{
       
@@ -1351,12 +1403,12 @@ deeptransformation_init <- function(
     
     bigP <- list_structured[[2]]
     if(length(bigP@x)==0) reg = NULL else
-      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[nrtw]], k_dot(
+      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[mono_layer_ind]], k_dot(
         # tf$constant(
         sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),
                                 "CsparseMatrix")),
         # dtype = "float32"),
-        model$trainable_weights[[nrtw]]),
+        model$trainable_weights[[mono_layer_ind]]),
         axes=2) # 1-based
       )
     

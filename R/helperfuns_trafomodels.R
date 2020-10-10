@@ -51,10 +51,19 @@ tf_repeat <- function(a, dim)
 tf_row_tensor <- function(a,b)
 {
   tf$multiply(
-    tf_repeat(a, ncol(b)[[1]]),  
-    tf$tile(b, c(1L, ncol(a)[[1]]))
-    
+    tf_row_tensor_left_part(a,b),
+    tf_row_tensor_right_part(a,b)
   )
+}
+
+tf_row_tensor_left_part <- function(a,b)
+{
+  tf_repeat(a, ncol(b)[[1]])
+}
+
+tf_row_tensor_right_part <- function(a,b)
+{
+  tf$tile(b, c(1L, ncol(a)[[1]]))
 }
 
 ###############################################################################################
@@ -66,7 +75,9 @@ mono_trafo_multi <- function(w, bsp_dim)
   w_res <- tf$reshape(w, shape = list(bsp_dim, as.integer(nrow(w)/bsp_dim)))
   w1 <- tf$slice(w_res, c(0L,0L), size=c(1L,ncol(w_res)))
   wrest <- tf$math$softplus(tf$slice(w_res, c(1L,0L), size=c(as.integer(nrow(w_res)-1),ncol(w_res))))
-  w_w_cons <- tf$cumsum(k_concatenate(list(w1,wrest), axis = 1L), axis=0L)
+  w_w_cons <- tf$cumsum(k_concatenate(list(w1,wrest), 
+                                      axis = 1L # this is 1 and not 0 because k_concat is 1-based
+                                      ), axis=0L)
   return(tf$reshape(w_w_cons, shape = list(nrow(w),1L)))
   
 }
@@ -124,6 +135,62 @@ layer_mono_multi <- function(object,
   ))
 }
 
+
+########## other version
+
+MonoMultiTrafoLayer <- R6::R6Class("MonoMultiTrafoLayer",
+                              
+                              inherit = KerasLayer,
+                              
+                              public = list(
+                                
+                                output_dim = NULL,
+                                
+                                kernel = NULL,
+                                
+                                dim_bsp = NULL,
+                                
+                                initialize = function(output_dim, dim_bsp) {
+                                  self$output_dim <- output_dim
+                                  self$dim_bsp <- dim_bsp
+                                },
+                                
+                                build = function(input_shape) {
+                                  self$kernel <- self$add_weight(
+                                    name = 'kernel', 
+                                    shape = list(input_shape[[2]], self$output_dim),
+                                    initializer = initializer_random_normal(),
+                                    trainable = TRUE
+                                  )
+                                },
+                                
+                                call = function(x, mask = NULL) {
+                                  tf$multiply(x, tf$transpose(mono_trafo_multi(self$kernel, self$dim_bsp)))
+                                },
+                                
+                                compute_output_shape = function(input_shape) {
+                                  list(input_shape[[1]], self$output_dim)
+                                }
+                              )
+)
+
+# define layer wrapper function
+layer_mono_multi_trafo <- function(object, 
+                                   input_shape = NULL,
+                                   output_dim = 1L,
+                                   dim_bsp = NULL,
+                                   name = "constraint_mono_layer_multi_trafo", 
+                                   trainable = TRUE
+) {
+  create_layer(MonoMultiTrafoLayer, object, list(
+    name = name,
+    trainable = trainable,
+    input_shape = input_shape,
+    output_dim = as.integer(output_dim),
+    dim_bsp = as.integer(dim_bsp)
+  ))
+}
+
 # to retrieve the weights on their original scale
 softplus <- function(x) log(exp(x)+1)
 reshape_softplus_cumsum <- function(x, order_bsp_p1)
@@ -132,5 +199,35 @@ reshape_softplus_cumsum <- function(x, order_bsp_p1)
   x <- matrix(x, nrow = order_bsp_p1, byrow=T)
   x[2:nrow(x),] <- softplus(x[2:nrow(x),])
   apply(x, 2, cumsum)
+  
+}
+
+correct_min_val <- function(pcf, addconst = 10)
+{
+
+  minval <- suppressWarnings(min(pcf$linterms))
+  if(!is.null(pcf$smoothterms))
+    minval <- min(c(minval, 
+                    suppressWarnings(sapply(pcf$smoothterms,
+                                            function(x) min(x[[1]]$X)))))
+  if(minval<0)
+  {
+    
+    minval <- minval - addconst
+    
+    if(!is.null(pcf$linterms))
+      pcf$linterms <- pcf$linterms - minval
+    if(!is.null(pcf$smoothterms))
+      pcf$smoothterms <- lapply(pcf$smoothterms, function(x){
+        x[[1]]$X <- x[[1]]$X - minval
+        return(x)
+      })
+    
+    
+  }
+  
+  attr(pcf,"minval") <- minval
+    
+  return(pcf)
   
 }
