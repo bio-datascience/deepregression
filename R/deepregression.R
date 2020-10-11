@@ -1338,36 +1338,36 @@ deeptransformation_init <- function(
     aTtheta <- AoB %>% thetas_layer()
     aPrimeTtheta <- AprimeoB %>% thetas_layer()
     
-    if(!is.null(addconst_interaction))
-    {
-
-      correction <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
-                                tf_row_tensor_left_part(input_theta_y, interact_pred)) %>% 
-        thetas_layer()
-      correction_prime <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
-                                      tf_row_tensor_left_part(input_theta_y_prime, interact_pred)) %>% 
-        thetas_layer()
-      
-      aTtheta <- tf$add(aTtheta, correction)
-      aPrimeTtheta <- tf$add(aPrimeTtheta, correction_prime)
-
-    }
+    # if(!is.null(addconst_interaction))
+    # {
+    # 
+    #   correction <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
+    #                             tf_row_tensor_left_part(input_theta_y, interact_pred)) %>% 
+    #     thetas_layer()
+    #   correction_prime <- tf$multiply(tf$constant(matrix(addconst_interaction), dtype="float32"),
+    #                                   tf_row_tensor_left_part(input_theta_y_prime, interact_pred)) %>% 
+    #     thetas_layer()
+    #   
+    #   aTtheta <- tf$add(aTtheta, correction)
+    #   aPrimeTtheta <- tf$add(aPrimeTtheta, correction_prime)
+    # 
+    # }
     
   }
   
-  if(!is.null(addconst_interaction))
-  {
-    
-    modeled_terms <- layer_concatenate(list(
-      final_eta_pred,
-      aTtheta,
-      aPrimeTtheta,
-      correction,
-      correction_prime
-      # tf$add(tf$multiply(tf$constant(matrix(0),dtype="float32"), aTtheta), correction)
-    ))
-    
-  }else{
+  # if(!is.null(addconst_interaction))
+  # {
+  #   
+  #   modeled_terms <- layer_concatenate(list(
+  #     final_eta_pred,
+  #     aTtheta,
+  #     aPrimeTtheta,
+  #     correction,
+  #     correction_prime
+  #     # tf$add(tf$multiply(tf$constant(matrix(0),dtype="float32"), aTtheta), correction)
+  #   ))
+  #   
+  # }else{
     
     modeled_terms <- layer_concatenate(list(
       final_eta_pred,
@@ -1375,7 +1375,7 @@ deeptransformation_init <- function(
       aPrimeTtheta
     ))
     
-  }
+  # }
   
   neg_ll <- function(y, model) {
     
