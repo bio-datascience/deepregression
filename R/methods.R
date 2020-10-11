@@ -962,7 +962,18 @@ get_distribution <- function(
   return(disthat)
 }
 
-
+#' Function to return the log_score
+#' 
+#' @param x the fitted deepregression object
+#' @param data an optional data set
+#' @param this_y new y for optional data
+#' @param ind_fun function indicating the dependency; per default (iid assumption)
+#' \code{tfd_independent} is used.
+#' @param convert_fun function that converts Tensor; per default \code{as.matrix}
+#' @param summary_fun function summarizing the output; per default the identity
+#' 
+#' @export
+#' 
 log_score <- function(
   x,
   data=NULL,
@@ -1018,23 +1029,53 @@ log_score <- function(
   )))
 }
 
+#' Function to return the shift term
+#' 
+#' @param x the fitted deeptrafo object
+#' 
+#' @export
+#' 
 get_shift <- function(x)
 {
   
   stopifnot("deeptrafo" %in% class(x))
-  nrtw <- length(x$model$trainable_weights)
-  c(-1* (as.matrix(x$model$weights[[nrtw-1]] + 0)))
+  names_weights <- sapply(x$model$trainable_weights, function(x) x$name)
+  if(all(!grep("structured_linear_1", names_weights)))
+    stop("Not sure which layer to access for shift. Have you specified a structured shift predictor?")
+  -1 * as.matrix(x$model$weights[[grep("structured_linear_1", names_weights)]] + 0)
   
 }
 
+#' Function to return the theta term
+#' 
+#' @param x the fitted deeptrafo object
+#' 
+#' @export
+#' 
 get_theta <- function(x)
 {
   
   stopifnot("deeptrafo" %in% class(x))
-  nrtw <- length(x$model$trainable_weights)
+  names_weights <- sapply(x$model$trainable_weights, function(x) x$name)
   reshape_softplus_cumsum(
-    as.matrix(x$model$weights[[nrtw]] + 0), 
+    as.matrix(x$model$weights[[grep("constraint_mono_layer", names_weights)]] + 0), 
     order_bsp_p1 = x$init_params$order_bsp + 1
   )
+  
+}
+
+#' Function to return the minval term
+#' 
+#' @param x the fitted deeptrafo object
+#' 
+#' @details This value is only available if \code{addconst_interaction}
+#' was specified in the model call.
+#' 
+#' @export
+#' 
+get_minval <- function(x)
+{
+  
+  attr(x$init_params$parsed_formulae_contents[[2]], "minval")
   
 }
