@@ -1040,9 +1040,11 @@ get_shift <- function(x)
   
   stopifnot("deeptrafo" %in% class(x))
   names_weights <- sapply(x$model$trainable_weights, function(x) x$name)
-  if(all(!grep("structured_linear_1", names_weights)))
+  lin_names <- grep("structured_linear_1", names_weights)
+  nonlin_names <- grep("structured_nonlinear_1", names_weights)
+  if(length(c(lin_names, nonlin_names))==0)
     stop("Not sure which layer to access for shift. Have you specified a structured shift predictor?")
-  -1 * as.matrix(x$model$weights[[grep("structured_linear_1", names_weights)]] + 0)
+  -1 * as.matrix(x$model$weights[[c(lin_names, nonlin_names)]] + 0)
   
 }
 
