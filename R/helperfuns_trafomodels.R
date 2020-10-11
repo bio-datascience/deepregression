@@ -232,28 +232,78 @@ correct_min_val <- function(pcf, addconst = 10)
   
 }
 
-secondOrderPenBSP <- function(order_bsp)
+secondOrderPenBSP <- function(order_bsp, order_diff = 2)
 {
   
   # taken from https://github.com/cran/penDvine/blob/master/R/pen.matrix.r
-  k.dim <- order_bsp + 1
-  k <- k.dim-1
   
-  c2 <- factorial(k+1)/factorial(k-2)
-  A <- matrix(0,k.dim-2,k.dim)
-  diag(A) <- 1
-  diag(A[,-1]) <- -2
-  diag(A[,-c(1,2)]) <- 1
+  if(order_diff == 0){
+    
+    k.dim <- order_bsp + 1
+    k <- k.dim-1
+    
+    c2 <- factorial(k+1)/factorial(k-2)
+    A <- matrix(0,k.dim-2,k.dim)
+    diag(A) <- 1
+    diag(A[,-1]) <- -2
+    diag(A[,-c(1,2)]) <- 1
+    
+    A.hat <- matrix(NA,k.dim-2,k.dim-2)
+    for(i in 0:(k-2)) {
+      i.z <- i+1
+      for(j in 0:(k-2)) {
+        j.z <- j+1
+        A.hat[i.z,j.z] <- choose(k-2,j)*choose(k-2,i)*beta(i+j+1,2*k-i-j-3)
+      }
+    }  
+    
+    return(c2^2*(t(A)%*%A.hat%*%A))
+    
+  }
   
-  A.hat <- matrix(NA,k.dim-2,k.dim-2)
-  for(i in 0:(k-2)) {
-    i.z <- i+1
-    for(j in 0:(k-2)) {
-      j.z <- j+1
-      A.hat[i.z,j.z] <- choose(k-2,j)*choose(k-2,i)*beta(i+j+1,2*k-i-j-3)
-    }
-  }  
+  K <- order_bsp+1
 
-  return(c2^2*(t(A)%*%A.hat%*%A))
+  if(order_diff==1) {
+    L <- diag(1,K)
+    L.1 <- diag(-1,K,K-1)
+    L.2 <- matrix(0,K,1)
+    L1 <- cbind(L.2,L.1)
+    L <- L+L1
+    L <- L[1:(K-1),]
+  }
+  if(order_diff==2) {
+    L <- diag(1,K,K)
+    L1 <- diag(-2,K,(K-1))
+    L2 <- diag(1,K,(K-2))
+    L.1 <- matrix(0,K,1)
+    L1 <- cbind(L.1,L1)
+    L2 <- cbind(L.1,L.1,L2)
+    L <- L+L1+L2
+    L <- L[1:(K-2),]
+  }
+  if(order_diff==3) {
+    L <- diag(1,(K-3),(K-3))
+    L.help <- matrix(0,(K-3),1)
+    L1 <- diag(-3,(K-3),(K-3))
+    M1 <- cbind(L,L.help,L.help,L.help)
+    M2 <- cbind(L.help,L1,L.help,L.help)
+    M3 <- cbind(L.help,L.help,-L1,L.help)
+    M4 <- cbind(L.help,L.help,L.help,-L)
+    L <- (M1+M2+M3+M4)
+  }
+  if(order_diff==4) {
+    L <- diag(1,(K-4),(K-4))
+    L.help <- matrix(0,(K-4),1)
+    L1 <- diag(-4,(K-4),(K-4))
+    L2 <- diag(6,(K-4),(K-4))
+    M1 <- cbind(L,L.help,L.help,L.help,L.help)
+    M2 <- cbind(L.help,L1,L.help,L.help,L.help)
+    M3 <- cbind(L.help,L.help,L2,L.help,L.help)
+    M4 <- cbind(L.help,L.help,L.help,L1,L.help)
+    M5 <- cbind(L.help,L.help,L.help,L.help,L)
+    L <- (M1+M2+M3+M4+M5)
+  }
+  
+  return(crossprod(L))
   
 }

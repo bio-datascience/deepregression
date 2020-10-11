@@ -1053,6 +1053,9 @@ deepregression_init <- function(
 #' @param addconst_interaction additive constant added to predictor matrix to
 #' ensure positivity
 #' @param penalize_bsp scalar value > 0; amount of penalization of Bernstein polynomials
+#' @param order_bsp_penalty integer; order of Bernstein polynomial penalty. 0 results in a
+#' penalty based on integrated squared second order derivatives, values >= 1 in difference 
+#' penalties
 #' 
 #' @export 
 #'
@@ -1077,7 +1080,8 @@ deeptransformation_init <- function(
   split_between_shift_and_theta = NULL,
   interact_pred_trafo = NULL,
   addconst_interaction = NULL,
-  penalize_bsp = 0
+  penalize_bsp = 0,
+  order_bsp_penalty = 2
 )
 {
   
@@ -1437,7 +1441,7 @@ deeptransformation_init <- function(
   }else{
     
     if(penalize_bsp)
-      bspP <- secondOrderPenBSP(order_bsp)
+      bspP <- secondOrderPenBSP(order_bsp, order_diff = order_bsp_penalty)
     bigP <- list_structured[[2]]
     if(length(bigP@x)==0 & penalize_bsp==0){ 
       reg = NULL 
