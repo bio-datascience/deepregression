@@ -231,3 +231,29 @@ correct_min_val <- function(pcf, addconst = 10)
   return(pcf)
   
 }
+
+secondOrderPenBSP <- function(order_bsp)
+{
+  
+  # taken from https://github.com/cran/penDvine/blob/master/R/pen.matrix.r
+  k.dim <- order_bsp + 1
+  k <- k.dim-1
+  
+  c2 <- factorial(k+1)/factorial(k-2)
+  A <- matrix(0,k.dim-2,k.dim)
+  diag(A) <- 1
+  diag(A[,-1]) <- -2
+  diag(A[,-c(1,2)]) <- 1
+  
+  A.hat <- matrix(NA,k.dim-2,k.dim-2)
+  for(i in 0:(k-2)) {
+    i.z <- i+1
+    for(j in 0:(k-2)) {
+      j.z <- j+1
+      A.hat[i.z,j.z] <- choose(k-2,j)*choose(k-2,i)*beta(i+j+1,2*k-i-j-3)
+    }
+  }  
+
+  return(c2^2*(t(A)%*%A.hat%*%A))
+  
+}

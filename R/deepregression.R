@@ -1050,6 +1050,9 @@ deepregression_init <- function(
 #' @param split_between_shift_and_theta see \code{?deepregression}
 #' @param interact_pred_trafo specifies a transformation function applied
 #' to the interaction predictor using a layer lambda (e.g. to ensure positivity)
+#' @param addconst_interaction additive constant added to predictor matrix to
+#' ensure positivity
+#' @param penalize_bsp scalar value > 0; amount of penalization of Bernstein polynomials
 #' 
 #' @export 
 #'
@@ -1073,7 +1076,8 @@ deeptransformation_init <- function(
   train_together = NULL,
   split_between_shift_and_theta = NULL,
   interact_pred_trafo = NULL,
-  addconst_interaction = NULL
+  addconst_interaction = NULL,
+  penalize_bsp = 0
 )
 {
   
@@ -1432,22 +1436,74 @@ deeptransformation_init <- function(
     
   }else{
     
-    
+    if(penalize_bsp)
+      bspP <- secondOrderPenBSP(order_bsp)
     bigP <- list_structured[[2]]
-    if(length(bigP@x)==0) reg = NULL else
+    if(length(bigP@x)==0 & penalize_bsp==0){ 
+      reg = NULL 
+    }else if(penalize_bsp==0){
+      
       reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[mono_layer_ind]], k_dot(
         # tf$constant(
-        sparse_mat_to_tensor(as(kronecker(bigP, diag(rep(1, ncol(input_theta_y)[[1]]))),
+        sparse_mat_to_tensor(as(kronecker(diag(rep(1, ncol(input_theta_y)[[1]])),bigP),
                                 "CsparseMatrix")),
         # dtype = "float32"),
         model$trainable_weights[[mono_layer_ind]]),
         axes=2) # 1-based
       )
+      
+    }else if(length(bigP@x)==0)
+    {
+      
+      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[mono_layer_ind]], k_dot(
+        # tf$constant(
+        sparse_mat_to_tensor(as(kronecker(penalize_bsp*bspP, diag(rep(1, ncol(interact_pred)[[1]]))),
+                                "CsparseMatrix")),
+        # dtype = "float32"),
+        model$trainable_weights[[mono_layer_ind]]),
+        axes=2) # 1-based
+      )
+      
+    }else{
+      
+      reg = function(x) k_mean(k_batch_dot(model$trainable_weights[[mono_layer_ind]], k_dot(
+        # tf$constant(
+        sparse_mat_to_tensor(as(kronecker(penalize_bsp*bspP, diag(rep(1, ncol(interact_pred)[[1]])))
+                                + kronecker(diag(rep(1, ncol(input_theta_y)[[1]])),bigP), "CsparseMatrix")),
+        # dtype = "float32"),
+        model$trainable_weights[[mono_layer_ind]]),
+        axes=2) # 1-based
+      )
+      
+    }
+    
+    if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
+      
+      reg2 = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[mono_layer_ind]])
+      
+    }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
+      
+      reg2 = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[mono_layer_ind]])
+      
+      
+    }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
+      
+      reg2 = function(x) tf$keras$regularizers$l1_l2(
+        l1=lambda_lasso,
+        l2=lambda_ridge)(model$trainable_weights[[mono_layer_ind]])
+      
+    }else{
+      
+      reg2 = NULL
+      
+    }
     
   }
   
   # add penalization
   if(!is.null(reg)) model$add_loss(reg)
+  # add additional l1 or l2
+  if(!is.null(reg2)) model$add_loss(reg2)
   
   model %>% compile(
     optimizer = optimizer, 
