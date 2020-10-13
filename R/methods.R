@@ -999,6 +999,8 @@ log_score <- function(
     newdata_processed <- prepare_data(x, data, pred=TRUE)
     if(is_trafo){
       if(missing(this_y)) stop("Must provide this_y for transformation models and new data.")
+      if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
+        newdata_processed <- newdata_processed[[1]]
       newdata_processed <- list(unname(
         lapply(c(newdata_processed,
                  list(x$init_params$y_basis_fun(this_y)),
