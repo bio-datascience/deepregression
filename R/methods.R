@@ -957,6 +957,8 @@ get_distribution <- function(
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
     newdata_processed <- prepare_data(x, data, pred=TRUE)
+    if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
+      newdata_processed <- newdata_processed[[1]]
     disthat <- x$model(newdata_processed)
   }
   return(disthat)
