@@ -338,7 +338,9 @@ deepregression <- function(
     # ensure positivity of interaction
     parsed_formulae_contents[[2]] <- correct_min_val(parsed_formulae_contents[[2]], 
                                                      addconst_interaction)
-    addconst_interaction <- attr(parsed_formulae_contents[[2]], "minval")
+    if(is.null(attr(parsed_formulae_contents[[2]], "minval")))
+      addconst_interaction <- NULL else
+        addconst_interaction <- attr(parsed_formulae_contents[[2]], "minval")
     # if(minval<0) y <- y - minval
   }
 

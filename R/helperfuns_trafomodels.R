@@ -226,6 +226,8 @@ correct_min_val <- function(pcf, addconst = 10)
     
   }
   
+  if(minval==Inf) return(pcf)
+  
   attr(pcf,"minval") <- minval
     
   return(pcf)
