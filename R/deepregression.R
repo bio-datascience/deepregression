@@ -1438,6 +1438,8 @@ deeptransformation_init <- function(
       
     }
     
+    reg2 = NULL
+    
   }else{
     
     if(penalize_bsp)
