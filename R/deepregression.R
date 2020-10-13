@@ -331,7 +331,8 @@ deepregression <- function(
   parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,  
                                      zero_cons = zero_constraint_for_smooths)
   
-  if(zero_constraint_for_smooths) attr(parsed_formulae_contents,"zero_cons") <- TRUE
+  attr(parsed_formulae_contents,"zero_cons") <- zero_constraint_for_smooths
+    
   
   if(family=="transformation_model" & !is.null(addconst_interaction)){   
     # ensure positivity of interaction
