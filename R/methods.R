@@ -229,22 +229,22 @@ plot.deeptrafo <- function(
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
           
-          if(!plot)
-            return(list(df = df,
-                        design_mat = pmat,
-                        coef = phi[this_ind_this_w,],
-                        pred = pred))
-          
-          filled.contour(
-            this_x,
-            this_y,
-            matrix(pred, ncol=length(this_y)),
-            ...,
-            xlab = colnames(df)[1],
-            ylab = colnames(df)[2],
-            # zlab = "partial effect",
-            main = sTerm$label
-          )
+          plotData[[w]] <- list(df = df,
+                                design_mat = pmat,
+                                coef = phi[this_ind_this_w,],
+                                pred = pred)
+
+          if(plot)
+            filled.contour(
+              this_x,
+              this_y,
+              matrix(pred, ncol=length(this_y)),
+              ...,
+              xlab = colnames(df)[1],
+              ylab = colnames(df)[2],
+              # zlab = "partial effect",
+              main = sTerm$label
+            )
           # warning("Plotting of effects with ", nrcols, " 
           #         covariate inputs not supported yet.")
         }else if(nrcols==3){
@@ -268,11 +268,11 @@ plot.deeptrafo <- function(
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
           
-          return(list(df = df,
-                      design_mat = pmat,
-                      coef = phi[this_ind_this_w,],
-                      pred = pred))
-          
+          plotData[[w]] <- list(df = df,
+                                design_mat = pmat,
+                                coef = phi[this_ind_this_w,],
+                                pred = pred)
+
         }else{
           warning("Plotting of effects with ", nrcols, 
                   " covariate inputs not supported.")
