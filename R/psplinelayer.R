@@ -211,6 +211,7 @@ layer_spline <- function(object,
                          posterior_fun = NULL,
                          diffuse_scale = 1000,
                          output_dim = 1L,
+                         k_summary = k_sum,
                          ...) {
   
   if(variational){
@@ -225,7 +226,7 @@ layer_spline <- function(object,
   if(sum(lambdas)==0 | variational)
     regul <- NULL else
       regul <- function(x)
-        k_sum(k_batch_dot(x, k_dot(
+        k_summary(k_batch_dot(x, k_dot(
           # tf$constant(
           sparse_mat_to_tensor(bigP),
           # dtype = "float32"),
@@ -309,7 +310,7 @@ layer_spline <- function(object,
 #### get layer based on smoothCon object
 get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                               posterior_fun=NULL, trafo=FALSE, #, prior_fun=NULL
-                              output_dim = 1
+                              output_dim = 1, k_summary = k_sum
                               )
 {
 
@@ -383,6 +384,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                Ps = Ps,
                variational = variational,
                posterior_fun = posterior_fun,
-               output_dim = output_dim)
+               output_dim = output_dim,
+               k_summary = k_summary)
 
 }

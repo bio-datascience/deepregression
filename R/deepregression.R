@@ -104,6 +104,8 @@
 #' in the interaction term.
 #' @param additional_penalty a penalty that is added to the negative log-likelihood; must be 
 #' a \code{function(x)}, where \code{x} is actually not used and
+#' @param penalty_summary keras function; summary function for the penalty in the spline layer;
+#' default is \code{k_sum}. Another option could be \code{k_mean}.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -192,7 +194,7 @@ deepregression <- function(
   orthog_type = c("tf", "manual"),
   orthogonalize = TRUE,
   hat1 = FALSE,
-  sp_scale = 1,
+  sp_scale = NROW(y),
   order_bsp = NULL,
   y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, 
@@ -200,6 +202,7 @@ deepregression <- function(
   split_between_shift_and_theta = NULL,
   addconst_interaction = NULL,
   additional_penalty = NULL,
+  penalty_summary = k_sum,
   # compress = TRUE,
   ...
 )
@@ -370,7 +373,8 @@ deepregression <- function(
                       output_dim = output_dim,
                       trafo = 
                         (family == "transformation_model" & 
-                           i == 2)
+                           i == 2),
+                      k_summary = penalty_summary
                       # prior_fun = prior_fun
     ))
   
