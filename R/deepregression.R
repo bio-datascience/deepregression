@@ -1452,6 +1452,12 @@ deeptransformation_init <- function(
     if(penalize_bsp)
       bspP <- secondOrderPenBSP(order_bsp, order_diff = order_bsp_penalty)
     bigP <- list_structured[[2]]
+    if(!is.null(deep_part_ia))
+    {
+      
+      bigP <- bdiag(list(bigP, diag(rep(1, ncol(deep_part_ia)[[1]]))))
+      
+    }
     if(length(bigP@x)==0 & penalize_bsp==0){ 
       reg = NULL 
     }else if(penalize_bsp==0){
