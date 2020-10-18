@@ -29,10 +29,10 @@
 #' either one common value or a list of the same length as number of parameters and
 #' each list item a vector of the same length as number of smooth terms in the 
 #' respective formula
-#' @param lambda_lasso smoothing parameter for lasso regression; 
-#' can be combined with ridge
-#' @param lambda_ridge smoothing parameter for ridge regression; 
-#' can be combined with lasso
+#' @param lambda_lasso scalar value or list of \code{length(list_of_formulae)};
+#' smoothing parameter for lasso regression; can be combined with ridge
+#' @param lambda_ridge scalar value or list of \code{length(list_of_formulae)};
+#' smoothing parameter for ridge regression; can be combined with lasso
 #' @param defaultSmoothing function applied to all s-terms, per default (NULL)
 #' the minimum df of all possible terms is used.
 #' @param cv_folds a list of lists, each list element has two elements, one for
@@ -282,7 +282,8 @@ deepregression <- function(
     list_of_formulae <- list_of_formulae[1:nrparams_dist]
   }
   # check list of formulae is always one-sided
-  if(any(sapply(list_of_formulae, function(x) attr( terms(x) , "response" ) != 0 ))){
+  if(any(sapply(list_of_formulae, function(x) 
+    attr( terms(x, data = data) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
   # check orthog type
@@ -642,7 +643,8 @@ deepregression_init <- function(
   ind_fun = function(x) x,
   extend_output_dim = 0,
   offset = NULL,
-  additional_penalty = NULL
+  additional_penalty = NULL,
+  constraint_fun = NULL
 )
 {
   
@@ -732,6 +734,13 @@ deepregression_init <- function(
     output_dim <- rep(output_dim, length(inputs_struct))
   }
   
+  if(!is.null(lambda_ridge) && !is.list(lambda_ridge)) 
+    lambda_ridge <- as.list(rep(lambda_ridge, length(inputs_struct)))
+  if(!is.null(lambda_lasso) && !is.list(lambda_lasso)) 
+    lambda_lasso <- as.list(rep(lambda_lasso, length(inputs_struct)))
+  if(!is.list(constraint_fun))
+    constraint_fun <- list(constraint_fun)[rep(1, length(inputs_struct))]
+  
   # define structured predictor
   structured_parts <- lapply(1:length(inputs_struct),
                              function(i){
@@ -741,37 +750,43 @@ deepregression_init <- function(
                                }else{
                                  if(is.null(list_structured[[i]]))
                                  {
-                                   if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
-                                     l1 = tf$keras$regularizers$l1(l=lambda_lasso)
+                                   if(!is.null(lambda_lasso[[i]]) & 
+                                      is.null(lambda_ridge[[i]])){
+                                     l1 = tf$keras$regularizers$l1(l=lambda_lasso[[i]])
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
                                                 units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l1,
+                                                kernel_constraint = constraint_fun[[i]],
                                                 name = paste0("structured_lasso_",
                                                               i))
                                      )
-                                   }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
-                                     l2 = tf$keras$regularizers$l2(l=lambda_ridge)
+                                   }else if(!is.null(lambda_ridge[[i]]) & 
+                                            is.null(lambda_lasso[[i]])){ 
+                                     l2 = tf$keras$regularizers$l2(l=lambda_ridge[[i]])
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
                                                 units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l2,
+                                                kernel_constraint = constraint_fun[[i]],
                                                 name = paste0("structured_ridge_",
                                                               i))
                                      )
-                                   }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){
-                                     l12 = tf$keras$regularizers$l1_l2(l1=lambda_lasso,
-                                                                       l2=lambda_ridge)
+                                   }else if(!is.null(lambda_ridge[[i]]) & 
+                                            !is.null(lambda_lasso[[i]])){
+                                     l12 = tf$keras$regularizers$l1_l2(l1=lambda_lasso[[i]],
+                                                                       l2=lambda_ridge[[i]])
                                      return(inputs_struct[[i]] %>%
                                               dense_layer(
                                                 units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
                                                 kernel_regularizer = l12,
+                                                kernel_constraint = constraint_fun[[i]],
                                                 name = paste0("structured_elastnet_",
                                                               i))
                                      )
@@ -781,6 +796,7 @@ deepregression_init <- function(
                                                 units = as.integer(output_dim[i]), 
                                                 activation = "linear",
                                                 use_bias = use_bias_in_structured,
+                                                kernel_constraint = constraint_fun[[i]],
                                                 name = paste0("structured_linear_",
                                                               i))
                                      )
@@ -1426,11 +1442,15 @@ deeptransformation_init <- function(
   {
     if(!is.null(lambda_lasso) & is.null(lambda_ridge)){
       
-      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(model$trainable_weights[[mono_layer_ind]])
+      reg = function(x) tf$keras$regularizers$l1(l=lambda_lasso)(
+        model$trainable_weights[[mono_layer_ind]]
+        )
       
     }else if(!is.null(lambda_ridge) & is.null(lambda_lasso)){ 
       
-      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(model$trainable_weights[[mono_layer_ind]])
+      reg = function(x) tf$keras$regularizers$l2(l=lambda_ridge)(
+        model$trainable_weights[[mono_layer_ind]]
+        )
       
       
     }else if(!is.null(lambda_ridge) & !is.null(lambda_lasso)){

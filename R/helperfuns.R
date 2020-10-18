@@ -169,7 +169,7 @@ get_contents <- function(lf, data, df,
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
-  tf <- terms.formula(lf, specials=specials)
+  tf <- terms.formula(lf, specials=specials, data=data)
   
   if(length(attr(tf, "term.labels"))==0){
     if(intercept & attr(tf,"intercept")){
