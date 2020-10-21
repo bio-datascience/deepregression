@@ -22,8 +22,15 @@ jobs:
         run: |
           install.packages(c("remotes", "rcmdcheck"))
           remotes::install_deps(dependencies = TRUE)
-          keras::install_keras(tensorflow = "2.0", extra_packages = c("tfprobability==0.8", "six"))
+          reticulate::install_miniconda(update = TRUE)
+        shell: Rscript {0}
+      - name: Install dependencies II
+        run: |
+          conda update -n base -c defaults conda
+      - name: Install dependencies III
+        run: |
+          keras::install_keras(method = "conda", tensorflow = "2.0", extra_packages = c("tfprobability==0.8", "six"))
         shell: Rscript {0}
       - name: Check
-        run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
+        run: rcmdcheck::rcmdcheck(args = "--no-manual --as-cran --no-build-vignettes", error_on = "error")
         shell: Rscript {0}
