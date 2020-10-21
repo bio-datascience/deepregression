@@ -129,8 +129,12 @@ the via the ellipsis to the initialization function
 
 \item{seed}{integer value used as a seed in data splitting}
 
-\item{mixture_dist}{integer either 0 or >= 2. If 0 (default),
-no mixture distribution is fitted. If >= 2, a network is constructed that outputs
+
+\item{tf_seed}{a seed for tensorflow (only works with R version >= 2.2.0)}
+
+\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), 
+no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
+
 a multivariate response for each of the mixture components.}
 
 \item{split_fun}{a function separating the deep neural network in two parts
@@ -190,14 +194,14 @@ a conditional transformation model (CTM) is fitted.}
 to define how many of the last layer's hidden units are used for the shift
 term and how many for the theta term (an integer vector of length 2).}
 
-\item{addconst_interaction}{positive constant;
+\item{addconst_interaction}{positive constant; 
 a constant added to the additive predictor of the interaction term.
 If \code{NULL}, terms are left unchanged. If 0 and predictors have negative values in their
-design matrix, the minimum value of all predictors is added to ensure positivity.
+design matrix, the minimum value of all predictors is added to ensure positivity. 
 If > 0, the minimum value plus the \code{addconst_interaction} is added to each predictor
 in the interaction term.}
 
-\item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be
+\item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be 
 a \code{function(x)}, where \code{x} is actually not used and}
 
 \item{penalty_summary}{keras function; summary function for the penalty in the spline layer;
@@ -225,7 +229,7 @@ y <- rnorm(100)
 
 mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
-list_of_deep_models = list(deep_model = deep_model))
+list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
 
 if(!is.null(mod)){
    mod \%>\% fit(epochs = 100)

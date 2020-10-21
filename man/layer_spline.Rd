@@ -51,6 +51,8 @@ and posteriors as defined in \code{posterior_fun} are created}
 
 \item{output_dim}{the number of units for the layer}
 
+\item{k_summary}{keras function for the penalty (see \code{?deepregression} for details)}
+
 \item{...}{further arguments passed to \code{args} used in \code{create_layer}}
 }
 \description{

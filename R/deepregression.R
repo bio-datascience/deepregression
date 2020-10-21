@@ -57,8 +57,9 @@
 #' @param prior_fun function defining the prior function for the variational
 #' verison of the network
 #' @param seed integer value used as a seed in data splitting
-#' @param mixture_dist integer either 0 or >= 2. If 0 (default),
-#' no mixture distribution is fitted. If >= 2, a network is constructed that outputs
+#' @param tf_seed a seed for tensorflow (only works with R version >= 2.2.0)
+#' @param mixture_dist integer either 0 or >= 2. If 0 (default), 
+#' no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
 #' a multivariate response for each of the mixture components.
 #' @param split_fun a function separating the deep neural network in two parts
 #' so that the orthogonalization can be applied to the first part before
@@ -136,8 +137,8 @@
 #'
 #' mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 #' data = data, validation_data = list(data, y), y = y,
-#' list_of_deep_models = list(deep_model = deep_model))
-#'
+#' list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
+#' 
 #' if(!is.null(mod)){
 #'    mod %>% fit(epochs = 100)
 #'    mod %>% plot()
@@ -207,6 +208,10 @@ deepregression <- function(
   ...
 )
 {
+  
+  # TF seed -> does not work atm
+  if(!is.null(tf_seed))
+    try(tensorflow:::use_session_with_seed(tf_seed), silent = TRUE)
 
   # first check if an env is available
   if(!reticulate::py_available())
@@ -452,10 +457,6 @@ deepregression <- function(
   if(orthog_type == "tf")
     orthog_fun <- orthog_tf else orthog_fun <- orthog
 
-  # TF seed -> does not work atm
-  # if(!is.null(tf_seed))
-  #   try(tensorflow:::use_session_with_seed(tf_seed), silent = TRUE)
-
   # check if transformation models
 
   if(family=="transformation_model"){
@@ -609,10 +610,10 @@ deepregression <- function(
 #' @param additional_penalty to specify any additional penalty, provide a function
 #' that takes the \code{model$trainable_weights} as input and applies the
 #' additional penalty. In order to get the correct index for the trainable
-#' weights, you can run the model once and check its structure.
-#'
-#' @export
-#'
+#' weights, you can run the model once and check its structure. 
+#' @param constraint_fun function; a constraint for the linear layers
+#' 
+#' @export 
 deepregression_init <- function(
   n_obs,
   ncol_structured,
