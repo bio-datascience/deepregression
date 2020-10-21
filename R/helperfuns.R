@@ -647,9 +647,13 @@ get_indices <- function(x)
         if(is.null(y[[1]]$margin) & y[[1]]$by=="NA") 
           return(ncol(y[[1]]$X)) else if(
             is.null(y[[1]]$margin) & y[[1]]$by!="NA")
-            return(sapply(y, "[[", "bs.dim")) else
+            return(sapply(y, "[[", "bs.dim")) else{
               # Tensorprod
-              return(prod(sapply(y[[1]]$margin,"[[", "bs.dim")))
+              res <- prod(sapply(y[[1]]$margin,"[[", "bs.dim"))
+              # check z2s constraint
+              if(!is.null(y[[1]]$X) && NCOL(y[[1]]$X)==res-1)
+                return(res-1) else return(res)
+            }
       })) else bsdims <- c()
       ind <- if(ncollin > 0) seq(1, ncollin, by = 1) else c()
       end <- if(ncollin > 0) ind else c()
