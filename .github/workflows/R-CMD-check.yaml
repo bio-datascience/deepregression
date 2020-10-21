@@ -22,6 +22,7 @@ jobs:
         run: |
           install.packages(c("remotes", "rcmdcheck"))
           remotes::install_deps(dependencies = TRUE)
+          keras::install_keras(tensorflow = "2.0", extra_packages = c("tfprobability==0.8", "six"))
         shell: Rscript {0}
       - name: Check
         run: rcmdcheck::rcmdcheck(args = "--no-manual", error_on = "error")
