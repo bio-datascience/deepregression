@@ -29,6 +29,7 @@ deepregression(
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991 - 5 - 4,
+  tf_seed = NULL,
   mixture_dist = 0,
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
@@ -43,13 +44,15 @@ deepregression(
   orthog_type = c("tf", "manual"),
   orthogonalize = TRUE,
   hat1 = FALSE,
-  sp_scale = 1,
+  sp_scale = NROW(y),
   order_bsp = NULL,
   y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, supp =
     range(y))/diff(range(y)),
   split_between_shift_and_theta = NULL,
+  addconst_interaction = NULL,
   additional_penalty = NULL,
+  penalty_summary = k_sum,
   ...
 )
 }
@@ -90,11 +93,11 @@ either one common value or a list of the same length as number of parameters and
 each list item a vector of the same length as number of smooth terms in the 
 respective formula}
 
-\item{lambda_lasso}{smoothing parameter for lasso regression; 
-can be combined with ridge}
+\item{lambda_lasso}{scalar value or list of \code{length(list_of_formulae)};
+smoothing parameter for lasso regression; can be combined with ridge}
 
-\item{lambda_ridge}{smoothing parameter for ridge regression; 
-can be combined with lasso}
+\item{lambda_ridge}{scalar value or list of \code{length(list_of_formulae)};
+smoothing parameter for ridge regression; can be combined with lasso}
 
 \item{defaultSmoothing}{function applied to all s-terms, per default (NULL)
 the minimum df of all possible terms is used.}
@@ -125,6 +128,8 @@ the via the ellipsis to the initialization function
 \item{monitor_metric}{Further metrics to monitor}
 
 \item{seed}{integer value used as a seed in data splitting}
+
+\item{tf_seed}{a seed for tensorflow (only works with R version >= 2.2.0)}
 
 \item{mixture_dist}{integer either 0 or >= 2. If 0 (default), 
 no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
@@ -187,8 +192,18 @@ a conditional transformation model (CTM) is fitted.}
 to define how many of the last layer's hidden units are used for the shift
 term and how many for the theta term (an integer vector of length 2).}
 
+\item{addconst_interaction}{positive constant; 
+a constant added to the additive predictor of the interaction term.
+If \code{NULL}, terms are left unchanged. If 0 and predictors have negative values in their
+design matrix, the minimum value of all predictors is added to ensure positivity. 
+If > 0, the minimum value plus the \code{addconst_interaction} is added to each predictor
+in the interaction term.}
+
 \item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be 
 a \code{function(x)}, where \code{x} is actually not used and}
+
+\item{penalty_summary}{keras function; summary function for the penalty in the spline layer;
+default is \code{k_sum}. Another option could be \code{k_mean}.}
 
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }
@@ -212,7 +227,7 @@ y <- rnorm(100)
 
 mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
-list_of_deep_models = list(deep_model = deep_model))
+list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
 
 if(!is.null(mod)){
    mod \%>\% fit(epochs = 100)

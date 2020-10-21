@@ -34,7 +34,8 @@ deepregression_init(
   ind_fun = function(x) x,
   extend_output_dim = 0,
   offset = NULL,
-  additional_penalty = NULL
+  additional_penalty = NULL,
+  constraint_fun = NULL
 )
 }
 \arguments{
@@ -117,6 +118,8 @@ defines per parameter if an offset should be added to the predictor}
 that takes the \code{model$trainable_weights} as input and applies the
 additional penalty. In order to get the correct index for the trainable
 weights, you can run the model once and check its structure.}
+
+\item{constraint_fun}{function; a constraint for the linear layers}
 }
 \description{
 Initializing Deep Distributional Regression Models

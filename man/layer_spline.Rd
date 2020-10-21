@@ -17,6 +17,8 @@ layer_spline(
   variational = FALSE,
   posterior_fun = NULL,
   diffuse_scale = 1000,
+  output_dim = 1L,
+  k_summary = k_sum,
   ...
 )
 }
@@ -46,6 +48,10 @@ and posteriors as defined in \code{posterior_fun} are created}
 \item{posterior_fun}{function defining the variational posterior}
 
 \item{diffuse_scale}{diffuse scale prior for scalar weights}
+
+\item{output_dim}{the number of units for the layer}
+
+\item{k_summary}{keras function for the penalty (see \code{?deepregression} for details)}
 
 \item{...}{further arguments passed to \code{args} used in \code{create_layer}}
 }

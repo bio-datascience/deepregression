@@ -35,7 +35,7 @@ prepare_data(x, data, pred = TRUE)
   ...
 )
 
-\method{predict}{deeptrafo}(object, newdata = NULL, ...)
+\method{predict}{deeptrafo}(object, newdata = NULL, which = NULL, ...)
 
 \method{fitted}{deepregression}(object, apply_fun = tfd_mean, ...)
 
@@ -142,8 +142,8 @@ that coefficients have both a mean and a variance}
 }
 \value{
 returns a function with two parameters: the actual response
-and \code{type} in \code{c('trafo', 'pdf', 'cdf')} determining the
-returned value
+and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')} 
+determining the returned value
 
 Returns an object \code{drCV}, a list, one list element for each fold
 containing the model fit and the \code{weighthistory}.
