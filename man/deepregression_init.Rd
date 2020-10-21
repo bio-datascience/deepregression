@@ -34,7 +34,8 @@ deepregression_init(
   ind_fun = function(x) x,
   extend_output_dim = 0,
   offset = NULL,
-  additional_penalty = NULL
+  additional_penalty = NULL,
+  constraint_fun = NULL
 )
 }
 \arguments{
@@ -63,7 +64,7 @@ structured layer}
 
 \item{nr_params}{number of distribution parameters}
 
-\item{lss}{whether or not to model the whole distribution 
+\item{lss}{whether or not to model the whole distribution
 (lss in the style of location, scale and shape approaches)}
 
 \item{train_together}{see \code{?deepregression}}

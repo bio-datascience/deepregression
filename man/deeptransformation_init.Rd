@@ -22,7 +22,11 @@ deeptransformation_init(
   order_bsp,
   use_bias_in_structured = FALSE,
   train_together = NULL,
-  split_between_shift_and_theta = NULL
+  split_between_shift_and_theta = NULL,
+  interact_pred_trafo = NULL,
+  addconst_interaction = NULL,
+  penalize_bsp = 0,
+  order_bsp_penalty = 2
 )
 }
 \arguments{
@@ -64,7 +68,7 @@ non-zero while the others must be zero.}
 
 \item{split_fun}{see \code{?deepregression}}
 
-\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL, 
+\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL,
 a conditional transformation model (CTM) is fitted.}
 
 \item{use_bias_in_structured}{whether or not to use a bias in structured
@@ -73,6 +77,18 @@ layers}
 \item{train_together}{see \code{?deepregression}}
 
 \item{split_between_shift_and_theta}{see \code{?deepregression}}
+
+\item{interact_pred_trafo}{specifies a transformation function applied
+to the interaction predictor using a layer lambda (e.g. to ensure positivity)}
+
+\item{addconst_interaction}{additive constant added to predictor matrix to
+ensure positivity}
+
+\item{penalize_bsp}{scalar value > 0; amount of penalization of Bernstein polynomials}
+
+\item{order_bsp_penalty}{integer; order of Bernstein polynomial penalty. 0 results in a
+penalty based on integrated squared second order derivatives, values >= 1 in difference
+penalties}
 }
 \description{
 Initializing Deep Transformation Models

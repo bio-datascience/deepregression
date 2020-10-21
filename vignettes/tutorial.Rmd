@@ -1,5 +1,5 @@
 ---
-title: 
+title:
 author: "David Ruegamer"
 date: "9/15/2020"
 output: rmarkdown::github_document
@@ -69,7 +69,7 @@ if(!require(distr)) install.packages("distr")
     d. [Unstructured Data Examples](#unstructured-data-examples)
         i. [MNIST Pictures with Multinomial Response](#mnist-multinomial)
         ii. [Sentiment Analysis using IMDB Reviews](#text-as-input)
-    
+
 
 ## Introduction
 
@@ -81,23 +81,23 @@ As in many deep learning (DL) implementations, fitting a model (a network) is a 
 
 ```{r, eval = FALSE}
 mod <- deepregression(
-  
+
   # supply the response; usually a vector
-  y = y, 
-  
+  y = y,
+
   # supply the data; a data.frame or list
-  data = data, 
-  
+  data = data,
+
   # specify the distribution to be learned
   family = "gumbel"
-  
+
   # specify a list of formulas, each corresponding to one parameter
   # of the defined distribution (details later)
-  list_of_formulae = list( # 
+  list_of_formulae = list( #
     param1 = ~ 1 + s(x, bs = "tp") + my_deep_mod(x)
     param2 = ~ 0 + x + my_deep_mod2(z)
       ),
-  
+
   # define a list of DNNs, with list names corresponding
   # to the names given in the formula (details later)
   list_of_deep_models = list(my_deep_mod = some_function,
@@ -110,18 +110,18 @@ Once the model `mod` has been set up, we can train the neural network using the 
 
 ```{r, eval = FALSE}
 mod %>% fit(
-  
+
   # number of iterations to train the network
-  epochs = 1000, 
-  
+  epochs = 1000,
+
   # should progress be printed in the console
-  verbose = FALSE, 
-  
+  verbose = FALSE,
+
   # in RStudio you can get a visualization
   # of the training process using TRUE for
   # this option
   view_metrics = FALSE
-  
+
   )
 ```
 
@@ -135,16 +135,16 @@ The `family` argument is used to specify the family that is learned. Possible ch
 
 ```{r, eval = FALSE}
 possible_families = c(
-  
+
   "normal", "bernoulli", "bernoulli_prob", "beta", "betar",
   "cauchy", "chi2", "chi","exponential", "gamma_gamma",
-  "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", 
-  "horseshoe", "inverse_gamma", "inverse_gaussian", "laplace", 
-  "log_normal", "logistic", "multinomial", "multinoulli", 
+  "gamma", "gammar", "gumbel", "half_cauchy", "half_normal",
+  "horseshoe", "inverse_gamma", "inverse_gaussian", "laplace",
+  "log_normal", "logistic", "multinomial", "multinoulli",
   "negbinom", "pareto", "poisson", "poisson_lograte", "student_t",
   "student_t_ls", "truncated_normal", "uniform", "zip",
   "transformation_model"
-  
+
 )
 ```
 
@@ -175,18 +175,18 @@ The DNNs specified in the `list_of_formulae` must also be passed as named list e
 ```{r, eval = FALSE}
 function_for_ws <- function(x)
 {
-  
+
   # this specifies a two hidden-layer DNN with dropouts between each layer
-  
+
   # not that you do not need to specify several arguments
   # this is done automatically
-  x %>% 
+  x %>%
     layer_dense(units = 24, activation = "relu", use_bias = FALSE) %>%
     layer_dropout(rate = 0.2) %>%
     layer_dense(units = 12, activation = "relu") %>%
     layer_dropout(rate = 0.2) %>%
     layer_dense(units = 1, activation = "linear")
-  
+
 }
 ```
 
@@ -229,7 +229,7 @@ The `predict` function works as for other (keras) models. It either just takes t
 
 ### get_distribution
 
-Instead of returning summary statistics, the function `get_distribution` returns the whole TensorFlow distribution with all its functionalities, such as sampling, computing the PDF or CDF, etc. 
+Instead of returning summary statistics, the function `get_distribution` returns the whole TensorFlow distribution with all its functionalities, such as sampling, computing the PDF or CDF, etc.
 
 ### log_score
 
@@ -243,7 +243,7 @@ Instead of returning summary statistics, the function `get_distribution` returns
 
 Apart from specifying the smoothing penalties in each smooth term in the formulas (see `mgcv::s` for more details), two further options are available in `deepregression`. The first option is to use a single degrees-of-freedom specification using the argument `df` in`deepregression`. Using the Demmler-Reinsch Orhtogonalization, all smoothing parameters are then calculated based on this specification (e.g., setting `df = 5` results in `sp = 1.234` for one smooth, but `sp = 133.7` for another smooth due to their different nature and data). This ensures that no smooth term has more flexibility than the other term which makes sense in certain situations. If `df` is left unspecified, the default is used which is the smallest basis dimension among all smooths (leaving the least flexible smooth unpenalized while the others are penalized to have the same degrees-of-freedom as this one). The second option in `deepregression` is to specify a list of length `length(list_of_formulae)`. This not only allows to specify different `df` for each distribution parameter, but also to specify different `df` for each smooth term in each formula by providing a vector of the same length as the number of smooths in the parameter's formula.
 
-For expert usage: The definition of the degrees-of-freedom can be changed using the `hat1` argument. When set to `TRUE` (default is `FALSE` yielding the usual definition of the effective degrees-of-freedom), the `df` are assumed to be the sum of the hat matrix of the corresponding smooth term. In certain situations it is also necessary to scale the penalty. This can be done using the argument `sp_scale`, which `1` per default. 
+For expert usage: The definition of the degrees-of-freedom can be changed using the `hat1` argument. When set to `TRUE` (default is `FALSE` yielding the usual definition of the effective degrees-of-freedom), the `df` are assumed to be the sum of the hat matrix of the corresponding smooth term. In certain situations it is also necessary to scale the penalty. This can be done using the argument `sp_scale`, which `1` per default.
 
 ## Neural Network Settings
 
@@ -258,7 +258,7 @@ In addition to what was introduced in the Section [Specification of the DNNs](#s
 lstm_mod <- function(x) x %>%
     layer_embedding(input_dim = tokenizer$num_words,
                     output_dim = embedding_size) %>%
-    layer_flatten() %>% 
+    layer_flatten() %>%
     layer_dense(2) # note the number of output units
 # must be equal to the number of parameters learned
 
@@ -267,20 +267,20 @@ form_lists <- list(
     mean = ~ 1 + s(xa) + s(xb),
     scale = ~ 1 + s(xc)
   )
-  
+
 
 # shared network list (of the same length as form_lists)
 tt_list <- list( ~ lstm_mod(texts))[rep(1,2)]
-  
+
 mod <- deepregression(y = data$y,
                       list_of_formulae = form_lists,
-                      list_of_deep_models = 
-                        list(lstm_mod = lstm_mod), 
-                      family = "normal", 
+                      list_of_deep_models =
+                        list(lstm_mod = lstm_mod),
+                      family = "normal",
                       train_together = tt_list,
-                      data = list(xa = xa, # these could be vectors 
+                      data = list(xa = xa, # these could be vectors
                                   xb = xb,
-                                  xc = xc, 
+                                  xc = xc,
                                   # and texts is typically matrix
                                   # based on tokenization of the
                                   # text sequence
@@ -389,13 +389,15 @@ would orthogonalize the network in the same way as in the previous [Orthogonaliz
 We first create a very simple regression where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
 
 ```{r, cache = TRUE}
+tensorflow:::use_session_with_seed(1)
+
 set.seed(24)
 
 # generate the data
 n <- 1500
 b0 <- 1
 
-# training data; predictor 
+# training data; predictor
 x <- runif(n) %>% as.matrix()
 true_mean_fun <- function(xx) sin(10*xx) + b0
 
@@ -415,13 +417,13 @@ y_test <- true_mean_fun(x_test) + rnorm(n = n, sd = 2)
 #####################################################################
 # Define a Deep Model
 # We use three hidden layers for the location:
-deep_model <- function(x) x %>% 
+deep_model <- function(x) x %>%
   layer_dense(units = 256, activation = "relu", use_bias = FALSE) %>%
   layer_dense(units = 128, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 64, activation = "relu") %>% 
+  layer_dense(units = 64, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 16, activation = "relu") %>% 
+  layer_dense(units = 16, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 #####################################################################
 
@@ -437,7 +439,7 @@ mod <- deepregression(
   list_of_deep_models = list(d = deep_model)
 )
 # fit model (only do a few iterations for demonstration)
-mod %>% fit(epochs=100, verbose = FALSE, view_metrics = FALSE)
+mod %>% fit(epochs=100L, verbose = FALSE, view_metrics = FALSE)
 # predict
 mean <- mod %>% fitted()
 true_mean <- true_mean_fun(x) - b0
@@ -461,7 +463,7 @@ set.seed(24)
 n <- 1500
 b0 <- 1
 
-# training data; predictor 
+# training data; predictor
 x <- runif(n) %>% as.matrix()
 true_mean_fun <- function(xx) plogis(sin(10*xx) + b0)
 
@@ -481,13 +483,13 @@ y_test <- rbinom(n = n, size = 1, prob = true_mean_fun(x_test))
 #####################################################################
 # Define a Deep Model
 # We use three hidden layers for the location:
-deep_model <- function(x) x %>% 
+deep_model <- function(x) x %>%
   layer_dense(units = 128, activation = "relu", use_bias = FALSE) %>%
   layer_dense(units = 64, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 32, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dense(units = 8, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 #####################################################################
 
@@ -517,10 +519,10 @@ library(ggplot2)
 library(reshape2)
 df <- melt(cbind(x=x, as.data.frame(f_history)), id.vars="x")
 df$variable = as.numeric(df$variable)
-ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))) + 
-  geom_line() + 
-  scale_colour_gradient(name = "epoch", 
-                        low = "blue", high = "red") + 
+ggplot(df, aes(x=x,y=value, colour=as.integer(variable), group=factor(variable))) +
+  geom_line() +
+  scale_colour_gradient(name = "epoch",
+                        low = "blue", high = "red") +
   ylab("partial effect s(x)") + theme_bw()
 # since we are usually only interested in the final result,
 # all you would have to do is plot(mod) to get the non-linear
@@ -545,8 +547,10 @@ cvres <- mod %>% cv(epochs=10, cv_folds = 2) # should be 100
 ```
 
 Set the stopping iteration to the CV optimal value (which in this case is not optimal at all) and train the whole model again:
+
 ```{r, cache = TRUE}
 bestiter <- stop_iter_cv_result(cvres)
+
 # fit model
 mod %>% fit(epochs=bestiter, verbose = FALSE, view_metrics = FALSE)
 # plot model
@@ -565,18 +569,18 @@ set.seed(24)
 n <- 1500
 b0 <- 1
 
-# training data; predictor 
+# training data; predictor
 x <- runif(n) %>% as.matrix()
 z <- runif(n) %>% as.matrix()
 true_mean_fun <- function(xx,zz) sin(10*xx) + zz^2 + b0
 true_sd_fun <- function(xl) exp(2 * xl)
 true_dgp_fun <- function(xx,zz)
 {
-  
+
   eps <- rnorm(n) * true_sd_fun(xx)
   y <- true_mean_fun(xx, zz) + eps
   return(y)
-  
+
 }
 
 # compose training data with heteroscedastic errors
@@ -595,13 +599,13 @@ y_test <- true_dgp_fun(x_test, z_test)
 #####################################################################
 # Define a Deep Model
 # We use three hidden layers for the location:
-deep_model <- function(x) x %>% 
+deep_model <- function(x) x %>%
   layer_dense(units = 128, activation = "relu", use_bias = FALSE) %>%
   layer_dense(units = 64, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 32, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dense(units = 8, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 #####################################################################
 
@@ -647,18 +651,18 @@ set.seed(24)
 n <- 1500
 b0 <- 1
 
-# training data; predictor 
+# training data; predictor
 x <- runif(n) %>% as.matrix()
 z <- runif(n) %>% as.matrix()
 true_mean_fun <- function(xx,zz) sin(10*xx) + zz^2 + b0
 true_sd_fun <- function(xl) exp(2 * xl)
 true_dgp_fun <- function(xx,zz)
 {
-  
+
   eps <- rnorm(n) * true_sd_fun(xx)
   y <- true_mean_fun(xx, zz) + eps
   return(y)
-  
+
 }
 
 # compose training data with heteroscedastic errors
@@ -677,13 +681,13 @@ y_test <- true_dgp_fun(x_test, z_test)
 #####################################################################
 # Define a Deep Model
 # We use three hidden layers for the location:
-deep_model <- function(x) x %>% 
+deep_model <- function(x) x %>%
   layer_dense(units = 128, activation = "relu", use_bias = FALSE) %>%
   layer_dense(units = 64, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 32, activation = "relu") %>% 
+  layer_dense(units = 32, activation = "relu") %>%
   layer_dropout(rate = 0.2) %>%
-  layer_dense(units = 8, activation = "relu") %>% 
+  layer_dense(units = 8, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 #####################################################################
 
@@ -718,7 +722,7 @@ An example how to fit an access the ZIP distribution. We first create data and a
 n <- 5000
 prob = 0.3
 lambda = 2
-  
+
 bino <- rbinom(n, size = 1, prob = prob)
 y <- 0 * bino + (1-bino) * rpois(n, lambda)
 data = data.frame(y=y, x = rnorm(n))
@@ -727,11 +731,11 @@ data = data.frame(y=y, x = rnorm(n))
 Now we fit the distribution and access the fitted parameters
 
 ```{r}
-mod <- deepregression(y, 
-                      list_of_formulae = list(rate = ~ 1 + x, 
+mod <- deepregression(y,
+                      list_of_formulae = list(rate = ~ 1 + x,
                                               prob = ~1),
                       data = data,
-                      list_of_deep_models = NULL, 
+                      list_of_deep_models = NULL,
                       family = "zip")
 # fit the model
 mod %>% fit(epochs = 50, view_metrics=FALSE, verbose=FALSE)
@@ -743,7 +747,6 @@ mydist <- mod %>% get_distribution()
 as.matrix(mydist$components[[0]]$rate + 0) %>% head()
 # probability for inflation / non-inflation
 as.array(mydist$cat$probs + 0)[,1,] %>% head()
-
 ```
 
 ## Real World Application
@@ -760,7 +763,7 @@ data$ID <- as.factor(data$ID)
 train <- data %>% dplyr::filter(YEAR < 6)
 test <- data %>% dplyr::filter(YEAR >= 6)
 
-deep_mod <- function(x) x %>% 
+deep_mod <- function(x) x %>%
   layer_dense(units = 5, activation = "relu", use_bias = FALSE) %>%
   layer_dense(units = 5, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
@@ -775,8 +778,8 @@ cv_folds <- list(#year1 = list(train = which(train$YEAR==1),
 
 # initialize model
 mod <- deepregression(y = train$LWAGE,
-                      data = train[,c(1:11, 14, 16)], 
-                      list_of_formulae = list(~ 1 + s(ID, bs="re") + 
+                      data = train[,c(1:11, 14, 16)],
+                      list_of_formulae = list(~ 1 + s(ID, bs="re") +
                                                 d(EXP, WKS, OCC, IND, SOUTH, YEAR,
                                                   SMSA, MS, FEM, UNION, ED, BLK),
                                               ~ 1),
@@ -792,6 +795,7 @@ pred <- mod %>% predict(test)
 
 mean((pred-test$LWAGE)^2)
 ```
+
 
 
 ### Mixture of Normal Distributions for Acidity Modeling
@@ -812,23 +816,21 @@ softmax <- function (x) {
   exp(x - logsumexp(x))
 }
 
-
-
-mod <- deepregression(acidity$y-mean(acidity$y), 
+mod <- deepregression(acidity$y-mean(acidity$y),
                       list_of_formulae = list(~ 1, #mixtures
                                               ~1, ~1, ~1, # means
                                               ~1, ~1, ~1 # sds
                       ),
                       data = acidity,
-                      list_of_deep_models = NULL, 
+                      list_of_deep_models = NULL,
                       mixture_dist = 3,
                       dist_fun = mix_dist_maker())
 
 
 # cvres <- mod %>% cv(epochs = 500, cv_folds = 5)
 bestiter <- 49 # stop_iter_cv_result(cvres)
-mod %>% fit(epochs = bestiter, 
-            validation_split = NULL, 
+mod %>% fit(epochs = bestiter,
+            validation_split = NULL,
             view_metrics = FALSE,
             verbose = FALSE)
 coefinput <- unlist(mod$model$get_weights())
@@ -843,7 +845,7 @@ mixDist <- UnivarMixingDistribution(Norm(means[1],stds[1]),
                                     Norm(means[3],stds[3]),
                                     mixCoeff=pis)
 
-plot(mixDist, to.draw.arg="d", ylim=c(0,1.4)) 
+plot(mixDist, to.draw.arg="d", ylim=c(0,1.4))
 with(acidity, hist(y-mean(y), breaks = 100, add=TRUE, freq = FALSE))
 ```
 
@@ -887,14 +889,14 @@ mod <- deepregression(y = y_train,
                       data = x_train,
                       family = "multinomial")
 
-# model does not need to have many epochs as 
+# model does not need to have many epochs as
 # the 0 is easily detected using some specific pixels
 cvres <- mod %>% fit(epochs = 10, validation_split = NULL, steps_per_epoch=1,
                      view_metrics = FALSE, verbose=FALSE)
 # currenty has some issues when using actual batch training,
 # see also: https://github.com/keras-team/keras/issues/11749
 pred <- mod %>% predict(x_test)
-table(data.frame(pred=apply(pred,1,which.max)-1, 
+table(data.frame(pred=apply(pred,1,which.max)-1,
                  truth=apply(y_test, 1, function(x) which(x==1))-1
                  )
       )
@@ -912,7 +914,7 @@ train_labels <- imdb$train$y
 test_data <- imdb$test$x
 test_labels <- imdb$test$y
 
-word_index <- keras::dataset_imdb_word_index()  
+word_index <- keras::dataset_imdb_word_index()
 reverse_word_index <- names(word_index)
 names(reverse_word_index) <- word_index
 
@@ -927,9 +929,9 @@ Do the actual pre-processing and model fitting
 
 ```{r, cache = TRUE}
 vectorize_sequences <- function(sequences, dimension = nr_words) {
-  results <- matrix(0, nrow = length(sequences), ncol = dimension) 
+  results <- matrix(0, nrow = length(sequences), ncol = dimension)
   for (i in 1:length(sequences))
-    results[i, sequences[[i]]] <- 1 
+    results[i, sequences[[i]]] <- 1
   results
 }
 
@@ -940,21 +942,21 @@ y_test <- as.numeric(test_labels)
 
 # this is how a bidirectional LSTM would look like
 # nn_model <- function(x) x %>%
-#   layer_embedding(input_dim = nr_words, 
+#   layer_embedding(input_dim = nr_words,
 #                   # embedding dimension = 2
 #                   # as an example -> yields
 #                   # 100*nr_words parameters
 #                   # to be estimated
-#                   output_dim = 100) %>% 
+#                   output_dim = 100) %>%
 #   bidirectional(layer = layer_lstm(units = 64)) %>%
 #   layer_dense(1)
 #
 # -> not appropriate here, as we have a simple
 # classification task
 
-nn_model <- function(x) x %>% 
-  layer_dense(units = 5, activation = "relu", input_shape = c(nr_words)) %>% 
-  layer_dense(units = 5, activation = "relu") %>% 
+nn_model <- function(x) x %>%
+  layer_dense(units = 5, activation = "relu", input_shape = c(nr_words)) %>%
+  layer_dense(units = 5, activation = "relu") %>%
   layer_dense(units = 1, activation = "linear")
 
 mod <- deepregression(y = y_train,
@@ -963,7 +965,7 @@ mod <- deepregression(y = y_train,
                       data = as.data.frame(x_train),
                       family = "bernoulli")
 
-# as an example only use 3 epochs (lstms usualy need 
+# as an example only use 3 epochs (lstms usualy need
 # not so many epochs anyway)
 mod %>% fit(epochs = 20, view_metrics=FALSE, batch_size = 250, verbose=FALSE)
 pred <- mod %>% predict(as.data.frame(x_test))

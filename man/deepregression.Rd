@@ -29,6 +29,7 @@ deepregression(
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991 - 5 - 4,
+  tf_seed = NULL,
   mixture_dist = 0,
   split_fun = split_model,
   posterior_fun = posterior_mean_field,
@@ -43,13 +44,15 @@ deepregression(
   orthog_type = c("tf", "manual"),
   orthogonalize = TRUE,
   hat1 = FALSE,
-  sp_scale = 1,
+  sp_scale = NROW(y),
   order_bsp = NULL,
   y_basis_fun = function(y) eval_bsp(y, order = order_bsp, supp = range(y)),
   y_basis_fun_prime = function(y) eval_bsp_prime(y, order = order_bsp, supp =
     range(y))/diff(range(y)),
   split_between_shift_and_theta = NULL,
+  addconst_interaction = NULL,
   additional_penalty = NULL,
+  penalty_summary = k_sum,
   ...
 )
 }
@@ -62,9 +65,9 @@ set to \code{~ 1} if the parameter should be treated as constant.
 Use the \code{s()}-notation from \code{mgcv} for specification of
 non-linear structured effects and \code{d(...)} for
 deep learning predictors (predictors in brackets are separated by commas),
-where \code{d} can be replaced by an name name of the names in 
+where \code{d} can be replaced by an name name of the names in
 \code{list_of_deep_models}, e.g., \code{~ 1 + s(x) + my_deep_mod(a,b,c)},
-where my_deep_mod is the name of the neural net specified in 
+where my_deep_mod is the name of the neural net specified in
 \code{list_of_deep_models} and \code{a,b,c} are features modeled via
 this network.}
 
@@ -72,14 +75,14 @@ this network.}
 specifying a keras model.
 See the examples for more details.}
 
-\item{family}{a character specifying the distribution. For information on 
+\item{family}{a character specifying the distribution. For information on
 possible distribution and parameters, see \code{\link{make_tfd_dist}}}
 
-\item{train_together}{a list of formulae of the same length as \code{list_of_formulae} 
-specifying the deep predictors that should be trained together and then the results are; 
+\item{train_together}{a list of formulae of the same length as \code{list_of_formulae}
+specifying the deep predictors that should be trained together and then the results are;
 fed into different distribution parameters; use the same name for the deep predictor to
 indicate for which distribution parameter they should be used. For example, if the second
-and fourth list entry are \code{~ lstm_mod(text)} then the jointly learned \code{lstm_mod} 
+and fourth list entry are \code{~ lstm_mod(text)} then the jointly learned \code{lstm_mod}
 network is added to the linear predictor of the second and fourth distribution parameter.
 Those network names should then be excluded from the \code{list_of_formulae}}
 
@@ -87,26 +90,26 @@ Those network names should then be excluded from the \code{list_of_formulae}}
 
 \item{df}{degrees of freedom for all non-linear structural terms;
 either one common value or a list of the same length as number of parameters and
-each list item a vector of the same length as number of smooth terms in the 
+each list item a vector of the same length as number of smooth terms in the
 respective formula}
 
-\item{lambda_lasso}{smoothing parameter for lasso regression; 
-can be combined with ridge}
+\item{lambda_lasso}{scalar value or list of \code{length(list_of_formulae)};
+smoothing parameter for lasso regression; can be combined with ridge}
 
-\item{lambda_ridge}{smoothing parameter for ridge regression; 
-can be combined with lasso}
+\item{lambda_ridge}{scalar value or list of \code{length(list_of_formulae)};
+smoothing parameter for ridge regression; can be combined with lasso}
 
 \item{defaultSmoothing}{function applied to all s-terms, per default (NULL)
 the minimum df of all possible terms is used.}
 
 \item{cv_folds}{a list of lists, each list element has two elements, one for
-training indices and one for testing indices; 
-if a single integer number is given, 
+training indices and one for testing indices;
+if a single integer number is given,
 a simple k-fold cross-validation is defined, where k is the supplied number.}
 
 \item{validation_data}{data for validation during training.}
 
-\item{validation_split}{percentage of training data used for validation. 
+\item{validation_split}{percentage of training data used for validation.
 Per default 0.2.}
 
 \item{dist_fun}{a custom distribution applied to the last layer,
@@ -126,15 +129,15 @@ the via the ellipsis to the initialization function
 
 \item{seed}{integer value used as a seed in data splitting}
 
-\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), 
-no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
+\item{mixture_dist}{integer either 0 or >= 2. If 0 (default),
+no mixture distribution is fitted. If >= 2, a network is constructed that outputs
 a multivariate response for each of the mixture components.}
 
 \item{split_fun}{a function separating the deep neural network in two parts
-so that the orthogonalization can be applied to the first part before 
+so that the orthogonalization can be applied to the first part before
 applying the second network part; per default, the function \code{split_model} is
 used which assumes a dense layer as penultimate layer and separates the network
-into a first part without this last layer and a second part only consisting of a 
+into a first part without this last layer and a second part only consisting of a
 single dense layer that is fed into the output layer}
 
 \item{posterior_fun}{function defining the posterior function for the variational
@@ -144,29 +147,29 @@ verison of the network}
 verison of the network}
 
 \item{null_space_penalty}{logical value;
-if TRUE, the null space will also be penalized for smooth effects. 
+if TRUE, the null space will also be penalized for smooth effects.
 Per default, this is equal to the value give in \code{variational}.}
 
-\item{ind_fun}{function applied to the model output before calculating the 
+\item{ind_fun}{function applied to the model output before calculating the
 log-likelihood. Per default independence is assumed by applying \code{tfd_independent}.}
 
-\item{extend_output_dim}{integer value >= 0 for extending the output dimension by an 
+\item{extend_output_dim}{integer value >= 0 for extending the output dimension by an
 additive constant. If set to a value > 0, a multivariate response with dimension
 \code{1 + extend_output_dim} is defined.}
 
-\item{offset}{a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each 
-parameter, in case an offset should be added to the additive predictor; 
+\item{offset}{a list of column vectors (i.e. matrix with ncol = 1) or NULLs for each
+parameter, in case an offset should be added to the additive predictor;
 if NULL, no offset is used}
 
 \item{offset_val}{a list analogous to offset for the validation data}
 
-\item{absorb_cons}{logical; adds identifiability constraint to the basisi. 
+\item{absorb_cons}{logical; adds identifiability constraint to the basisi.
 See \code{?mgcv::smoothCon} for more details.}
 
-\item{zero_constraint_for_smooths}{logical; the same as absorb_cons, 
+\item{zero_constraint_for_smooths}{logical; the same as absorb_cons,
 but done explicitly. If true a constraint is put on each smooth to have zero mean.}
 
-\item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated 
+\item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated
 before model fitting, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
 The first only works well for larger batch sizes or ideally batch_size == NROW(y).}
 
@@ -177,7 +180,7 @@ matrix sum(diag(H)), else sum(diag(2*H-HH))}
 
 \item{sp_scale}{positive constant; for scaling the DRO calculated penalty (1 per default)}
 
-\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL, 
+\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL,
 a conditional transformation model (CTM) is fitted.}
 
 \item{y_basis_fun, y_basis_fun_prime}{basis functions for y transformation for CTM case}
@@ -187,8 +190,18 @@ a conditional transformation model (CTM) is fitted.}
 to define how many of the last layer's hidden units are used for the shift
 term and how many for the theta term (an integer vector of length 2).}
 
-\item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be 
+\item{addconst_interaction}{positive constant;
+a constant added to the additive predictor of the interaction term.
+If \code{NULL}, terms are left unchanged. If 0 and predictors have negative values in their
+design matrix, the minimum value of all predictors is added to ensure positivity.
+If > 0, the minimum value plus the \code{addconst_interaction} is added to each predictor
+in the interaction term.}
+
+\item{additional_penalty}{a penalty that is added to the negative log-likelihood; must be
 a \code{function(x)}, where \code{x} is actually not used and}
+
+\item{penalty_summary}{keras function; summary function for the penalty in the spline layer;
+default is \code{k_sum}. Another option could be \code{k_mean}.}
 
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }

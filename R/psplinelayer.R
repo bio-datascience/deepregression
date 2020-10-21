@@ -1,16 +1,14 @@
-k <- keras:::keras
-
 # splineLayer <- R6::R6Class("splineLayer",
-# 
+#
 #                            lock_objects = FALSE,
 #                            inherit = KerasLayer,
-# 
+#
 #                            public = list(
-# 
+#
 #                              output_dim = NULL,
-# 
+#
 #                              kernel = NULL,
-# 
+#
 #                              initialize = function(
 #                                # input_shape=NULL,
 #                                shared_weights=FALSE,
@@ -20,9 +18,9 @@ k <- keras:::keras
 #                                bias_initializer='zeros'#,
 #                                # ...
 #                              ) {
-# 
+#
 #                                # super$initialize(...)
-# 
+#
 #                                # self$input_shape = input_shape
 #                                self$shared_weights = shared_weights
 #                                self$kernel_regularizer = tf$keras$regularizers$get(
@@ -34,29 +32,29 @@ k <- keras:::keras
 #                                  bias_initializer)
 #                                self$input_spec = tf$keras$layers$InputSpec(min_ndim=3)
 #                              },
-# 
+#
 #                              build = function(input_shape) {
-# 
+#
 #                                stopifnot(length(input_shape) >= 3)
-# 
+#
 #                                n_bases = input_shape[[length(input_shape)]]
 #                                n_features = input_shape[[length(input_shape)-1]]
-# 
+#
 #                                self$inp_shape = input_shape
 #                                self$n_features = n_features
 #                                self$n_bases = n_bases
-# 
+#
 #                                if(self$shared_weights)
 #                                  use_n_features = 1 else
 #                                    use_n_features = self$n_features
-# 
+#
 #                                self$kernel =
 #                                  self$add_weight(shape=list(n_bases, use_n_features),
 #                                                  initializer=self$kernel_initializer,
 #                                                  name='kernel',
 #                                                  regularizer=self$kernel_regularizer,
 #                                                  trainable=TRUE)
-# 
+#
 #                                if(self$use_bias)
 #                                  self$bias =
 #                                  self$add_weight(shape = (n_features),
@@ -65,21 +63,21 @@ k <- keras:::keras
 #                                                  initializer=self$bias_initializer,
 #                                                  name='bias',
 #                                                  regularizer=NULL)
-# 
+#
 #                                self$built = TRUE
-# 
+#
 #                                super$build(self
 #                                            #,input_shape
 #                                )
-# 
+#
 #                              },
-# 
+#
 #                              call = function(inputs, mask = NULL) {
 #                                N = length(self$inp_shape)
-# 
+#
 #                                if (self$shared_weights)
 #                                  return(k_squeeze(k_dot(inputs, self$kernel), -1))
-# 
+#
 #                                # print("output def")
 #                                output =
 #                                  k_permute_dimensions(inputs, list(
@@ -88,15 +86,15 @@ k <- keras:::keras
 #                                    N
 #                                  )
 #                                  )
-# 
+#
 #                                # print("output_reshaped def")
-# 
+#
 #                                sh = list(self$n_features, -1, self$n_bases)
 #                                output_reshaped =
 #                                  k_reshape(output, sh)
-# 
+#
 #                                # print(str(output_reshaped,1))
-# 
+#
 #                                axes = NULL
 #                                # # added due to missing translation
 #                                # # of the argument axes in k_batch_dot
@@ -110,14 +108,14 @@ k <- keras:::keras
 #                                #   axes = list(x_ndim - 1, y_ndim - 1) else
 #                                #     axes = list(x_ndim - 1, y_ndim - 2)
 #                                # #####################################
-# 
+#
 #                                # print("bd_output def")
-# 
+#
 #                                bd_output =
 #                                  k_batch_dot(output_reshaped,
 #                                              k_transpose(self$kernel),
 #                                              axes = axes)
-# 
+#
 #                                # this one is tricky to translate
 #                                # from python. Not sure if this is
 #                                # correct
@@ -125,34 +123,34 @@ k <- keras:::keras
 #                                if(length(self$inp_shape) > 3){
 #                                  sh = append(sh, self$inp_shape[2:(N - 2)])
 #                                }
-# 
+#
 #                                # print("output def 1")
-# 
+#
 #                                output = k_reshape(bd_output, sh)
 #                                # move axis 0 (features) to back
-# 
+#
 #                                # print("output def 2")
-# 
+#
 #                                # print(str(output,1))
-# 
-# 
+#
+#
 #                                output =
 #                                  k_permute_dimensions(output,
 #                                                       c(as.list(2:(N-1)), list(1)))
-# 
+#
 #                                # print("done")
-# 
+#
 #                                # permute is 1-based
 #                                if(self$use_bias)
 #                                  output = k_bias_add(output,
 #                                                      self$bias, data_format="channels_last")
 #                                return(output)
 #                              },
-# 
+#
 #                              compute_output_shape = function(input_shape) {
 #                                input_shape[-length(input_shape)]
 #                              },
-# 
+#
 #                              get_config = function()
 #                              {
 #                                config = list(
@@ -170,7 +168,7 @@ k <- keras:::keras
 #                                # python's combining dicts?
 #                                return(c(base_config, config))
 #                              }
-# 
+#
 #                            )
 # )
 
@@ -195,8 +193,6 @@ k <- keras:::keras
 #' @param posterior_fun function defining the variational posterior
 #' @param output_dim the number of units for the layer
 #' @param ... further arguments passed to \code{args} used in \code{create_layer}
-#' 
-#' 
 layer_spline <- function(object,
                          name = NULL,
                          trainable = TRUE,
@@ -213,16 +209,16 @@ layer_spline <- function(object,
                          output_dim = 1L,
                          k_summary = k_sum,
                          ...) {
-  
+
   if(variational){
-    bigP = bdiag(lapply(1:length(Ps), function(j){ 
+    bigP = bdiag(lapply(1:length(Ps), function(j){
       # return vague prior for scalar
       if(length(Ps[[j]])==1) return(diffuse_scale^2) else
-        return(chol2inv(chol(lambdas[j] * Ps[[j]])))})) 
+        return(chol2inv(chol(lambdas[j] * Ps[[j]])))}))
   }else{
       bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
   }
-  
+
   if(sum(lambdas)==0 | variational)
     regul <- NULL else
       regul <- function(x)
@@ -233,7 +229,7 @@ layer_spline <- function(object,
           x),
           axes=2) # 1-based
         )
-    
+
     args <- c(list(input_shape = input_shape),
               name = name,
               units = output_dim,
@@ -241,10 +237,10 @@ layer_spline <- function(object,
               kernel_regularizer=regul,
               use_bias=use_bias,
               list(...))
-    
+
     if(variational){
-      
-      class <- tfprobability::tfp$layers$DenseVariational 
+
+      class <- tfprobability::tfp$layers$DenseVariational
       args$make_posterior_fn = posterior_fun
       args$make_prior_fn = function(kernel_size,
                                     bias_size = 0L,
@@ -253,13 +249,13 @@ layer_spline <- function(object,
                                                          dtype = 'float32',
                                                          P = as.matrix(bigP))
       args$regul <- NULL
-      
+
     }else{
-      
+
       class <- k$layers$Dense
       args$kernel_initializer=kernel_initializer
       args$bias_initializer=bias_initializer
-    
+
     }
 
     create_layer(layer_class = class,
@@ -279,9 +275,9 @@ layer_spline <- function(object,
 #                          kernel_initializer = 'glorot_uniform',
 #                          bias_initializer = 'zeros',
 #                          ...) {
-#   
+#
 #   bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
-#   
+#
 #   if(sum(lambdas)==0)
 #     regul <- NULL else
 #       regul <- function(x)
@@ -292,7 +288,7 @@ layer_spline <- function(object,
 #           x),
 #           axes=2) # 1-based
 #         )
-#     
+#
 #     create_layer(layer_class = splineLayer,
 #                  object = object,
 #                  args = c(list(input_shape = input_shape),
@@ -329,7 +325,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
   if(!is.null(this_param$smoothterms)){
     these_lambdas = unlist(sapply(this_param$smoothterms, function(x) x[[1]]$sp))
     lambdas = c(lambdas, these_lambdas)
-    these_Ps = lapply(this_param$smoothterms, function(x) if(length(x)==1) x[[1]]$S else 
+    these_Ps = lapply(this_param$smoothterms, function(x) if(length(x)==1) x[[1]]$S else
       list(Matrix::bdiag(lapply(x,function(y)y$S[[1]]))))
     is_TP <- sapply(these_Ps, length) > 1
     if(any(is_TP))
@@ -370,11 +366,11 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
 
   name <- "structured_nonlinear"
   if(!is.null(nr)) name <- paste(name, nr, sep="_")
-  
+
   if(trafo){
-    
+
     return(bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]])))
-    
+
   }
 
   layer_spline(input_shape = list(as.integer(params)),
