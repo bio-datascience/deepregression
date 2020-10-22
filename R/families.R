@@ -215,7 +215,8 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                         function(x) x),
                          von_mises = list(function(x) x,
                                           function(x) add_const + tfe(x)),
-                         zinb = list(function(x) tf$math$exp(x), tf$math$exp(x),
+                         zinb = list(function(x) tf$math$exp(x), 
+                                     function(x) tf$math$exp(x),
                                      function(x) tf$stack(list(tf$math$sigmoid(x),
                                                                1-tf$math$sigmoid(x)),
                                                           axis=2L)),
@@ -409,7 +410,7 @@ tfd_negative_binomial_ls = function(mu, r){
   
   sig2 <- mu + (mu*mu / r)
   count <- mu*mu / (sig2 - mu + 1e-8)
-  probs <- tf$compat$v2$clip_by_value(
+  probs <- 1-tf$compat$v2$clip_by_value(
     count / (count + mu),
     0, 1
   )
