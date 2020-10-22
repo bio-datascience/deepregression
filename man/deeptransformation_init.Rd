@@ -68,7 +68,7 @@ non-zero while the others must be zero.}
 
 \item{split_fun}{see \code{?deepregression}}
 
-\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL, 
+\item{order_bsp}{NULL or integer; order of Bernstein polynomials; if not NULL,
 a conditional transformation model (CTM) is fitted.}
 
 \item{use_bias_in_structured}{whether or not to use a bias in structured
@@ -87,7 +87,7 @@ ensure positivity}
 \item{penalize_bsp}{scalar value > 0; amount of penalization of Bernstein polynomials}
 
 \item{order_bsp_penalty}{integer; order of Bernstein polynomial penalty. 0 results in a
-penalty based on integrated squared second order derivatives, values >= 1 in difference 
+penalty based on integrated squared second order derivatives, values >= 1 in difference
 penalties}
 }
 \description{

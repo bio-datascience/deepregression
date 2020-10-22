@@ -9,7 +9,7 @@ tfd_zip(lambda, probs)
 \arguments{
 \item{lambda}{scalar value for rate of poisson distribution}
 
-\item{probs}{vector of probabilites of length 2 (probability for poisson and 
+\item{probs}{vector of probabilites of length 2 (probability for poisson and
 probability for 0s)}
 }
 \description{

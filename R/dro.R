@@ -1,4 +1,3 @@
-
 # from mboost https://github.com/cran/mboost/blob/master/R/helpers.R
 make_psd <- function(x, eps = sqrt(.Machine$double.eps)) {
   lambda <- min(eigen(x, only.values = TRUE, symmetric = TRUE)$values)
@@ -71,7 +70,7 @@ DRO <- function(X, df = 4, lambda = NULL, dmat = NULL, # weights,
     dfFun <- function(lambda) sum(1/(1 + lambda * d))
   }
   else {
-    dfFun <- function(lambda) 2 * sum(1/(1 + lambda * d)) - 
+    dfFun <- function(lambda) 2 * sum(1/(1 + lambda * d)) -
       sum(1/(1 + lambda * d)^2)
   }
   if (!is.null(lambda))
