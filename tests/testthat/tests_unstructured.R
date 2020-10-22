@@ -64,7 +64,7 @@ test_that("custom orthogonalization", {
     expect_is(mod, "deepregression")
     expect_true(!any(is.nan(unlist(coef(mod)))))
 
-    res <- mod %>% predict(validation_data)
+    suppressWarnings(res <- mod %>% predict(validation_data))
     expect_true(is.numeric(res))
     expect_true(!any(is.nan(res)))
   }
