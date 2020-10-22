@@ -48,7 +48,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"log_normal": }{Log-normal with location (identity) and scale (exp) of
 #'  underlying normal distribution}
 #'  \item{"logistic": }{logistic with location (identity) and scale (exp)}
-#'  \item{"negbinom": }{neg. binomial with mean (exp) and st.dev.(exp)}
+#'  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
+#'  \item{"negbinom": }{neg. binomail with mean (exp) and clutter factor (exp)}
 #'  \item{"pareto": }{Pareto with concentration (exp) (and if modeled scale (exp),
 #'  else scale = 1)}
 #'  \item{"poisson": }{poisson with rate (exp)}
@@ -57,7 +58,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and
 #'  scale (exp)}
 #'  \item{"uniform": }{uniform with upper and lower (both identity)}
-#'  \item{"zip":  }{Zero-inflated poisson distribution with }
+#'  \item{"zinb": }{Zero-inflated negative binomial with mean (exp), variance (exp) and prob (sigmoid)}
+#'  \item{"zip":  }{Zero-inflated poisson distribution with mean (exp) and prob (sigmoid)}
 #' }
 #' @param add_const small positive constant to stabilize calculations
 #' @param return_nrparams logical, if TRUE, only the number of distribution parameters is
@@ -196,8 +198,8 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                            function(x) add_const + tfe(x)),
                          logistic = list(function(x) x,
                                          function(x) add_const + tfe(x)),
-                         negbinom = list(function(x) x,
-                                         function(x) x),
+                         negbinom = list(function(x) add_const + tfe(x),
+                                         function(x) tf$math$sigmoid(x)),
                          negbinom_ls = list(function(x) tf$math$exp(x), 
                                             function(x) tf$math$exp(x)),
                          multinomial = list(function(x) tfsoft(x)),
