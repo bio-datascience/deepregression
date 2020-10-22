@@ -7,10 +7,8 @@ Authors@R:
            role = c("aut", "cre"),
            email = "David.Ruegamer@gmail.com")
 Description:
-    This package allows for the specification of deep distributional regression models
-    which are fitted within a large neural network. Potential predictors can be modeled using
-    structured linear effects, structured non-linear effects or modeled using an unstructured deep
-    network model.
+    Allows for the specification of deep distributional regression models which are fitted as part of a possibly large neural network.
+    Potential predictors can be modeled using structured linear effects, structured non-linear effects or using an unstructured deep network model.
 Config/reticulate:
   list(
     packages = list(

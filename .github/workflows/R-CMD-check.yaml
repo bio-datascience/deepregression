@@ -31,10 +31,10 @@ jobs:
           reticulate::conda_create('r-reticulate', packages = c('python==3.6.9'))
           keras::install_keras(tensorflow = "2.0", extra_packages = c('IPython', 'requests', 'certifi', 'urllib3', 'six', 'tensorflow_probability==0.8.0'))
         shell: Rscript {0}
-      - name: Install dependencies - Tutorial
+      - name: Install dependencies - Tutorial (Vignette)
         run: |
           install.packages(c("ggplot2", "reshape2", "MASS", "gamlss.data", "distr"))
         shell: Rscript {0}
       - name: Check
-        run: rcmdcheck::rcmdcheck(args = "--as-cran", error_on = "error")
+        run: rcmdcheck::rcmdcheck(args=c("--as-cran", "--no-build-vignettes"), build_args=c("--no-build-vignettes"), error_on="error")
         shell: Rscript {0}
