@@ -21,10 +21,7 @@ expect_object_dims = function(mod, data, loc = c(1,1), scale = c(1,1)) {
   expect_true(is.numeric(mean))
 }
 
-
-
 test_that("simple additive model", {
-
   n <- 1500
   deep_model <- function(x) x %>%
     layer_dense(units = 2L, activation = "relu", use_bias = FALSE) %>%

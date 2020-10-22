@@ -3,7 +3,7 @@
 #' @param x deepregression object
 #' @param which which effect to plot, default selects all.
 #' @param which_param integer of length 1.
-#' Corresponds to the distribution parameter for 
+#' Corresponds to the distribution parameter for
 #' which the effects should be plotted.
 #' @param plot logical, if FALSE, only the data for plotting is returned
 #' @param use_posterior logical; if \code{TRUE} it is assumed that
@@ -34,9 +34,9 @@ plot.deepregression <- function(
   if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
   if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
   plus_number_lin_eff <- sum(this_ind$type=="lin")
-  
+
   plotData <- vector("list", length(which))
-  org_feature_names <- 
+  org_feature_names <-
     names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
   phi <- x$model$get_layer(paste0("structured_nonlinear_",
                                   which_param))$get_weights()
@@ -49,22 +49,22 @@ plot.deepregression <- function(
   }else{
     phi <- phi[[1]]
   }
-  
+
   for(w in which){
-    
+
     nam <- org_feature_names[w]
     this_ind_this_w <- do.call("Map",
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
                                                        c("start","end")])))[[1]]
-    BX <- 
+    BX <-
       x$init_params$parsed_formulae_contents[[
         which_param]]$smoothterms[[nam]][[1]]$X
     if(use_posterior){
-      
+
       # get the correct index as each coefficient has now mean and sd
       phi_mean <- phi[this_ind_this_w,1]
       phi_sd <- log(exp(log(expm1(1)) + phi[this_ind_this_w,2])+1)
-      plotData[[w]] <- 
+      plotData[[w]] <-
         list(org_feature_names = nam,
              value = unlist(x$init_params$data[strsplit(nam,",")[[1]]]),
              design_mat = BX,
@@ -85,14 +85,14 @@ plot.deepregression <- function(
       if(nrcols==1)
       {
         if(use_posterior){
-          plot(plotData[[w]]$mean_partial_effect[order(plotData[[w]]$value)] ~ 
+          plot(plotData[[w]]$mean_partial_effect[order(plotData[[w]]$value)] ~
                  sort(plotData[[w]]$value),
                main = paste0("s(", nam, ")"),
                xlab = nam,
                ylab = "partial effect",
-               ylim = c(min(plotData[[w]]$mean_partial_effect - 
+               ylim = c(min(plotData[[w]]$mean_partial_effect -
                               2*plotData[[w]]$sd_partial_effect),
-                        max(plotData[[w]]$mean_partial_effect + 
+                        max(plotData[[w]]$mean_partial_effect +
                               2*plotData[[w]]$sd_partial_effect)),
                ...)
           with(plotData[[w]], {
@@ -130,15 +130,15 @@ plot.deepregression <- function(
           # zlab = "partial effect",
           main = sTerm$label
         )
-        # warning("Plotting of effects with ", nrcols, " 
+        # warning("Plotting of effects with ", nrcols, "
         #         covariate inputs not supported yet.")
       }else{
-        warning("Plotting of effects with ", nrcols, 
+        warning("Plotting of effects with ", nrcols,
                 " covariate inputs not supported.")
       }
     }
   }
-  
+
   invisible(plotData)
 }
 
@@ -171,26 +171,26 @@ plot.deeptrafo <- function(
   if(all(this_ind$type!="smooth")) return("No smooth effects. Nothing to plot.")
   if(is.null(which)) which <- 1:length(which(this_ind$type=="smooth"))
   plus_number_lin_eff <- sum(this_ind$type=="lin")
-  
+
   plotData <- vector("list", length(which))
-  org_feature_names <- 
+  org_feature_names <-
     names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
   if(which_param==1){
     phi <- matrix(get_shift(x), ncol=1)
   }else{
     phi <- t(get_theta(x))
   }
-  
+
   for(w in which){
-    
+
     nam <- org_feature_names[w]
     this_ind_this_w <- do.call("Map",
                                c(":", as.list(this_ind[w+plus_number_lin_eff,
                                                        c("start","end")])))[[1]]
-    BX <- 
+    BX <-
       x$init_params$parsed_formulae_contents[[
         which_param]]$smoothterms[[nam]][[1]]$X
-    
+
     plotData[[w]] <-
       list(org_feature_name = nam,
            value = sapply(strsplit(nam,",")[[1]], function(xx)
@@ -198,22 +198,22 @@ plot.deeptrafo <- function(
            design_mat = BX,
            coef = phi[this_ind_this_w,],
            partial_effects = BX%*%phi[this_ind_this_w,])
-    
+
     nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
-    
+
     if(plot | nrcols == 2){
       if(which_param==1){
-        
+
         if(nrcols==1)
         {
-          
+
           plot(partial_effects[order(value),1] ~ sort(value[,1]),
                data = plotData[[w]][c("value", "partial_effects")],
                main = paste0("s(", nam, ")"),
                xlab = nam,
                ylab = "partial effect",
                ...)
-          
+
         }else if(nrcols==2){
           sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
           this_x <- do.call(seq, c(as.list(range(plotData[[w]]$value[,1])),
@@ -228,7 +228,7 @@ plot.deeptrafo <- function(
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
-          
+
           plotData[[w]] <- list(df = df,
                                 design_mat = pmat,
                                 coef = phi[this_ind_this_w,],
@@ -245,12 +245,12 @@ plot.deeptrafo <- function(
               # zlab = "partial effect",
               main = sTerm$label
             )
-          # warning("Plotting of effects with ", nrcols, " 
+          # warning("Plotting of effects with ", nrcols, "
           #         covariate inputs not supported yet.")
         }else if(nrcols==3){
-          
+
           if(plot) warning("Will only return the plot data for 3d effects.")
-          
+
           sTerm <- x$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[w]][[1]]
           this_x <- do.call(seq, c(as.list(range(plotData[[w]]$value[,1])),
                                    list(l=grid_length)))
@@ -267,18 +267,18 @@ plot.deeptrafo <- function(
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
-          
+
           plotData[[w]] <- list(df = df,
                                 design_mat = pmat,
                                 coef = phi[this_ind_this_w,],
                                 pred = pred)
 
         }else{
-          warning("Plotting of effects with ", nrcols, 
+          warning("Plotting of effects with ", nrcols,
                   " covariate inputs not supported.")
         }
       }else{ # plot effects in theta
-        
+
         matplot(
           #sort(plotData[[w]]$value[,1]),
           #1:ncol(plotData[[w]]$partial_effects),
@@ -290,23 +290,23 @@ plot.deeptrafo <- function(
           # zlab = "partial effect",
           type = "l"
         )
-        
+
       }
     }
   }
-  
+
   invisible(plotData)
 }
 
 
 #' Function to prepare data for deepregression use
-#' 
+#'
 #' @export
-#' 
+#'
 #' @param x a deepregression object
 #' @param data a data.frame or list
 #' @param pred logical, where the data corresponds to a prediction task
-#' 
+#'
 #' @rdname methodDR
 #'
 prepare_data <- function(
@@ -317,7 +317,7 @@ prepare_data <- function(
 {
   if(length(data)>1 & is.list(data) & !is.null(x$init_params$offset))
   {
-    
+
     message("Using the second list item of data as offset.")
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
@@ -325,27 +325,27 @@ prepare_data <- function(
     if(is.list(data[[2]]))
       data[[2]] <- unlist(data[[2]], recursive = FALSE)
     newdata_processed <- c(newdata_processed,
-                           tf$constant(matrix(data[[2]], ncol = 1), 
+                           tf$constant(matrix(data[[2]], ncol = 1),
                                        dtype="float32"))
-    
+
   }else{
-    
+
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
       data, pred=pred)
-    
+
     # for trafo models
-    if(length(x$init_params$parsed_formulae_contents)>1 && 
+    if(length(x$init_params$parsed_formulae_contents)>1 &&
        !is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
-      return(list(data=newdata_processed, 
+      return(list(data=newdata_processed,
                   minval=attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
-    
+
   }
   return(newdata_processed)
 }
 
 #' Predict based on a deepregression object
-#' 
+#'
 #' @param object a deepregression model
 #' @param newdata optional new data, either data.frame or list
 #' @param apply_fun which function to apply to the predicted distribution,
@@ -364,7 +364,7 @@ predict.deepregression <- function(
   ...
 )
 {
-  
+
   if(is.null(newdata)){
     yhat <- object$model(unname(object$init_params$input_cov))
   }else{
@@ -373,21 +373,21 @@ predict.deepregression <- function(
     newdata_processed <- prepare_data(object, newdata, pred=TRUE)
     yhat <- object$model(newdata_processed)
   }
-  
-  
+
+
   if(!is.null(apply_fun))
     return(convert_fun(apply_fun(yhat))) else
       return(convert_fun(yhat))
-  
+
 }
 
 #' Predict based on a deeptrafo object
-#' 
+#'
 #' @param object a deeptrafo model
 #' @param newdata optional new data, either data.frame or list
 #' @param ... not used atm
 #' @return returns a function with two parameters: the actual response
-#' and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')} 
+#' and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')}
 #' determining the returned value
 #'
 #' @export
@@ -400,7 +400,7 @@ predict.deeptrafo <- function(
   ...
 )
 {
-  
+
   if(is.null(newdata)){
     inpCov <- unname(object$init_params$input_cov)
   }else{
@@ -416,14 +416,14 @@ predict.deeptrafo <- function(
     }
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
-  
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction", "shift"), 
+
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction", "shift"),
                         which = NULL, grid = FALSE)
   {
     type <- match.arg(type)
-    
+
     # if(!is.null(minval)) y <- y - sum(minval*get_theta(object))
-    
+
     ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
     aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)
     inpCov[length(inpCov)-c(1,0)] <- list(ay, aPrimey)
@@ -433,29 +433,29 @@ predict.deeptrafo <- function(
     # if(!is.null(minval))
     #   aTtheta <- aTtheta - sum(minval*get_theta(object))
     if(type=="interaction"){
-     
+
       if(is.null(newdata))
         newdata <- object$init_params$data
-       
+
       ret <- cbind(interaction = as.matrix(aTtheta),
                    as.data.frame(newdata)
       )
-      
+
       if(ncol(mod_output)==5)
         ret <- cbind(ret, correction = as.matrix(mod_output[,4,drop=FALSE]))
-      
+
       return(ret)
 
     }
-    
+
     if(type=="shift"){
-      
+
       if(is.null(newdata))
         newdata <- object$init_params$data
-      
+
       return(cbind(shift = -as.matrix(w_eta),
                    as.data.frame(newdata)))
-      
+
     }
     ytransf <- aTtheta + w_eta
     yprimeTrans <- mod_output[, 3, drop = FALSE]
@@ -464,58 +464,58 @@ predict.deeptrafo <- function(
     theta <- get_theta(object)
     if(grid)
     {
-      
+
       grid_eval <- t(as.matrix(
         tf$matmul(inpCov[[2]],
                   tf$transpose(
                     tf$matmul(ay,
                               tf$cast(theta, tf$float32)
                     )))))
-      grid_eval <- grid_eval + 
+      grid_eval <- grid_eval +
         t(as.matrix(w_eta)[,rep(1,nrow(grid_eval))])
-      
-      if(type=="pdf") 
+
+      if(type=="pdf")
         grid_prime_eval <- t(as.matrix(
           tf$matmul(inpCov[[2]],
                     tf$transpose(
                       tf$matmul(aPrimey,
                                 tf$cast(theta, tf$float32)
                       )))))
-      
-      
+
+
     }
-    
+
     if(grid) type <- paste0("grid_",type)
-    
+
     ret <- switch (type,
                    trafo = (ytransf %>% as.matrix),
-                   pdf = ((tfd_normal(0,1) %>% tfd_prob(ytransf) %>% 
+                   pdf = ((tfd_normal(0,1) %>% tfd_prob(ytransf) %>%
                              as.matrix)*as.matrix(yprimeTrans)),
-                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf) %>% 
+                   cdf = (tfd_normal(0,1) %>% tfd_cdf(ytransf) %>%
                             as.matrix),
                    grid_trafo = grid_eval,
-                   grid_pdf = ((tfd_normal(0,1) %>% tfd_prob(grid_eval) %>% 
+                   grid_pdf = ((tfd_normal(0,1) %>% tfd_prob(grid_eval) %>%
                                   as.matrix)*as.matrix(grid_prime_eval)),
-                   grid_cdf = (tfd_normal(0,1) %>% tfd_cdf(grid_eval) %>% 
+                   grid_cdf = (tfd_normal(0,1) %>% tfd_cdf(grid_eval) %>%
                                  as.matrix)
     )
-    
+
     return(ret)
-    
+
   }
-  
+
   return(trafo_fun)
-  
+
 }
 
 
 #' Function to extract fitted distribution
-#' 
+#'
 #' @param object a deepregression object
 #' @param apply_fun function applied to fitted distribution,
 #' per default \code{tfd_mean}
 #' @param ... further arguments passed to the predict function
-#' 
+#'
 #' @export
 #' @rdname methodDR
 #'
@@ -529,10 +529,10 @@ fitted.deepregression <- function(
 }
 
 #' Generic fit function
-#' 
+#'
 #' @param x object
 #' @param ... further arguments passed to the class-specific function
-#' 
+#'
 #' @export
 fit <- function (x, ...) {
   UseMethod("fit", x)
@@ -549,10 +549,10 @@ fit <- function (x, ...) {
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param val_data optional specified validation data
 #' @param callbacks a list of callbacks for fitting
-#' @param ... further arguments passed to 
+#' @param ... further arguments passed to
 #' \code{keras:::fit.keras.engine.training.Model}
-#' 
-#' 
+#'
+#'
 #' @method fit deepregression
 #' @export
 #' @rdname methodDR
@@ -560,7 +560,7 @@ fit <- function (x, ...) {
 fit.deepregression <- function(
   x,
   early_stopping = FALSE,
-  verbose = TRUE, 
+  verbose = TRUE,
   view_metrics = FALSE,
   patience = 20,
   save_weights = FALSE,
@@ -570,22 +570,22 @@ fit.deepregression <- function(
   ...
 )
 {
-  
-  # make callbacks 
+
+  # make callbacks
   if(save_weights){
     weighthistory <- WeightHistory$new()
     callbacks <- append(callbacks, weighthistory)
   }
   if(early_stopping)
-    callbacks <- append(callbacks, 
+    callbacks <- append(callbacks,
                         callback_early_stopping(patience = patience))
-  
+
   if(auc_callback){
-    
+
     if(is.null(val_data)) stop("Must provide validation data via argument val_data.")
     if(is.data.frame(val_data[[1]])) val_data[[1]] <- as.list(val_data[[1]])
     val_data_processed <- prepare_data(x, val_data[[1]], pred=TRUE)
-    
+
     auc_cb <- auc_roc$new(training = list(unname(x$init_params$input_cov), x$init_params$y),
                           validation = list(unname(val_data_processed), val_data[[2]]))
     callbacks <- append(callbacks,
@@ -595,32 +595,32 @@ fit.deepregression <- function(
   # if(monitor_weights){
   #   # object$history <- WeightHistory$new()
   #   weight_callback <- callback_lambda(
-  #     on_epoch_begin = function(epoch, logs) 
+  #     on_epoch_begin = function(epoch, logs)
   #       coef_prior_to_epoch <<- unlist(coef(object)),
-  #     on_epoch_end = function(epoch, logs) 
+  #     on_epoch_end = function(epoch, logs)
   #       print(sum(abs(coef_prior_to_epoch-unlist(coef(object)))))
   #     )
   #   this_callbacks <- append(this_callbacks, weight_callback)
   # }
-  
+
   if(is.null(x$init_params$input_cov)){
-    
+
     input_x <- prepare_newdata(x$init_params$parsed_formulae_contents,
                                x$init_params$data,
                                pred = FALSE)
     if(!is.null(x$init_params$offset))
       input_x <- c(input_x, unlist(lapply(x$init_params$offset, function(yy)
         tf$constant(matrix(yy, ncol = 1), dtype="float32")), recursive = FALSE))
-    
+
   }else{
-    
+
     input_x <- x$init_params$input_cov
-    
+
   }
-  
-  
+
+
   args <- list(...)
-  input_list_model <- 
+  input_list_model <-
     list(object = x$model,
          x = input_x,
          y = x$init_params$y,
@@ -630,15 +630,15 @@ fit.deepregression <- function(
          verbose = verbose,
          view_metrics = view_metrics
     )
-  args <- append(args, 
-                 input_list_model[!names(input_list_model) %in% 
+  args <- append(args,
+                 input_list_model[!names(input_list_model) %in%
                                     names(args)])
   if(length(x$init_params$ellipsis)>0)
-    args <- append(args, 
+    args <- append(args,
                    x$init_params$ellipsis[
                      !names(x$init_params$ellipsis) %in% names(args)])
-  
-  
+
+
   ret <- do.call(fit_fun,
                  args)
   if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
@@ -672,7 +672,7 @@ coef.deepregression <- function(
     lret[[i]] <- list(structured_linear = NULL,
                       structured_lasso = NULL,
                       structured_nonlinear = NULL)
-    
+
     lret[[i]]$structured_linear <-
       if(sl %in% layer_names)
         object$model$get_layer(sl)$get_weights()[[1]] else
@@ -691,19 +691,19 @@ coef.deepregression <- function(
     }else{
       lret[[i]]$structured_nonlinear <- NULL
     }
-    
+
   }
   return(lret)
-  
+
 }
 
 #' Print function for deepregression model
-#' 
+#'
 #' @export
 #' @rdname methodDR
 #' @param x a \code{deepregression} model
 #' @param ... unused
-#' 
+#'
 #' @method print deepregression
 #'
 print.deepregression <- function(
@@ -715,7 +715,7 @@ print.deepregression <- function(
 }
 
 #' @title Cross-validation for deepgression objects
-#' @param ... further arguments passed to 
+#' @param ... further arguments passed to
 #' \code{keras:::fit.keras.engine.training.Model}
 #' @param x deepregression object
 #' @param verbose whether to print training in each fold
@@ -728,15 +728,15 @@ print.deepregression <- function(
 #' @param stop_if_nan logical; whether to stop CV if NaN values occur
 #' @export
 #' @rdname methodDR
-#' 
+#'
 #' @return Returns an object \code{drCV}, a list, one list element for each fold
 #' containing the model fit and the \code{weighthistory}.
-#' 
 #'
-#' 
+#'
+#'
 cv <- function(
   x,
-  verbose = FALSE, 
+  verbose = FALSE,
   patience = 20,
   plot = TRUE,
   print_folds = TRUE,
@@ -747,12 +747,12 @@ cv <- function(
   ...
 )
 {
-  
-  if(is.null(cv_folds)){ 
+
+  if(is.null(cv_folds)){
     cv_folds <- x$init_params$cv_folds
   }else if(!is.list(cv_folds) & is.numeric(cv_folds)){
     cv_folds <- make_cv_list_simple(
-      data_size = NROW(x$init_params$data[[1]]), 
+      data_size = NROW(x$init_params$data[[1]]),
       cv_folds)
   }else{
     stop("Wrong format for cv_folds.")
@@ -764,46 +764,46 @@ cv <- function(
   }
   nrfolds <- length(cv_folds)
   old_weights <- x$model$get_weights()
-  
+
   if(print_folds) folds_iter <- 1
-  
+
   # subset fun
   if(NCOL(x$init_params$y)==1)
     subset_fun <- function(y,ind) y[ind] else
       subset_fun <- function(y,ind) subset_array(y,ind)
-  
+
   res <- mylapply(cv_folds, function(this_fold){
-    
+
     if(print_folds) cat("Fitting Fold ", folds_iter, " ... ")
     st1 <- Sys.time()
-    
+
     # does not work?
     # this_mod <- clone_model(x$model)
     this_mod <- x$model
-    
+
     train_ind <- this_fold[[1]]
     test_ind <- this_fold[[2]]
-    
+
     # data
     if(is.data.frame(x$init_params$data)){
-      train_data <- x$init_params$data[train_ind,, drop=FALSE] 
+      train_data <- x$init_params$data[train_ind,, drop=FALSE]
       test_data <- x$init_params$data[test_ind,,drop=FALSE]
     }else if(class(x$init_params$data)=="list"){
-      train_data <- lapply(x$init_params$data, function(x) 
+      train_data <- lapply(x$init_params$data, function(x)
         subset_array(x, train_ind))
-      test_data <- lapply(x$init_params$data, function(x) 
+      test_data <- lapply(x$init_params$data, function(x)
         subset_array(x, test_ind))
     }else{
       stop("Invalid input format for CV.")
     }
-    
-    # make callbacks 
+
+    # make callbacks
     this_callbacks <- list()
     if(save_weights){
       weighthistory <- WeightHistory$new()
       this_callbacks <- append(this_callbacks, weighthistory)
     }
-    
+
     args <- list(...)
     args <- append(args,
                    list(object = this_mod,
@@ -830,44 +830,44 @@ cv <- function(
                    )
     )
     args <- append(args, x$init_params$ellipsis)
-    
+
     ret <- do.call(fit_fun, args)
     if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
-    
+
     if(stop_if_nan && any(is.nan(ret$metrics$validloss)))
       stop("Fold ", folds_iter, " with NaN's in ")
-    
+
     if(print_folds) folds_iter <<- folds_iter + 1
-    
+
     this_mod$set_weights(old_weights)
     td <- Sys.time()-st1
     if(print_folds) cat("\nDone in", as.numeric(td), "", attr(td,"units"), "\n")
-    
+
     return(ret)
-    
+
   })
-  
+
   class(res) <- c("drCV","list")
-  
+
   if(plot) try(plot(res))
-  
+
   x$model$set_weights(old_weights)
-  
+
   invisible(return(res))
-  
+
 }
 
 #' mean of model fit
-#' 
+#'
 #' @export
 #' @rdname methodDR
 #'
 #' @param x a deepregression model
 #' @param data optional data, a data.frame or list
 #' @param ... arguments passed to the predict function
-#' 
+#'
 #' @method mean deepregression
-#' 
+#'
 #'
 mean.deepregression <- function(
   x,
@@ -880,21 +880,21 @@ mean.deepregression <- function(
 
 
 #' Generic sd function
-#' 
+#'
 #' @param x object
 #' @param ... further arguments passed to the class-specific function
-#' 
+#'
 #' @export
 sd <- function (x, ...) {
   UseMethod("sd", x)
 }
 
 #' Standard deviation of fit distribution
-#' 
+#'
 #' @param x a deepregression object
 #' @param data either NULL or a new data set
 #' @param ... arguments passed to the \code{predict} function
-#' 
+#'
 #' @export
 #' @rdname methodDR
 #'
@@ -908,22 +908,22 @@ sd.deepregression <- function(
 }
 
 #' Generic quantile function
-#' 
+#'
 #' @param x object
 #' @param ... further arguments passed to the class-specific function
-#' 
+#'
 #' @export
 quantile <- function (x, ...) {
   UseMethod("quantile", x)
 }
 
 #' Calculate the distribution quantiles
-#' 
+#'
 #' @param x a deepregression object
 #' @param data either \code{NULL} or a new data set
-#' @param value the quantile value(s) 
+#' @param value the quantile value(s)
 #' @param ... arguments passed to the \code{predict} function
-#' 
+#'
 #' @export
 #' @rdname methodDR
 #'
@@ -934,19 +934,19 @@ quantile.deepregression <- function(
   ...
 )
 {
-  predict.deepregression(x, 
-                         newdata = data, 
+  predict.deepregression(x,
+                         newdata = data,
                          apply_fun = function(x) tfd_quantile(x, value=value),
                          ...)
 }
 
 #' Function to return the fitted distribution
-#' 
+#'
 #' @param x the fitted deepregression object
 #' @param data an optional data set
-#' 
+#'
 #' @export
-#' 
+#'
 get_distribution <- function(
   x,
   data=NULL
@@ -966,7 +966,7 @@ get_distribution <- function(
 }
 
 #' Function to return the log_score
-#' 
+#'
 #' @param x the fitted deepregression object
 #' @param data an optional data set
 #' @param this_y new y for optional data
@@ -974,9 +974,8 @@ get_distribution <- function(
 #' \code{tfd_independent} is used.
 #' @param convert_fun function that converts Tensor; per default \code{as.matrix}
 #' @param summary_fun function summarizing the output; per default the identity
-#' 
+#'
 #' @export
-#' 
 log_score <- function(
   x,
   data=NULL,
@@ -987,13 +986,13 @@ log_score <- function(
 )
 {
   is_trafo <- x$init_params$family=="transformation_model"
-  
+
   if(is.null(data)){
     this_data <- unname(x$init_params$input_cov)
     this_data <- lapply(this_data, function(x) tf$cast(x, tf$float32))
     if(is_trafo)
-      this_data <- list(this_data, tf$constant(matrix(x$init_params$y, 
-                                                      ncol=1), 
+      this_data <- list(this_data, tf$constant(matrix(x$init_params$y,
+                                                      ncol=1),
                                                dtype = "float32"))
     disthat <- x$model(this_data)
   }else{
@@ -1009,23 +1008,23 @@ log_score <- function(
                  list(x$init_params$y_basis_fun(this_y)),
                  list(x$init_params$y_basis_fun_prime(this_y))),
                function(y) tf$cast(y, tf$float32))),
-        tf$constant(matrix(this_y, 
-                           ncol=1), 
+        tf$constant(matrix(this_y,
+                           ncol=1),
                     dtype = "float32")
       )
     }
     disthat <- x$model(newdata_processed)
   }
-  
+
   if(is_trafo)
     return(summary_fun(
       convert_fun(
-        tfd_normal(loc = 0, scale = 1) %>% 
-          tfd_log_prob(disthat[,2,drop=F] + 
+        tfd_normal(loc = 0, scale = 1) %>%
+          tfd_log_prob(disthat[,2,drop=F] +
                          disthat[,1,drop=F])
       ))
     )
-  
+
   if(is.null(this_y)){
     this_y <- x$init_params$y
   }
@@ -1035,14 +1034,13 @@ log_score <- function(
 }
 
 #' Function to return the shift term
-#' 
+#'
 #' @param x the fitted deeptrafo object
-#' 
+#'
 #' @export
-#' 
 get_shift <- function(x)
 {
-  
+
   stopifnot("deeptrafo" %in% class(x))
   names_weights <- sapply(x$model$trainable_weights, function(x) x$name)
   lin_names <- grep("structured_linear_1", names_weights)
@@ -1050,39 +1048,37 @@ get_shift <- function(x)
   if(length(c(lin_names, nonlin_names))==0)
     stop("Not sure which layer to access for shift. Have you specified a structured shift predictor?")
   -1 * as.matrix(x$model$weights[[c(lin_names, nonlin_names)]] + 0)
-  
+
 }
 
 #' Function to return the theta term
-#' 
+#'
 #' @param x the fitted deeptrafo object
-#' 
+#'
 #' @export
-#' 
 get_theta <- function(x)
 {
-  
+
   stopifnot("deeptrafo" %in% class(x))
   names_weights <- sapply(x$model$trainable_weights, function(x) x$name)
   reshape_softplus_cumsum(
-    as.matrix(x$model$weights[[grep("constraint_mono_layer", names_weights)]] + 0), 
+    as.matrix(x$model$weights[[grep("constraint_mono_layer", names_weights)]] + 0),
     order_bsp_p1 = x$init_params$order_bsp + 1
   )
-  
+
 }
 
 #' Function to return the minval term
-#' 
+#'
 #' @param x the fitted deeptrafo object
-#' 
+#'
 #' @details This value is only available if \code{addconst_interaction}
 #' was specified in the model call.
-#' 
+#'
 #' @export
-#' 
 get_minval <- function(x)
 {
-  
+  stopifnot("deeptrafo" %in% class(x))
   attr(x$init_params$parsed_formulae_contents[[2]], "minval")
-  
+
 }

@@ -39,7 +39,8 @@ test_that("reproducibility", {
     list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
     list_of_deep_models = list(d = deep_model)
   )
-
+  mean1 <- mod1 %>% fitted()
+  mean2 <- mod1 %>% fitted()
   # before training
   expect_equal(coef(mod1), coef(mod2))
   expect_equal(mean1, mean2)

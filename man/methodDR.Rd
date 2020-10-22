@@ -81,7 +81,7 @@ cv(
 \item{which}{which effect to plot, default selects all.}
 
 \item{which_param}{integer of length 1.
-Corresponds to the distribution parameter for 
+Corresponds to the distribution parameter for
 which the effects should be plotted.}
 
 \item{plot}{whether to plot the resulting losses in each fold}
@@ -142,7 +142,7 @@ that coefficients have both a mean and a variance}
 }
 \value{
 returns a function with two parameters: the actual response
-and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')} 
+and \code{type} in \code{c('trafo', 'pdf', 'cdf', 'interaction')}
 determining the returned value
 
 Returns an object \code{drCV}, a list, one list element for each fold
