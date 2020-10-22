@@ -1,30 +1,28 @@
 Package: deepregression
 Title: Fitting Deep Distributional Regression
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person(given = "David",
            family = "Ruegamer",
            role = c("aut", "cre"),
            email = "David.Ruegamer@gmail.com")
-Description: 
-    This package allows for the specification of deep distributional regression models 
-    which are fitted within a large neural network. Potential predictors can be modeled using 
-    structured linear effects, structured non-linear effects or modeled using an unstructured deep
-    network model.
+Description:
+    Allows for the specification of deep distributional regression models which are fitted as part of a possibly large neural network.
+    Potential predictors can be modeled using structured linear effects, structured non-linear effects or using an unstructured deep network model.
 Config/reticulate:
   list(
     packages = list(
       list(package = "six", pip = TRUE),
-      list(package = "tensorflow", version = "2.0.0", pip = TRUE),
+      list(package = "tensorflow", version = NA, pip = TRUE),
       list(package = "tensorflow_probability", version = "0.8.0", pip = TRUE),
       list(package = "keras", version = "2.3", pip = TRUE)
     )
   )
-Suggests: 
+Suggests:
     rsvd,
     testthat,
     knitr
-Imports: 
+Imports:
     tensorflow (>= 2.2.0),
     tfprobability,
     keras,
@@ -36,10 +34,11 @@ Imports:
     magrittr,
     Metrics,
     tfruns,
-    methods
+    methods,
+    utils
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.0
-StagedInstall: no 
+RoxygenNote: 7.1.1
+StagedInstall: no
 VignetteBuilder: knitr

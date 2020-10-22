@@ -1,5 +1,3 @@
-k <- keras:::keras
-
 ### instantiate spline layer
 
 #' Wrapper function to create spline layer
@@ -21,8 +19,6 @@ k <- keras:::keras
 #' @param output_dim the number of units for the layer
 #' @param k_summary keras function for the penalty (see \code{?deepregression} for details)
 #' @param ... further arguments passed to \code{args} used in \code{create_layer}
-#' 
-#' 
 layer_spline <- function(object,
                          name = NULL,
                          trainable = TRUE,
@@ -39,16 +35,16 @@ layer_spline <- function(object,
                          output_dim = 1L,
                          k_summary = k_sum,
                          ...) {
-  
+
   if(variational){
-    bigP = bdiag(lapply(1:length(Ps), function(j){ 
+    bigP = bdiag(lapply(1:length(Ps), function(j){
       # return vague prior for scalar
       if(length(Ps[[j]])==1) return(diffuse_scale^2) else
-        return(chol2inv(chol(lambdas[j] * Ps[[j]])))})) 
+        return(chol2inv(chol(lambdas[j] * Ps[[j]])))}))
   }else{
       bigP = bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]]))
   }
-  
+
   if(sum(lambdas)==0 | variational)
     regul <- NULL else
       regul <- function(x)
@@ -59,7 +55,7 @@ layer_spline <- function(object,
           x),
           axes=2) # 1-based
         )
-    
+
     args <- c(list(input_shape = input_shape),
               name = name,
               units = output_dim,
@@ -67,10 +63,10 @@ layer_spline <- function(object,
               kernel_regularizer=regul,
               use_bias=use_bias,
               list(...))
-    
+
     if(variational){
-      
-      class <- tfprobability::tfp$layers$DenseVariational 
+
+      class <- tfprobability::tfp$layers$DenseVariational
       args$make_posterior_fn = posterior_fun
       args$make_prior_fn = function(kernel_size,
                                     bias_size = 0L,
@@ -79,13 +75,13 @@ layer_spline <- function(object,
                                                          dtype = 'float32',
                                                          P = as.matrix(bigP))
       args$regul <- NULL
-      
+
     }else{
-      
+
       class <- k$layers$Dense
       args$kernel_initializer=kernel_initializer
       args$bias_initializer=bias_initializer
-    
+
     }
 
     create_layer(layer_class = class,
@@ -116,7 +112,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
   if(!is.null(this_param$smoothterms)){
     these_lambdas = unlist(sapply(this_param$smoothterms, function(x) x[[1]]$sp))
     lambdas = c(lambdas, these_lambdas)
-    these_Ps = lapply(this_param$smoothterms, function(x) if(length(x)==1) x[[1]]$S else 
+    these_Ps = lapply(this_param$smoothterms, function(x) if(length(x)==1) x[[1]]$S else
       list(Matrix::bdiag(lapply(x,function(y)y$S[[1]]))))
     is_TP <- sapply(these_Ps, length) > 1
     if(any(is_TP))
@@ -157,11 +153,11 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
 
   name <- "structured_nonlinear"
   if(!is.null(nr)) name <- paste(name, nr, sep="_")
-  
+
   if(trafo){
-    
+
     return(bdiag(lapply(1:length(Ps), function(j) lambdas[j] * Ps[[j]])))
-    
+
   }
 
   layer_spline(input_shape = list(as.integer(params)),

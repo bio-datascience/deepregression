@@ -64,7 +64,7 @@ structured layer}
 
 \item{nr_params}{number of distribution parameters}
 
-\item{lss}{whether or not to model the whole distribution 
+\item{lss}{whether or not to model the whole distribution
 (lss in the style of location, scale and shape approaches)}
 
 \item{train_together}{see \code{?deepregression}}

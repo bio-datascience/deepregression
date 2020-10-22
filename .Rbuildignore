@@ -1,1 +1,6 @@
 ^\.github$
+^doc$
+^Meta$
+.travis.yml
+deepregression.Rproj
+README_files
