@@ -24,27 +24,33 @@ test_that("reproducibility", {
     layer_dense(units = 16, activation = "relu") %>%
     layer_dense(units = 1, activation = "linear")
 
-
-  tensorflow:::use_session_with_seed(1)
   mod1 <- deepregression(
     y = y,
     data = data,
+    tf_seed = 1L,
     list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
     list_of_deep_models = list(d = deep_model)
   )
-  mod1 %>% fit(epochs=2L, verbose = FALSE, view_metrics = FALSE)
-  mean1 <- mod1 %>% fitted()
 
-  tensorflow:::use_session_with_seed(1)
   mod2 <- deepregression(
     y = y,
     data = data,
+    tf_seed = 1L,
     list_of_formulae = list(loc = ~ 1 + d(x), scale = ~1),
     list_of_deep_models = list(d = deep_model)
   )
+
+  # before training
+  expect_equal(coef(mod1), coef(mod2))
+  expect_equal(mean1, mean2)
+
+  mod1 %>% fit(epochs=2L, verbose = FALSE, view_metrics = FALSE)
+  mean1 <- mod1 %>% fitted()
+
   mod2 %>% fit(epochs=2L, verbose = FALSE, view_metrics = FALSE)
   mean2 <- mod1 %>% fitted()
 
+  # after training
+  expect_equal(coef(mod1), coef(mod2))
   expect_equal(mean1, mean2)
-
-  })
+})
