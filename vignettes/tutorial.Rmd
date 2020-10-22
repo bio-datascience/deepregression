@@ -389,8 +389,6 @@ would orthogonalize the network in the same way as in the previous [Orthogonaliz
 We first create a very simple regression where we try to model the non-linear part of the data generating process using a complex neural network and an intercept using a structured linear part.
 
 ```{r, cache = TRUE}
-tensorflow:::use_session_with_seed(1)
-
 set.seed(24)
 
 # generate the data
