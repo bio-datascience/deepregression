@@ -335,7 +335,8 @@ prepare_data <- function(
       data, pred=pred)
     
     # for trafo models
-    if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
+    if(length(x$init_params$parsed_formulae_contents)>1 && 
+       !is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
       return(list(data=newdata_processed, 
                   minval=attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
     
