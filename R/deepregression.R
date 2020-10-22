@@ -153,9 +153,9 @@ deepregression <- function(
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "multinomial", "multinoulli", "negbinom", "pareto", "poisson", 
+    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto", "poisson", 
     "poisson_lograte", "student_t",
-    "student_t_ls", "truncated_normal", "uniform", "zip",
+    "student_t_ls", "truncated_normal", "uniform", "zinb", "zip",
     "transformation_model"
   ),
   train_together = list(),
@@ -942,7 +942,7 @@ deepregression_init <- function(
   if(lss){
     
     # special families needing transformations
-    if(family %in% c("betar", "gammar", "negbinom")){
+    if(family %in% c("betar", "gammar")){
       
       # trafo_list <- family_trafo_funs(family)
       # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)

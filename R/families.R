@@ -113,6 +113,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                        tfd_negative_binomial(total_count = fail, probs = probs#,
                                              # validate_args = TRUE
                        ),
+                     negbinom_ls = tfd_negative_binomial_ls,
                      pareto = tfd_pareto,
                      poisson = tfd_poisson,
                      poisson_lograte = function(log_rate) 
@@ -124,6 +125,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                      uniform = tfd_uniform,
                      von_mises_fisher = tfd_von_mises_fisher,
                      von_mises = tfd_von_mises,
+                     zinb = tfd_zinb,
                      zip = tfd_zip
                      # zipf = function(x)
                      #   tfd_zipf(x, 
@@ -196,6 +198,8 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                          function(x) add_const + tfe(x)),
                          negbinom = list(function(x) x,
                                          function(x) x),
+                         negbinom_ls = list(function(x) tf$math$exp(x), 
+                                            function(x) tf$math$exp(x)),
                          multinomial = list(function(x) tfsoft(x)),
                          multinoulli = list(function(x) x), 
                          pareto = list(function(x) add_const + tfe(x),
@@ -211,6 +215,10 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                         function(x) x),
                          von_mises = list(function(x) x,
                                           function(x) add_const + tfe(x)),
+                         zinb = list(function(x) tf$math$exp(x), tf$math$exp(x),
+                                     function(x) tf$stack(list(tf$math$sigmoid(x),
+                                                               1-tf$math$sigmoid(x)),
+                                                          axis=2L)),
                          zip = list(function(x) tf$math$exp(x),
                                     function(x) tf$stack(list(tf$math$sigmoid(x),
                                                               1-tf$math$sigmoid(x)),
@@ -392,6 +400,36 @@ tfd_zip <- function(lambda, probs)
                 components = 
                   list(tfd_poisson(rate = lambda),
                        tfd_deterministic(loc = lambda * 0L)
+                  ),
+                name="zip")
+  )
+}
+
+tfd_negative_binomial_ls = function(mu, r){
+  
+  sig2 <- mu + (mu*mu / r)
+  count <- mu*mu / (sig2 - mu + 1e-8)
+  probs <- tf$compat$v2$clip_by_value(
+    count / (count + mu),
+    0, 1
+  )
+  
+  return(tfd_negative_binomial(total_count = count, probs = probs))
+}
+
+#' Implementation of a zero-inflated negbinom distribution for TFP
+#' 
+#' @param 
+#' @param probs vector of probabilites of length 2 (probability for poisson and 
+#' probability for 0s)
+tfd_zinb <- function(mu, r, probs)
+{
+  
+  return(
+    tfd_mixture(cat = tfd_categorical(probs = probs),
+                components = 
+                  list(tfd_negative_binomial_ls(mu = mu, r = r),
+                       tfd_deterministic(loc = mu * 0L)
                   ),
                 name="zip")
   )
