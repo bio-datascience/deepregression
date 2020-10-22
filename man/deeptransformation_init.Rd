@@ -87,7 +87,7 @@ ensure positivity}
 \item{penalize_bsp}{scalar value > 0; amount of penalization of Bernstein polynomials}
 
 \item{order_bsp_penalty}{integer; order of Bernstein polynomial penalty. 0 results in a
-penalty based on integrated squared second order derivatives, values >= 1 in difference 
+penalty based on integrated squared second order derivatives, values >= 1 in difference
 penalties}
 }
 \description{
