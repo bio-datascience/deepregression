@@ -63,5 +63,4 @@ fit_fun <- function(object, x = NULL, y = NULL, batch_size = NULL, epochs = 10,
   history <- to_keras_training_history(history)
   write_history_metadata(history)
   invisible(history)
-
 }

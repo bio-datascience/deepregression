@@ -131,8 +131,8 @@ the via the ellipsis to the initialization function
 
 \item{tf_seed}{a seed for tensorflow (only works with R version >= 2.2.0)}
 
-\item{mixture_dist}{integer either 0 or >= 2. If 0 (default), 
-no mixture distribution is fitted. If >= 2, a network is constructed that outputs 
+\item{mixture_dist}{integer either 0 or >= 2. If 0 (default),
+no mixture distribution is fitted. If >= 2, a network is constructed that outputs
 a multivariate response for each of the mixture components.}
 
 \item{split_fun}{a function separating the deep neural network in two parts
@@ -229,9 +229,9 @@ mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
 list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
 
+# train for 100 epochs to get a better model
 if(!is.null(mod)){
-   mod \%>\% fit(epochs = 100)
+   mod \%>\% fit(epochs = 10)
    mod \%>\% plot()
 }
-
 }
