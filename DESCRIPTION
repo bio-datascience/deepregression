@@ -24,7 +24,7 @@ Suggests:
     rsvd,
     testthat,
     knitr
-Imports: 
+Imports:
     tensorflow (>= 2.2.0),
     tfprobability,
     keras,
