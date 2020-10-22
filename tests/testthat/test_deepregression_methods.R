@@ -49,6 +49,10 @@ test_that("all methods", {
   expect_output(print(mod), "Model")
   expect_output(print(mod), "Total params: 14")
 
+  dst = get_distribution(mod)
+  expect_is(dst, "python.builtin.object")
 
-
+  ls = log_score(mod, data)
+  expect_true(all(ls < 0))
+  expect_true(all(dim(ls) == c(500, 1)))
 })
