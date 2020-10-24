@@ -425,8 +425,7 @@ deepregression <- function(
     if(is.data.frame(validation_data[[1]]))
       validation_data[[1]] <- as.list(validation_data[[1]])
     validation_data[[1]] <- prepare_newdata(parsed_formulae_contents,
-                                            validation_data[[1]],
-                                            pred = TRUE)
+                                            validation_data[[1]])
 
     if(!is.null(offset_val)){
       # print("Using an offset.")
@@ -514,7 +513,7 @@ deepregression <- function(
       prior = prior_fun,
       ind_fun = ind_fun,
       extend_output_dim = extend_output_dim,
-      offset = if(is.null(offset)) NULL else lapply(offset, NCOL),
+      offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
       orthog_fun = orthog_fun,
       additional_penalty = additional_penalty,
       ...
@@ -705,7 +704,7 @@ deepregression_init <- function(
   if(!is.null(offset)){
 
     offset_inputs <- lapply(offset, function(odim){
-      if(is.null(odim)) return(NULL) else{
+      if(is.null(odim) | odim==0) return(NULL) else{
         return(
           layer_input(shape = list(odim))
         )
@@ -901,10 +900,10 @@ deepregression_init <- function(
 
     for(i in 1:length(list_pred_param)){
 
-      if(!offset[[i]])
+      if(!is.null(offset[[i]]) & offset[[i]]!=0)
         list_pred_param[[i]] <- layer_add(list(list_pred_param[[i]],
                                                offset_layers[[i]]))
-
+      
     }
 
   }
