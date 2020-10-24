@@ -726,6 +726,7 @@ print.deepregression <- function(
 #' @param save_weights logical, whether to save weights in each epoch.
 #' @param cv_folds see \code{deepregression}
 #' @param stop_if_nan logical; whether to stop CV if NaN values occur
+#' @param callbacks a list of callbacks used for fitting
 #' @export
 #' @rdname methodDR
 #'
@@ -744,6 +745,7 @@ cv <- function(
   stop_if_nan = TRUE,
   mylapply = lapply,
   save_weights = FALSE,
+  callbacks = list(),
   ...
 )
 {
@@ -798,7 +800,7 @@ cv <- function(
     }
 
     # make callbacks
-    this_callbacks <- list()
+    this_callbacks <- callbacks
     if(save_weights){
       weighthistory <- WeightHistory$new()
       this_callbacks <- append(this_callbacks, weighthistory)
@@ -849,7 +851,7 @@ cv <- function(
 
   class(res) <- c("drCV","list")
 
-  if(plot) try(plot(res))
+  if(plot) try(plot_cv(res))
 
   x$model$set_weights(old_weights)
 

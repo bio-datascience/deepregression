@@ -748,7 +748,6 @@ extract_cv_result <- function(res, name_loss = "loss", name_val_loss = "val_loss
 
 #' Plot CV results from deepregression
 #'
-#' @method plot drCV
 #' @param x \code{drCV} object returned by \code{cv.deepregression}
 #' @param what character indicating what to plot (currently supported 'loss'
 #' or 'weights')
@@ -756,13 +755,13 @@ extract_cv_result <- function(res, name_loss = "loss", name_val_loss = "val_loss
 #'
 #' @export
 #'
-plot.drCV <- function(x, what=c("loss","weight"), ...){
+plot_cv <- function(x, what=c("loss","weight"), ...){
 
   .pardefault <- par()
   cres <- extract_cv_result(x)
 
   what <- match.arg(what)
-
+  
   if(what=="loss"){
 
     loss <- cres$trainloss

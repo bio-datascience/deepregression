@@ -1021,7 +1021,7 @@ deepregression_init <- function(
   if(!is.null(additional_penalty)){
 
     add_loss <- function(x) additional_penalty(
-      model$trainable_weight
+      model$trainable_weights
     )
     model$add_loss(add_loss)
 

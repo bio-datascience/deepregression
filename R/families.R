@@ -422,7 +422,7 @@ tfd_negative_binomial_ls = function(mu, r){
 
 #' Implementation of a zero-inflated negbinom distribution for TFP
 #' 
-#' @param 
+#' @param mu,r parameter of the negbin_ls distribution
 #' @param probs vector of probabilites of length 2 (probability for poisson and 
 #' probability for 0s)
 tfd_zinb <- function(mu, r, probs)

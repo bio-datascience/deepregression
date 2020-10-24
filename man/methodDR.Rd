@@ -66,6 +66,7 @@ cv(
   stop_if_nan = TRUE,
   mylapply = lapply,
   save_weights = FALSE,
+  callbacks = list(),
   ...
 )
 
@@ -125,7 +126,7 @@ per default \code{as.matrix}}
 
 \item{val_data}{optional specified validation data}
 
-\item{callbacks}{a list of callbacks for fitting}
+\item{callbacks}{a list of callbacks used for fitting}
 
 \item{variational}{logical, if TRUE, the function takes into account
 that coefficients have both a mean and a variance}

@@ -61,7 +61,8 @@ with parameters (and corresponding inverse link function in brackets):
  \item{"log_normal": }{Log-normal with location (identity) and scale (exp) of
  underlying normal distribution}
  \item{"logistic": }{logistic with location (identity) and scale (exp)}
- \item{"negbinom": }{neg. binomial with mean (exp) and st.dev.(exp)}
+ \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
+ \item{"negbinom": }{neg. binomail with mean (exp) and clutter factor (exp)}
  \item{"pareto": }{Pareto with concentration (exp) (and if modeled scale (exp),
  else scale = 1)}
  \item{"poisson": }{poisson with rate (exp)}
@@ -70,6 +71,7 @@ with parameters (and corresponding inverse link function in brackets):
  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and
  scale (exp)}
  \item{"uniform": }{uniform with upper and lower (both identity)}
- \item{"zip":  }{Zero-inflated poisson distribution with }
+ \item{"zinb": }{Zero-inflated negative binomial with mean (exp), variance (exp) and prob (sigmoid)}
+ \item{"zip":  }{Zero-inflated poisson distribution with mean (exp) and prob (sigmoid)}
 }
 }
