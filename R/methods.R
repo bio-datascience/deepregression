@@ -370,7 +370,7 @@ predict.deepregression <- function(
   }else{
     # preprocess data
     if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(object, newdata, pred=TRUE)
+    newdata_processed <- prepare_data(object, newdata, pred=FALSE)
     yhat <- object$model(newdata_processed)
   }
 
