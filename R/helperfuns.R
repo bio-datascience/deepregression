@@ -679,8 +679,8 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
   }
   input_cov_new <- make_cov(pfc, data, pred = pred,
                             zc = attr(pfc, "zero_cons"))
-  if(pred & !is.null(data))
-    pfc <- get_contents_newdata(pfc, data)
+  # if(pred & !is.null(data))
+  #   pfc <- get_contents_newdata(pfc, data)
   ox <- lapply(pfc, make_orthog)
   if(pred){
     ox <- unlist(lapply(ox, function(x_per_param)

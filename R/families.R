@@ -295,33 +295,34 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
         tf$constant(0) + add_const)
 
       return(list(a,b))
-    },
-    negbinom = function(x){
-
-      # see, e.g., https://www.johndcook.com/negative_binomial.pdf
-
-      mu <- tfe(x[,1,drop=FALSE])
-      sig2 <- tfsq(tfe(x[,2,drop=FALSE]))
-      f = tf$compat$v2$clip_by_value(
-        tfdiv(tfsq(mu),sig2-mu),
-        add_const, Inf
-        )
-      p = tf$compat$v2$clip_by_value(
-        tfdiv(f, f+mu),
-        0, 1
-        )
-
-      return(list(f,p))
     }
+    # },
+    # negbinom = function(x){
+    # 
+    #   # see, e.g., https://www.johndcook.com/negative_binomial.pdf
+    # 
+    #   mu <- tfe(x[,1,drop=FALSE])
+    #   sig2 <- tfsq(tfe(x[,2,drop=FALSE]))
+    #   f = tf$compat$v2$clip_by_value(
+    #     tfdiv(tfsq(mu),sig2-mu),
+    #     add_const, Inf
+    #     )
+    #   p = tf$compat$v2$clip_by_value(
+    #     tfdiv(f, f+mu),
+    #     0, 1
+    #     )
+    # 
+    #   return(list(f,p))
+    # }
   )
 
   tfd_dist <- switch(family,
                      betar = tfd_beta,
-                     gammar = tfd_gamma,
-                     negbinom = function(fail, probs)
-                       tfd_negative_binomial(total_count = fail, probs = probs#,
+                     gammar = tfd_gamma# ,
+                     # negbinom = function(fail, probs)
+                     #   tfd_negative_binomial(total_count = fail, probs = probs#,
                                              # validate_args = TRUE
-                       )
+                       # )
   )
 
   ret_fun <- function(x) do.call(tfd_dist, trafo_fun(x))
@@ -417,7 +418,7 @@ tfd_negative_binomial_ls = function(mu, r){
     # 0, 1
   # )
   
-  return(tfd_negative_binomial(total_count = r, probs = probs))
+  return(tfd_negative_binomial(total_count = r, probs = 1-probs))
 }
 
 #' Implementation of a zero-inflated negbinom distribution for TFP
