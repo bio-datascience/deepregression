@@ -1,0 +1,72 @@
+context("families")
+
+test_that("tfd families", {
+  families =  c("normal", "bernoulli", "bernoulli_prob", "beta", "betar",
+    "cauchy", "chi2", "chi",
+    "exponential", "gamma", "gammar",
+    "gumbel", "half_cauchy", "half_normal", "horseshoe",
+    "inverse_gamma", "inverse_gaussian", "laplace",
+    "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
+    "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
+    "uniform",
+    "zip"
+  )
+  for (fam in families) {
+    d = make_tfd_dist(fam)
+    expect_is(d, "function")
+    np = make_tfd_dist(fam, return_nrparams = TRUE)
+    expect_true(np %in% c(1:3))
+  }
+
+    d = make_tfd_dist("zip", trafo_list = list(exp, exp))
+    expect_is(d, "function")
+})
+
+test_that("tfd families can be fitted", {
+
+  n <- 100
+
+  # FIXME: Currently not working:
+  # NA in history: "pareto"
+  # NA in fitted: "cauchy", "half_cauchy", "inverse_gamma", "student_t", "student_t_ls", "uniform"
+
+  dists = c(
+    "normal", "bernoulli", "bernoulli_prob",
+    "beta", "betar", "chi2", "chi","exponential",
+    "gamma", "gammar", "gumbel", "half_normal", "horseshoe",
+    "inverse_gaussian", "laplace", "log_normal",
+    "logistic", "negbinom", "negbinom",
+    "poisson", "poisson_lograte"
+  )
+
+  for(dist in dists) {
+    set.seed(24)
+    x <- runif(n) %>% as.matrix()
+    z <- runif(n) %>% as.matrix()
+    y <- as.matrix(0.5*x + rnorm(n, 0, 0.1*z) + 1)
+    data = data.frame(x = x, z = z)
+    if (dist %in% c("beta", "betar")) {
+      y <- (y - min(y)) / (max(y) + 0.01 - min(y)) + runif(n, 1e-5, 1e-4)
+    }
+    suppressWarnings(
+      mod <- deepregression(
+        y = y,
+        data = data,
+        # define how parameters should be modeled
+        list_of_formulae = list(~ 1 + x, ~ 1 + z, ~ 1),
+        list_of_deep_models = NULL,
+        family = dist
+      )
+    )
+    res <- mod %>% fit(epochs=2L, verbose = FALSE, view_metrics = FALSE)
+    expect_true(!sum(is.nan(unlist(res$metrics))) > 0)
+    expect_true(!any(unlist(res$metrics)==Inf))
+    expect_is(mod, "deepregression")
+    expect_true(!any(is.nan(unlist(coef(mod)))))
+    expect_true(!any(is.nan(fitted(mod))))
+    suppressWarnings(res <- mod %>% predict(data))
+    expect_true(is.numeric(res))
+    expect_true(!any(is.nan(res)))
+  }
+
+})
