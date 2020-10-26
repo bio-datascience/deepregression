@@ -180,7 +180,7 @@ context("Deep Specification")
 
 test_that("deep specification", {
   set.seed(24)
-  n <- 100
+  n <- 200
   b0 <- 1
   x <- runif(n) %>% as.matrix()
   z <- runif(n)
