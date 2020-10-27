@@ -251,3 +251,17 @@ test_that("deep specification", {
     expect_true(!any(is.nan(res)))
   }
 })
+
+
+test_that("tffuns", {
+  x = 2
+  y = 3
+  expect_is(tfe(x), "tensorflow.tensor")
+  expect_is(tfsig(x), "tensorflow.tensor")
+  expect_is(tfsoft(x), "tensorflow.tensor")
+  expect_is(tfsqrt(x), "tensorflow.tensor")
+  expect_is(tfsq(x), "tensorflow.tensor")
+  expect_is(tfdiv(x,y), "tensorflow.tensor")
+  expect_is(tfrec(x), "tensorflow.tensor")
+  expect_is(tfmult(x,y), "tensorflow.tensor")
+})
