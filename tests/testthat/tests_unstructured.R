@@ -258,10 +258,10 @@ test_that("tffuns", {
   y = 3
   expect_is(tfe(x), "tensorflow.tensor")
   expect_is(tfsig(x), "tensorflow.tensor")
-  expect_is(tfsoft(x), "tensorflow.tensor")
+  expect_is(tfsoft(c(x,y)), "tensorflow.tensor")
   expect_is(tfsqrt(x), "tensorflow.tensor")
   expect_is(tfsq(x), "tensorflow.tensor")
-  expect_is(tfdiv(x,y), "tensorflow.tensor")
+  expect_is(tfdiv(x,y), c("numeric","tensorflow.tensor"))
   expect_is(tfrec(x), "tensorflow.tensor")
   expect_is(tfmult(x,y), "tensorflow.tensor")
 })
