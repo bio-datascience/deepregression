@@ -131,10 +131,7 @@ test_that("generalized additive model", {
   # expect_object_dims(mod, data, c(1,1),c(10, 1))
 })
 
-
-
-
-test_that("deep generaliz additive model with LSS", {
+test_that("deep generalized additive model with LSS", {
   set.seed(24)
   # generate the data
   n <- 500

@@ -200,7 +200,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                          function(x) add_const + tfe(x)),
                          negbinom = list(function(x) add_const + tfe(x),
                                          function(x) tf$math$sigmoid(x)),
-                         negbinom_ls = list(function(x) add_const + tfe(x), 
+                         negbinom_ls = list(function(x) add_const + tfe(x),
                                             function(x) add_const + tfe(x)),
                          multinomial = list(function(x) tfsoft(x)),
                          multinoulli = list(function(x) x),
@@ -217,7 +217,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                         function(x) x),
                          von_mises = list(function(x) x,
                                           function(x) add_const + tfe(x)),
-                         zinb = list(function(x) add_const + tfe(x), 
+                         zinb = list(function(x) add_const + tfe(x),
                                      function(x) add_const + tfe(x),
                                      function(x) tf$stack(list(tf$math$sigmoid(x),
                                                                1-tf$math$sigmoid(x)),
@@ -298,9 +298,9 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
     }
     # },
     # negbinom = function(x){
-    # 
+    #
     #   # see, e.g., https://www.johndcook.com/negative_binomial.pdf
-    # 
+    #
     #   mu <- tfe(x[,1,drop=FALSE])
     #   sig2 <- tfsq(tfe(x[,2,drop=FALSE]))
     #   f = tf$compat$v2$clip_by_value(
@@ -311,7 +311,7 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
     #     tfdiv(f, f+mu),
     #     0, 1
     #     )
-    # 
+    #
     #   return(list(f,p))
     # }
   )
@@ -410,7 +410,7 @@ tfd_zip <- function(lambda, probs)
 }
 
 tfd_negative_binomial_ls = function(mu, r){
-  
+
   # sig2 <- mu + (mu*mu / r)
   # count <- r
   probs <- #1-tf$compat$v2$clip_by_value(
@@ -419,19 +419,20 @@ tfd_negative_binomial_ls = function(mu, r){
   # )
   
   return(tfd_negative_binomial(total_count = r, probs = probs))
+
 }
 
 #' Implementation of a zero-inflated negbinom distribution for TFP
-#' 
+#'
 #' @param mu,r parameter of the negbin_ls distribution
-#' @param probs vector of probabilites of length 2 (probability for poisson and 
+#' @param probs vector of probabilites of length 2 (probability for poisson and
 #' probability for 0s)
 tfd_zinb <- function(mu, r, probs)
 {
-  
+
   return(
     tfd_mixture(cat = tfd_categorical(probs = probs),
-                components = 
+                components =
                   list(tfd_negative_binomial_ls(mu = mu, r = r),
                        tfd_deterministic(loc = mu * 0L)
                   ),
@@ -446,7 +447,6 @@ tfd_zinb <- function(mu, r, probs)
 #' @param with_cov logical; whether or not to have a full covariance
 #' @param trafos_scale transformation function for the scale
 #' @param add_const small positive constant to stabilize calculations
-#'
 multinorm_maker <- function(dim = 2,
                             with_cov = TRUE,
                             trafos_scale = exp,
@@ -514,4 +514,3 @@ multinorm_maker <- function(dim = 2,
   }
 
 }
-
