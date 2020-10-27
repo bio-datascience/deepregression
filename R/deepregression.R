@@ -153,7 +153,7 @@ deepregression <- function(
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto", "poisson", 
+    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto", "poisson",
     "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform", "zinb", "zip",
     "transformation_model"
@@ -210,7 +210,7 @@ deepregression <- function(
 {
 
   # TF seed -> does not work atm
-  if(!is.null(tf_seed))
+  if(!is.null(tf_seed)) # nocov start
     try(tensorflow::use_session_with_seed(tf_seed), silent = TRUE)
 
   # first check if an env is available
@@ -226,7 +226,7 @@ deepregression <- function(
     message("Tensorflow not available. Use install_tensorflow() ",
             "or check_and_install() to update you system.")
     invisible(return(NULL))
-  }
+  } # nocov end
 
   # check family
   family <- match.arg(family)
@@ -903,7 +903,7 @@ deepregression_init <- function(
       if(!is.null(offset[[i]]) & offset[[i]]!=0)
         list_pred_param[[i]] <- layer_add(list(list_pred_param[[i]],
                                                offset_layers[[i]]))
-      
+
     }
 
   }
@@ -941,7 +941,7 @@ deepregression_init <- function(
     # special families needing transformations
 
     if(family %in% c("betar", "gammar")){
-      
+
       # trafo_list <- family_trafo_funs(family)
       # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
       # preds <- layer_concatenate(predsTrafo)

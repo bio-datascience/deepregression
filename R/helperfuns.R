@@ -298,11 +298,12 @@ get_contents <- function(lf, data, df,
     terms_w_s <- lapply(terms_w_s, function(x) x[!grepl("=", x, fixed=T)])
     smoothterms <-
       lapply(sTerms,
-             function(t)
-               smoothCon(eval(t),
+             function(t) {
+             smoothCon(eval(t),
                          data=data.frame(data[unname(unlist(terms_w_s))]),
                          knots=NULL, absorb.cons = absorb_cons,
-                         null.space.penalty = null_space_penalty))
+                         null.space.penalty = null_space_penalty)
+      })
 
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
@@ -761,7 +762,7 @@ plot_cv <- function(x, what=c("loss","weight"), ...){
   cres <- extract_cv_result(x)
 
   what <- match.arg(what)
-  
+
   if(what=="loss"){
 
     loss <- cres$trainloss
