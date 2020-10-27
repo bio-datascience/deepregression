@@ -104,13 +104,13 @@ test_that("custom orthogonalization", {
   )
 
   for (form in formulae) {
-    mod <- deepregression(
+    suppressWarnings(mod <- deepregression(
       y = y,
       data = data,
       # define how parameters should be modeled
       list_of_formulae = list(loc = as.formula(form), scale = ~1),
       list_of_deep_models = list(deep_model)
-    )
+    ))
 
     suppressWarnings(mod %>% fit(epochs=1, verbose = FALSE, view_metrics = FALSE))
 
