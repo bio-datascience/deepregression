@@ -418,7 +418,7 @@ tfd_negative_binomial_ls = function(mu, r){
     # 0, 1
   # )
   
-  return(tfd_negative_binomial(total_count = r, probs = 1-probs))
+  return(tfd_negative_binomial(total_count = r, probs = probs))
 }
 
 #' Implementation of a zero-inflated negbinom distribution for TFP
