@@ -374,7 +374,7 @@ get_contents <- function(lf, data, df,
     deepterms <- NULL
   }else{
     deepterms <- lapply(dterms[sapply(dterms,length)>0], function(dt){
-      if(grepl("%OZ%",dt)){
+      if(length(dt) == 1 && grepl("%OZ%",dt)){
        dt_split <- trimws(strsplit(dt, "%OZ%")[[1]])
        dt <- dt_split[[1]]
        dtoz <- dt_split[[2]]
