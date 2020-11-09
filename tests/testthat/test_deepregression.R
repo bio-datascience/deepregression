@@ -87,7 +87,7 @@ test_that("generalized additive model", {
   suppressWarnings(expect_object_dims(mod, data, c(19, 1)))
 
 
-  # FIXME: Shouldnt this work?
+  # FIXME Shouldnt this work?
   # # 2 deep 1 structured no intercept
   # mod <- deepregression(
   #   y = y,
@@ -120,7 +120,7 @@ test_that("generalized additive model", {
   suppressWarnings(expect_object_dims(mod, data, c(19, 1)))
 
 
-  # FIXME: Shouldnt this work?
+  # FIXME Shouldnt this work?
   # # 2 deep 1 structured no intercept
   # mod <- deepregression(
   #   y = y,
