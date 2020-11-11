@@ -873,7 +873,7 @@ cv <- function(
 #'
 mean.deepregression <- function(
   x,
-  data,
+  data = NULL,
   ...
 )
 {
@@ -902,7 +902,7 @@ sd <- function (x, ...) {
 #'
 sd.deepregression <- function(
   x,
-  data,
+  data = NULL,
   ...
 )
 {
@@ -931,7 +931,7 @@ quantile <- function (x, ...) {
 #'
 quantile.deepregression <- function(
   x,
-  data,
+  data = NULL,
   value,
   ...
 )
@@ -951,7 +951,7 @@ quantile.deepregression <- function(
 #'
 get_distribution <- function(
   x,
-  data=NULL
+  data = NULL
 )
 {
   if(is.null(data)){

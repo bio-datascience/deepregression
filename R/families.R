@@ -50,8 +50,9 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"logistic": }{logistic with location (identity) and scale (exp)}
 #'  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
 #'  \item{"negbinom": }{neg. binomail with mean (exp) and clutter factor (exp)}
-#'  \item{"pareto": }{Pareto with concentration (exp) (and if modeled scale (exp),
-#'  else scale = 1)}
+#'  \item{"pareto_ls": }{Pareto location scale version with mean (exp) 
+#'  and scale (exp), which corresponds to a Pareto distribution with parameters scale = mean
+#'  and concentration = 1/sigma, where sigma is the scale in the pareto_ls version.}
 #'  \item{"poisson": }{poisson with rate (exp)}
 #'  \item{"poisson_lograte": }{poisson with lograte (identity))}
 #'  \item{"student_t": }{Student's t with df (exp)}
@@ -116,7 +117,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                              # validate_args = TRUE
                        ),
                      negbinom_ls = tfd_negative_binomial_ls,
-                     pareto = tfd_pareto,
+                     pareto_ls = tfd_pareto,
                      poisson = tfd_poisson,
                      poisson_lograte = function(log_rate)
                        tfd_poisson(log_rate = log_rate),
@@ -204,7 +205,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                             function(x) add_const + tfe(x)),
                          multinomial = list(function(x) tfsoft(x)),
                          multinoulli = list(function(x) x),
-                         pareto = list(function(x) add_const + tfe(x),
+                         pareto_ls = list(function(x) add_const + tfe(x),
                                        function(x) add_const + tfe(x)),
                          poisson = list(function(x) add_const + tfe(x)),
                          poisson_lograte = list(function(x) x),
@@ -295,6 +296,14 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
         tf$constant(0) + add_const)
 
       return(list(a,b))
+    },
+    pareto_ls = function(x){
+      
+      scale = add_const + tfe(x[,1,drop=FALSE])
+      con = tfe(-x[,2,drop=FALSE])
+      return(list(con, scale)) 
+      
+      
     }
     # },
     # negbinom = function(x){
@@ -318,7 +327,8 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
 
   tfd_dist <- switch(family,
                      betar = tfd_beta,
-                     gammar = tfd_gamma# ,
+                     gammar = tfd_gamma,
+                     pareto_ls = tfd_pareto
                      # negbinom = function(fail, probs)
                      #   tfd_negative_binomial(total_count = fail, probs = probs#,
                                              # validate_args = TRUE

@@ -7,7 +7,7 @@ test_that("tfd families", {
     "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace",
     "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
-    "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
+    "pareto_ls", "poisson", "poisson_lograte", "student_t", "student_t_ls",
     "uniform",
     "zip"
   )
@@ -45,7 +45,6 @@ test_that("tfd families can be fitted", {
   n <- 100
 
   # FIXME: Currently not working:
-  # NA in history: "pareto"
   # NA in fitted: "cauchy", "half_cauchy", "inverse_gamma", "student_t", "student_t_ls", "uniform"
 
   dists = c(
@@ -54,7 +53,7 @@ test_that("tfd families can be fitted", {
     "gamma", "gammar", "gumbel", "half_normal", "horseshoe",
     "inverse_gaussian", "laplace", "log_normal",
     "logistic", "negbinom", "negbinom",
-    "poisson", "poisson_lograte"
+    "pareto_ls", "poisson", "poisson_lograte"
   )
 
   for(dist in dists) {

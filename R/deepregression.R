@@ -153,7 +153,7 @@ deepregression <- function(
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
     "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto", "poisson",
+    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto_ls", "poisson",
     "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform", "zinb", "zip",
     "transformation_model"
@@ -940,7 +940,7 @@ deepregression_init <- function(
 
     # special families needing transformations
 
-    if(family %in% c("betar", "gammar")){
+    if(family %in% c("betar", "gammar", "pareto_ls")){
 
       # trafo_list <- family_trafo_funs(family)
       # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
@@ -1014,9 +1014,15 @@ deepregression_init <- function(
 
   # the negative log-likelihood is given by the negative weighted
   # log probability of the model
-  negloglik <- function(y, model)
-    - weights * (model %>% ind_fun() %>% tfd_log_prob(y))
-
+  if(family!="pareto_ls"){  
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y)) 
+  }else{
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$mean()))
+  }
+        
+  
   if(!is.null(additional_penalty)){
 
     add_loss <- function(x) additional_penalty(
