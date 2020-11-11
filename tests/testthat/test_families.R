@@ -105,3 +105,21 @@ test_that("multinorm", {
   expect_is(mkd$cdf, "python.builtin.method")
   expect_true(as.numeric(mkd$log_prob(1:2)) < 0)
 })
+
+# FIXME Do not know how to fix this, might also be a bug!
+# test_that("multinorm - no_cov", {
+#   mxdist = multinorm_maker(with_cov=FALSE)
+#   expect_is(mxdist, "function")
+#   mkd = mxdist(matrix(rep(1,4), nrow=1L))
+#   expect_is(mkd, "python.builtin.object")
+#   expect_is(mkd$cdf, "python.builtin.method")
+#   expect_true(as.numeric(mkd$log_prob(1:2)) < 0)
+# })
+
+test_that("tfd_zip", {
+  zipfun = tfd_zip(probs=c(0.1, 0.9), lambda=2)
+  expect_is(zipfun, "python.builtin.object")
+  expect_is(zipfun$cdf, "python.builtin.method")
+  expect_true(as.numeric(zipfun$log_prob(1)) < 0)
+  expect_true(as.numeric(zipfun$log_prob(0)) > as.numeric(zipfun$log_prob(1)))
+})
