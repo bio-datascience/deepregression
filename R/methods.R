@@ -37,7 +37,7 @@ plot.deepregression <- function(
 
   plotData <- vector("list", length(which))
   org_feature_names <-
-    names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
+    names(x$init_params$l_names_effects[[which_param]][["smoothterms"]])
   phi <- x$model$get_layer(paste0("structured_nonlinear_",
                                   which_param))$get_weights()
   if(length(phi)>1){
@@ -118,7 +118,10 @@ plot.deepregression <- function(
         df <- as.data.frame(expand.grid(this_x,
                                         this_y))
         colnames(df) <- sTerm$term
-        pred <- PredictMat(sTerm, data = df)%*%phi[this_ind_this_w,]
+        pmat <- PredictMat(sTerm, data = df)
+        if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+          pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
+        pred <- pmat%*%phi[this_ind_this_w,]
         #this_z <- plotData[[w]]$partial_effect
         filled.contour(
           this_x,
@@ -174,7 +177,7 @@ plot.deeptrafo <- function(
 
   plotData <- vector("list", length(which))
   org_feature_names <-
-    names(x$init_params$l_names_effets[[which_param]][["smoothterms"]])
+    names(x$init_params$l_names_effects[[which_param]][["smoothterms"]])
   if(which_param==1){
     phi <- matrix(get_shift(x), ncol=1)
   }else{
@@ -549,6 +552,9 @@ fit <- function (x, ...) {
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param val_data optional specified validation data
 #' @param callbacks a list of callbacks for fitting
+#' @param generator if not NULL, fitting is done using the provided generator
+#' using \code{keras::fit_generator}. In this case \code{steps_per_epoch} also have to be provided. 
+#' Further arguments can be passed via \code{...}.
 #' @param ... further arguments passed to
 #' \code{keras:::fit.keras.engine.training.Model}
 #'
@@ -567,6 +573,7 @@ fit.deepregression <- function(
   auc_callback = FALSE,
   val_data = NULL,
   callbacks = list(),
+  generator = NULL,
   ...
 )
 {
@@ -592,6 +599,7 @@ fit.deepregression <- function(
                         auc_cb)
     verbose <- FALSE
   }
+  
   # if(monitor_weights){
   #   # object$history <- WeightHistory$new()
   #   weight_callback <- callback_lambda(
@@ -618,18 +626,85 @@ fit.deepregression <- function(
 
   }
 
+  if(any(sapply(input_x, function(x)class(x)[1])=="placeholder")){
+    input_y <- x$init_params$y
+    phs <- which(sapply(input_x, function(x)class(x)[1])=="placeholder")
+    batch_size <- list(...)$batch_size
+    if(is.null(batch_size)) batch_size <- 32
+    if(is.null(x$init_params$validation_split) & 
+       is.null(list(...)$validation_split))
+    {
+      # only fit generator
+      max_data <- NROW(input_x[[1]])
+      steps_per_epoch <- max_data%/%batch_size+1
+      generator <- make_generator(batch_size, max_data, phs, input_x, input_y)
+      
+      if(!is.null(list(...)$validation_data) | 
+         !is.null(x$init_params$validation_data)){
+        validation_data <- if(!is.null(list(...)$validation_data))
+          list(...)$validation_data else
+            x$init_params$validation_data
+        max_data <- NROW(validation_data[[1]][[1]])
+        validation_data <- make_generator(batch_size, max_data, phs, 
+                                          validation_data[[1]], 
+                                          validation_data[[2]])
+        validation_steps <- max_data%/%batch_size+1
+      }else{
+        validation_data <- NULL
+        validation_steps <- NULL
+      }
+    
+      
+    }else{
+      
+      val_split <- if(!is.null(list(...)$validation_split))
+        list(...)$validation_split else
+          x$init_params$validation_split
+
+      ind_val <- sample(1:NROW(input_y), round(NROW(input_y)*val_split))
+      ind_train <- setdiff(1:NROW(input_y), ind_val)
+      input_x_train <- subset_input_cov(input_x, ind_train)
+      input_x_val <- subset_input_cov(input_x, ind_val)
+      input_y_train <- subset_array(input_y, ind_train)
+      input_y_val <- subset_array(input_y, ind_val)
+                
+      max_data_train <- NROW(input_x_train[[1]])
+      steps_per_epoch <- max_data_train%/%batch_size+1
+      generator <- make_generator(batch_size, max_data_train, phs, 
+                                  input_x_train, input_y_train)
+      max_data_val <- NROW(input_x_val[[1]])
+      validation_steps <- max_data_val%/%batch_size+1
+      validation_data <- make_generator(batch_size, max_data_val, phs, 
+                                        input_x_val, input_y_val)
+      
+    }
+    
+  }
 
   args <- list(...)
   input_list_model <-
     list(object = x$model,
-         x = input_x,
-         y = x$init_params$y,
          validation_split = x$init_params$validation_split,
          validation_data = x$init_params$validation_data,
          callbacks = callbacks,
          verbose = verbose,
          view_metrics = view_metrics
     )
+  if(is.null(generator)){
+    input_list_model <- c(input_list_model,
+                          list(x = input_x,
+                               y = x$init_params$y
+                          ))
+  }else{
+    input_list_model$validation_split <- 
+      input_list_model$validation_data <- NULL
+    input_list_model <- c(input_list_model, list(
+      generator = generator,
+      steps_per_epoch = as.integer(steps_per_epoch),
+      validation_data = validation_data,
+      validation_steps = as.integer(validation_steps)
+    ))
+  }
   args <- append(args,
                  input_list_model[!names(input_list_model) %in%
                                     names(args)])
@@ -637,10 +712,15 @@ fit.deepregression <- function(
     args <- append(args,
                    x$init_params$ellipsis[
                      !names(x$init_params$ellipsis) %in% names(args)])
+  
+  if(!is.null(generator)){ 
+    args$validation_split <- NULL
+    args$batch_size <- NULL
+  }
 
-
-  ret <- do.call(fit_fun,
-                 args)
+  if(is.null(generator))
+    ret <- do.call(fit_fun, args) else
+      ret <- do.call(fit_generator, args)
   if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
   invisible(ret)
 }
@@ -650,6 +730,11 @@ fit.deepregression <- function(
 #' @param object a deepregression model
 #' @param variational logical, if TRUE, the function takes into account
 #' that coefficients have both a mean and a variance
+#' @param params integer, indicating for which distribution parameter
+#' coefficients should be returned (default is all parameters)
+#' @param type either NULL (all types of coefficients are returned),
+#' "linear" for linear coefficients or "smooth" for coefficients of 
+#' smooth terms
 #'
 #' @method coef deepregression
 #' @export
@@ -658,14 +743,19 @@ fit.deepregression <- function(
 coef.deepregression <- function(
   object,
   variational = FALSE,
+  params = NULL,
+  type = NULL,
   ...
 )
 {
   nrparams <- length(object$init_params$parsed_formulae_contents)
+  if(is.null(params)) params <- 1:nrparams
   layer_names <- sapply(object$model$layers, "[[", "name")
-  lret <- vector("list", nrparams)
+  lret <- vector("list", params)
   names(lret) <- object$init_params$param_names
-  for(i in 1:nrparams){
+  if(is.null(type))
+    type <- c("linear", "smooth")
+  for(i in params){
     sl <- paste0("structured_linear_",i)
     slas <- paste0("structured_lasso_",i)
     snl <- paste0("structured_nonlinear_",i)
@@ -692,6 +782,19 @@ coef.deepregression <- function(
       lret[[i]]$structured_nonlinear <- NULL
     }
 
+    sel <- which(c("linear", "smooth") %in% type)
+    fits_type <- as.numeric(object$init_params$ind_structterms[[i]]$type)==sel
+    length_names <- 
+      (
+        object$init_params$ind_structterms[[i]]$end - 
+          object$init_params$ind_structterms[[i]]$start + 1
+      )
+    sel_ind <- rep(fits_type, length_names)
+    lret[[i]] <- unlist(lret[[i]])
+    lret[[i]] <- lret[[i]][sel_ind]
+    names(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]])[fits_type],
+                            length_names[fits_type])
+    
   }
   return(lret)
 

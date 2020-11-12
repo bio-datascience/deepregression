@@ -25,6 +25,11 @@
 #' network is added to the linear predictor of the second and fourth distribution parameter.
 #' Those network names should then be excluded from the \code{list_of_formulae}
 #' @param data data.frame or named list with input features
+#' @param dim_deep list for each distribution parameter with NULL or integer vector entries; 
+#' this is an optional argument to manually specify the input dimensions for the unstructured 
+#' model part(s) and required if placeholders are used for unstructured data sources. E.g.,
+#' if the formula contains \code{nn(images)} where \code{images} are ids of images that
+#' are loaded using a generator, the size of the image is part of the respective
 #' @param df degrees of freedom for all non-linear structural terms;
 #' either one common value or a list of the same length as number of parameters and
 #' each list item a vector of the same length as number of smooth terms in the
@@ -160,6 +165,7 @@ deepregression <- function(
   ),
   train_together = list(),
   data,
+  dim_deep = NULL,
   # batch_size = NULL,
   # epochs = 10L,
   df = NULL,
@@ -288,7 +294,7 @@ deepregression <- function(
   }
   # check list of formulae is always one-sided
   if(any(sapply(list_of_formulae, function(x)
-    attr( terms(x, data = data) , "response" ) != 0 ))){
+    attr( terms(x, data = data[!sapply(data, is.null)]) , "response" ) != 0 ))){
     stop("Only one-sided formulas are allowed in list_of_formulae.")
   }
   # check orthog type
@@ -414,7 +420,7 @@ deepregression <- function(
   }
 
   param_names <- names(parsed_formulae_contents)
-  l_names_effets <- lapply(parsed_formulae_contents, get_names)
+  l_names_effects <- lapply(parsed_formulae_contents, get_names)
   ind_structterms <- lapply(parsed_formulae_contents, get_indices)
 
   if(!is.null(validation_data)){
@@ -533,7 +539,7 @@ deepregression <- function(
                   validation_split = validation_split,
                   validation_data = validation_data,
                   cv_folds = cv_folds,
-                  l_names_effets = l_names_effets,
+                  l_names_effects = l_names_effects,
                   parsed_formulae_contents = parsed_formulae_contents,
                   data = data,
                   ind_structterms = ind_structterms,

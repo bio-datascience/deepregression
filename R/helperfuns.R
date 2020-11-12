@@ -619,8 +619,8 @@ make_cov <- function(pcf, newdata=NULL,
   if(sum(input_cov_isdf)>0)
     input_cov[which(input_cov_isdf)] <-
     lapply(input_cov[which(input_cov_isdf)], as.matrix)
-  input_cov[!sapply(input_cov,is.factor)] <-
-    lapply(input_cov[!sapply(input_cov,is.factor)], convertfun)
+  which_to_convert <- !sapply(input_cov,function(ic){is.factor(ic) | any(class(ic)=="placeholder")})
+  input_cov[which_to_convert] <- lapply(input_cov[which_to_convert], convertfun)
   return(input_cov)
 
 }
@@ -631,7 +631,7 @@ get_names <- function(x)
   lret <- list(linterms = NULL,
                smoothterms = NULL,
                deepterms = NULL)
-  if(!is.null(x$linterms)) lret$linterms <- names(x$linterms)
+  if(!is.null(x$linterms)) lret$linterms <- names_lint(x$linterms)
   if(!is.null(x$smoothterms)) lret$smoothterms <-
       sapply(x$smoothterms,function(x)x[[1]]$label)
   if(!is.null(x$deepterms)) lret$deepterms <- names(x$deepterms)
@@ -642,7 +642,7 @@ get_indices <- function(x)
 {
   if(!is.null(x$linterms) &
      !(length(x$linterms)==1 & is.null(x$linterms[[1]])))
-    ncollin <- ncol(x$linterms) else ncollin <- 0
+    ncollin <- ncol_lint(x$linterms) else ncollin <- 0
     if(!is.null(x$smoothterms))
       bsdims <- unlist(lapply(x$smoothterms, function(y){
         if(is.null(y[[1]]$margin) & y[[1]]$by=="NA")
@@ -830,12 +830,26 @@ make_folds <- function(mat, val_train=0, val_test=1)
 subset_array <- function(x, index)
 {
 
+  if(class(x)[1]=="placeholder") return(x[index])
   dimx <- dim(x)
   if(is.null(dimx)) dimx = 1
-  eval(parse(text=paste0("x[index",
-                         paste(rep(",", length(dimx)-1),collapse=""),
-                         ",drop=FALSE]")))
+  tryCatch(
+    eval(parse(text=paste0("x[index",
+                           paste(rep(",", length(dimx)-1),collapse=""),
+                           ",drop=FALSE]"))),
+    error = function(e) 
+      eval(parse(text=paste0("tf$constant(as.matrix(x)[index",
+                             paste(rep(",", length(dimx)-1),collapse=""),
+                             ",drop=FALSE], 'float32')")))
+  )
+}
 
+subset_input_cov <- function(x, index)
+{
+  
+  if(is.list(x)) lapply(x, subset_input_cov, index = index) else
+    subset_array(x, index = index)
+  
 }
 
 # nrow for list
@@ -879,6 +893,16 @@ ncol_lint <- function(z)
   if(length(z_fac)==0) z_fac <- 0 else z_fac <- z_fac-1
   return(sum(c(z_num, z_fac)))
 
+}
+
+names_lint <- function(z)
+{
+  
+  unlist(sapply(1:length(z), function(i) 
+    if(is.numeric(z[,i])) names(z)[i] else
+      paste0(names(z)[i],".",levels(z[,i])[-1])
+    ))
+  
 }
 
 unlist_order_preserving <- function(x)
