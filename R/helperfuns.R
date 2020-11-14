@@ -633,7 +633,7 @@ get_names <- function(x)
                deepterms = NULL)
   if(!is.null(x$linterms)) lret$linterms <- names_lint(x$linterms)
   if(!is.null(x$smoothterms)) lret$smoothterms <-
-      sapply(x$smoothterms,function(x)x[[1]]$label)
+      c(sapply(x$smoothterms,function(x) sapply(x, "[[", "label")))
   if(!is.null(x$deepterms)) lret$deepterms <- names(x$deepterms)
   return(lret)
 }

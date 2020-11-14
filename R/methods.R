@@ -751,7 +751,7 @@ coef.deepregression <- function(
   nrparams <- length(object$init_params$parsed_formulae_contents)
   if(is.null(params)) params <- 1:nrparams
   layer_names <- sapply(object$model$layers, "[[", "name")
-  lret <- vector("list", params)
+  lret <- vector("list", length(params))
   names(lret) <- object$init_params$param_names
   if(is.null(type))
     type <- c("linear", "smooth")
@@ -783,17 +783,32 @@ coef.deepregression <- function(
     }
 
     sel <- which(c("linear", "smooth") %in% type)
-    fits_type <- as.numeric(object$init_params$ind_structterms[[i]]$type)==sel
+    struct_terms_fitting_type <- 
+      sapply(as.numeric(object$init_params$ind_structterms[[i]]$type),
+             function(x) x%in%sel)
     length_names <- 
       (
         object$init_params$ind_structterms[[i]]$end - 
           object$init_params$ind_structterms[[i]]$start + 1
       )
-    sel_ind <- rep(fits_type, length_names)
-    lret[[i]] <- unlist(lret[[i]])
-    lret[[i]] <- lret[[i]][sel_ind]
-    names(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]])[fits_type],
-                            length_names[fits_type])
+    sel_ind <- rep(struct_terms_fitting_type, length_names)
+    if(any(sapply(lret[[i]], is.matrix))){
+      lret[[i]] <- lapply(lret[[i]], function(x) x[sel_ind,])
+      lret[[i]]$linterms <- do.call("rbind", lret[[i]][c("structured_linear", "structured_lasso")])
+      lret[[i]]$smoothterms <- lret[[i]]["structured_nonlinear"]
+      lret[[i]] <- lret[[i]][c("linterms","smoothterms")[sel]]
+      lret[[i]] <- lret[[i]][!sapply(lret[[i]],function(x) is.null(x) | is.null(x[[1]]))]
+      lret[[i]] <- do.call("rbind", lret[[i]])
+      rownames(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
+        c("linterms","smoothterms")]),
+        length_names[struct_terms_fitting_type])
+    }else{
+      lret[[i]] <- unlist(lret[[i]])
+      lret[[i]] <- lret[[i]][sel_ind]
+      names(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
+        c("linterms","smoothterms")]),
+        length_names[struct_terms_fitting_type])
+    }
     
   }
   return(lret)

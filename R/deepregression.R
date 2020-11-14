@@ -316,6 +316,10 @@ deepregression <- function(
     list_of_formulae <- c(list_of_formulae, unique(train_together[!nulls]))
 
   }
+  
+  if(is.null(names(list_of_formulae))){
+   names(list_of_formulae) <- names_families(family)
+  }
   if(!is.null(df) && !is.list(df)) df <- list(df)[rep(1,length(list_of_formulae))]
 
   cat("Preparing additive formula(e)...")
@@ -419,7 +423,7 @@ deepregression <- function(
 
   }
 
-  param_names <- names(parsed_formulae_contents)
+  param_names <- names(list_of_formulae)
   l_names_effects <- lapply(parsed_formulae_contents, get_names)
   ind_structterms <- lapply(parsed_formulae_contents, get_indices)
 
@@ -1025,7 +1029,7 @@ deepregression_init <- function(
       - weights * (model %>% ind_fun() %>% tfd_log_prob(y)) 
   }else{
     negloglik <- function(y, model)
-      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$mean()))
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$scale))
   }
         
   

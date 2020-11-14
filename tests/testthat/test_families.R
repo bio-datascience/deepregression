@@ -60,7 +60,7 @@ test_that("tfd families can be fitted", {
     set.seed(24)
     x <- runif(n) %>% as.matrix()
     z <- runif(n) %>% as.matrix()
-    y <- as.matrix(0.5*x + rnorm(n, 0, 0.1*z) + 1)
+    y <- exp(as.matrix(0.5*x + rnorm(n, 0, 0.1*z) + 1))
     data = data.frame(x = x, z = z)
     if (dist %in% c("beta", "betar")) {
       y <- (y - min(y)) / (max(y) + 0.01 - min(y)) + runif(n, 1e-5, 1e-4)
@@ -72,9 +72,11 @@ test_that("tfd families can be fitted", {
         # define how parameters should be modeled
         list_of_formulae = list(~ 1 + x, ~ 1 + z, ~ 1),
         list_of_deep_models = NULL,
-        family = dist
+        family = dist, tf_seed = 44,
+        optimizer = optimizer_rmsprop(lr = 0.000001)
       )
     )
+    cat("Fitting", dist, "\n")
     res <- mod %>% fit(epochs=2L, verbose = FALSE, view_metrics = FALSE)
     expect_true(!sum(is.nan(unlist(res$metrics))) > 0)
     expect_true(!any(unlist(res$metrics)==Inf))
@@ -106,15 +108,14 @@ test_that("multinorm", {
   expect_true(as.numeric(mkd$log_prob(1:2)) < 0)
 })
 
-# FIXME Do not know how to fix this, might also be a bug!
-# test_that("multinorm - no_cov", {
-#   mxdist = multinorm_maker(with_cov=FALSE)
-#   expect_is(mxdist, "function")
-#   mkd = mxdist(matrix(rep(1,4), nrow=1L))
-#   expect_is(mkd, "python.builtin.object")
-#   expect_is(mkd$cdf, "python.builtin.method")
-#   expect_true(as.numeric(mkd$log_prob(1:2)) < 0)
-# })
+test_that("multinorm - no_cov", {
+  mxdist = multinorm_maker(with_cov=FALSE)
+  expect_is(mxdist, "function")
+  mkd = mxdist(matrix(rep(1,4), nrow=1L))
+  expect_is(mkd, "python.builtin.object")
+  expect_is(mkd$cdf, "python.builtin.method")
+  expect_true(as.numeric(mkd$log_prob(1:2)) < 0)
+})
 
 test_that("tfd_zip", {
   zipfun = tfd_zip(probs=c(0.1, 0.9), lambda=2)

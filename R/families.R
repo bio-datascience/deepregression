@@ -49,7 +49,7 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  underlying normal distribution}
 #'  \item{"logistic": }{logistic with location (identity) and scale (exp)}
 #'  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
-#'  \item{"negbinom": }{neg. binomail with mean (exp) and clutter factor (exp)}
+#'  \item{"negbinom_ls": }{neg. binomail with mean (exp) and clutter factor (exp)}
 #'  \item{"pareto_ls": }{Pareto location scale version with mean (exp) 
 #'  and scale (exp), which corresponds to a Pareto distribution with parameters scale = mean
 #'  and concentration = 1/sigma, where sigma is the scale in the pareto_ls version.}
@@ -255,6 +255,46 @@ make_tfd_dist <- function(family, add_const = 1e-8,
 
 }
 
+names_families <- function(family)
+{
+  
+  nams <- switch(family,
+                 normal = c("location", "scale"),
+                 bernoulli = "logits",
+                 bernoulli_prob = "probabilities",
+                 beta = c("concentration", "concentration"),
+                 betar = c("location", "scale"),
+                 cauchy = c("location", "scale"),
+                 chi2 = "df",
+                 chi = "df",
+                 exponential = "rate",
+                 gamma = c("concentration", "rate"),
+                 gammar = c("location", "scale"),
+                 gumbel = c("location", "scale"),
+                 half_cauchy = c("location", "scale"),
+                 half_normal = "scale",
+                 horseshoe = "scale",
+                 inverse_gamma = c("concentation", "rate"),
+                 inverse_gaussian = c("location", "concentation"),
+                 laplace = c("location", "scale"),
+                 log_normal = c("location", "scale"),
+                 logistic = c("location", "scale"),
+                 negbinom = c("count", "prob"),
+                 negbinom_ls = c("mean", "clutter_factor"),
+                 pareto_ls = c("location", "scale"),
+                 poisson = "rate",
+                 poisson_lograte = "lograte",
+                 student_t = "df",
+                 student_t_ls = c("df", "location", "scale"),
+                 uniform = c("upper", "lower"),
+                 zinb = c("mean", "variance", "prob"),
+                 zip = c("mean", "prob")
+  )
+  
+  return(nams)
+  
+}
+
 family_trafo_funs_special <- function(family, add_const = 1e-8)
 {
 
@@ -299,8 +339,11 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
     },
     pareto_ls = function(x){
       
+      # k_print_tensor(x, message = "This is x")
       scale = add_const + tfe(x[,1,drop=FALSE])
+      # k_print_tensor(scale, message = "This is scale")
       con = tfe(-x[,2,drop=FALSE])
+      # k_print_tensor(con, message = "This is con")
       return(list(con, scale)) 
       
       
@@ -510,8 +553,8 @@ multinorm_maker <- function(dim = 2,
 
     trafo_fun <- function(x){
 
-      c(loc = x[,1:dim,drop=FALSE],
-        scale_diag = add_const + tfe(x[,(dim+1):(dim*2),drop=FALSE])
+      list(loc = x[,1:dim,drop=FALSE],
+           scale_diag = add_const + tfe(x[,(dim+1):(dim*2),drop=FALSE])
       )
 
     }
