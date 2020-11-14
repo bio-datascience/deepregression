@@ -792,7 +792,7 @@ coef.deepregression <- function(
           object$init_params$ind_structterms[[i]]$start + 1
       )
     sel_ind <- rep(struct_terms_fitting_type, length_names)
-    if(any(sapply(lret[[i]], is.matrix))){
+    if(any(sapply(lret[[i]], NCOL)>1)){
       lret[[i]] <- lapply(lret[[i]], function(x) x[sel_ind,])
       lret[[i]]$linterms <- do.call("rbind", lret[[i]][c("structured_linear", "structured_lasso")])
       lret[[i]]$smoothterms <- lret[[i]]["structured_nonlinear"]
