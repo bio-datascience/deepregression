@@ -550,7 +550,8 @@ deepregression <- function(
                   param_names = param_names,
                   ellipsis = list(...),
                   family = family,
-                  orthogonalize = orthogonalize
+                  orthogonalize = orthogonalize,
+                  list_of_formulae = list_of_formulae
                 ))
 
   class(ret) <- "deepregression"

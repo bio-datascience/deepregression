@@ -830,6 +830,9 @@ print.deepregression <- function(
 )
 {
   print(x$model)
+  fae <- x$init_params$list_of_formulae
+  cat("Model formulae:\n---------------\n")
+  invisible(sapply(1:length(fae), function(i){ cat(names(fae)[i],":\n"); print(fae[[i]])}))
 }
 
 #' @title Cross-validation for deepgression objects
