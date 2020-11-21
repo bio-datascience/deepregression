@@ -12,10 +12,11 @@ deepregression(
     "chi2", "chi", "exponential", "gamma_gamma", "gamma", "gammar", "gumbel",
     "half_cauchy", "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian",
     "laplace", "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
-    "negbinom_ls", "pareto", "poisson", "poisson_lograte", "student_t", "student_t_ls",
-    "truncated_normal", "uniform", "zinb", "zip", "transformation_model"),
+    "negbinom_ls", "pareto_ls", "poisson", "poisson_lograte", "student_t",
+    "student_t_ls", "truncated_normal", "uniform", "zinb", "zip", "transformation_model"),
   train_together = list(),
   data,
+  dim_deep = NULL,
   df = NULL,
   lambda_lasso = NULL,
   lambda_ridge = NULL,
@@ -88,10 +89,16 @@ Those network names should then be excluded from the \code{list_of_formulae}}
 
 \item{data}{data.frame or named list with input features}
 
+\item{dim_deep}{list for each distribution parameter with NULL or integer vector entries; 
+this is an optional argument to manually specify the input dimensions for the unstructured 
+model part(s) and required if placeholders are used for unstructured data sources. E.g.,
+if the formula contains \code{nn(images)} where \code{images} are ids of images that
+are loaded using a generator, the size of the image is part of the respective}
+
 \item{df}{degrees of freedom for all non-linear structural terms;
 either one common value or a list of the same length as number of parameters and
-each list item a vector of the same length as number of smooth terms in the
-respective formula}
+each list item a list of the same length as number of smooth terms in the
+respective formula where elements can be vectors for two- or multidimensional smooth terms}
 
 \item{lambda_lasso}{scalar value or list of \code{length(list_of_formulae)};
 smoothing parameter for lasso regression; can be combined with ridge}

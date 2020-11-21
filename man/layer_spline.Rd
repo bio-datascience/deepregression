@@ -9,7 +9,7 @@ layer_spline(
   name = NULL,
   trainable = TRUE,
   input_shape,
-  lambdas,
+  regul = NULL,
   Ps,
   use_bias = FALSE,
   kernel_initializer = "glorot_uniform",
@@ -31,9 +31,9 @@ layer_spline(
 
 \item{input_shape}{Input dimensionality not including samples axis.}
 
-\item{lambdas}{vector of smoothing parameters}
+\item{regul}{if set to 0, no regularization is applied}
 
-\item{Ps}{list of penalty matrices}
+\item{Ps}{list of penalty matrices times lambdas}
 
 \item{use_bias}{whether or not to use a bias in the layer. Default is FALSE.}
 

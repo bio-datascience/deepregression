@@ -1205,3 +1205,80 @@ get_minval <- function(x)
   attr(x$init_params$parsed_formulae_contents[[2]], "minval")
 
 }
+
+#' Function to set the weights of a deepregression object
+#'
+#' @param x deepregression object
+#' @param weights a matrix with weights
+#' @param param integer; for which parameter to set the weights
+#' @param type character; for which type of layer to set the weights;
+#' 
+#' @export
+#'
+set_weights <- function(x, 
+                        weights, 
+                        param = NULL, 
+                        type = c("linear", "nonlinear", "lasso", "ridge", "elasticnet"))
+{
+  
+  type <- match.arg(type)
+  name <- switch(type,
+                 lasso = paste0("structured_lasso_", param),
+                 ridge = paste0("structured_ridge_", param),
+                 elasticnet = paste0("structured_elastnet_", param),
+                 linear = paste0("structured_linear_", param),
+                 nonlinear = paste0("structured_nonlinear_", param)
+  )
+                           
+
+  x$model$get_layer(name)$set_weights(weights)
+  
+}
+
+#' Compile an uncompiled deepregression object
+#' 
+#' @param object deepregression object
+#' @param add_loss an additional penalty added to the loss function
+#' @param weights scalar or vector; weights used in the log-likelihood
+#' @param ind_fun see \code{?deepregression_init}
+#' 
+#' @export
+#' 
+compile.deepregression <- function(object, add_loss = NULL, weights = NULL, ind_fun = function(x) x)
+{
+  
+  model <- object$model
+  
+  if(is.null(weights)) weights <- 1
+  
+  # the negative log-likelihood is given by the negative weighted
+  # log probability of the model
+  if(family!="pareto_ls"){  
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y)) 
+  }else{
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$scale))
+  }
+  
+  if(!is.null(additional_penalty)){
+    
+    add_loss <- function(x) additional_penalty(
+      model$trainable_weights
+    )
+    model$add_loss(add_loss)
+    
+  }
+  
+  # compile the model using the defined optimizer,
+  # the negative log-likelihood as loss funciton
+  # and the defined monitoring metrics as metrics
+  if(compile_model)
+    model %>% compile(optimizer = optimizer,
+                      loss = negloglik,
+                      metrics = monitor_metric)
+  
+  object$model <- models
+  return(object)
+  
+}

@@ -49,10 +49,11 @@ prepare_data(x, data, pred = TRUE)
   auc_callback = FALSE,
   val_data = NULL,
   callbacks = list(),
+  generator = NULL,
   ...
 )
 
-\method{coef}{deepregression}(object, variational = FALSE, ...)
+\method{coef}{deepregression}(object, variational = FALSE, params = NULL, type = NULL, ...)
 
 \method{print}{deepregression}(x, ...)
 
@@ -70,11 +71,11 @@ cv(
   ...
 )
 
-\method{mean}{deepregression}(x, data, ...)
+\method{mean}{deepregression}(x, data = NULL, ...)
 
-\method{sd}{deepregression}(x, data, ...)
+\method{sd}{deepregression}(x, data = NULL, ...)
 
-\method{quantile}{deepregression}(x, data, value, ...)
+\method{quantile}{deepregression}(x, data = NULL, value, ...)
 }
 \arguments{
 \item{x}{a deepregression object}
@@ -128,8 +129,19 @@ per default \code{as.matrix}}
 
 \item{callbacks}{a list of callbacks used for fitting}
 
+\item{generator}{if not NULL, fitting is done using the provided generator
+using \code{keras::fit_generator}. In this case \code{steps_per_epoch} also have to be provided. 
+Further arguments can be passed via \code{...}.}
+
 \item{variational}{logical, if TRUE, the function takes into account
 that coefficients have both a mean and a variance}
+
+\item{params}{integer, indicating for which distribution parameter
+coefficients should be returned (default is all parameters)}
+
+\item{type}{either NULL (all types of coefficients are returned),
+"linear" for linear coefficients or "smooth" for coefficients of 
+smooth terms}
 
 \item{print_folds}{whether to print the current fold}
 

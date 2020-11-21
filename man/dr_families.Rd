@@ -62,9 +62,10 @@ with parameters (and corresponding inverse link function in brackets):
  underlying normal distribution}
  \item{"logistic": }{logistic with location (identity) and scale (exp)}
  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
- \item{"negbinom": }{neg. binomail with mean (exp) and clutter factor (exp)}
- \item{"pareto": }{Pareto with concentration (exp) (and if modeled scale (exp),
- else scale = 1)}
+ \item{"negbinom_ls": }{neg. binomail with mean (exp) and clutter factor (exp)}
+ \item{"pareto_ls": }{Pareto location scale version with mean (exp) 
+ and scale (exp), which corresponds to a Pareto distribution with parameters scale = mean
+ and concentration = 1/sigma, where sigma is the scale in the pareto_ls version.}
  \item{"poisson": }{poisson with rate (exp)}
  \item{"poisson_lograte": }{poisson with lograte (identity))}
  \item{"student_t": }{Student's t with df (exp)}

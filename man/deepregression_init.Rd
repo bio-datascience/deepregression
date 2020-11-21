@@ -35,7 +35,8 @@ deepregression_init(
   extend_output_dim = 0,
   offset = NULL,
   additional_penalty = NULL,
-  constraint_fun = NULL
+  constraint_fun = NULL,
+  compile_model = TRUE
 )
 }
 \arguments{
@@ -120,6 +121,8 @@ additional penalty. In order to get the correct index for the trainable
 weights, you can run the model once and check its structure.}
 
 \item{constraint_fun}{function; a constraint for the linear layers}
+
+\item{compile_model}{logical; whether to compile the model (default is TRUE)}
 }
 \description{
 Initializing Deep Distributional Regression Models

@@ -81,15 +81,10 @@ DRO <- function(X, df = 4, lambda = NULL, dmat = NULL, # weights,
   df2l <- function(lambda)
     dfFun(lambda) - df
 
-  lambdaMax <- 1e+15
+  lambdaMax <- 1e+16
 
   if (df2l(lambdaMax) > 0){
     if (df2l(lambdaMax) > sqrt(.Machine$double.eps))
-      warning("lambda needs to be larger than ", lambdaMax, " for given ",
-              sQuote("df"), ";\n  setting lambda = ", lambdaMax,
-              " leeds to an deviation from ", sQuote("df"), " of ",
-              df2l(lambdaMax), ";\n  You can increase lambda_max via ",
-              sQuote("options(mboost_lambdaMax = value)"))
     return(c(df = df, lambda = lambdaMax))
   }
   lambda <- uniroot(df2l, c(0, lambdaMax), tol = sqrt(.Machine$double.eps))$root

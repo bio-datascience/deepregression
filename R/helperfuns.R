@@ -165,7 +165,8 @@ get_contents <- function(lf, data, df,
                          absorb_cons = TRUE,
                          null_space_penalty = FALSE,
                          hat1 = TRUE,
-                         sp_scale = 1){
+                         sp_scale = 1, 
+                         anisotropic = TRUE){
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
@@ -315,16 +316,52 @@ get_contents <- function(lf, data, df,
     smooths_w_pen <- sapply(smoothterms,function(x) is.null(x[[1]]$sp))
     if(length(df)>1)
       stopifnot(sum(smooths_w_pen)==length(df)) else if(length(smoothterms)>1 & sum(smooths_w_pen)>0)
-        df <- rep(df, sum(smooths_w_pen))
+        df <- as.list(rep(df, sum(smooths_w_pen)))
 
+    if(!is.list(df))
+    {
+      
+      warning("Converting vector of df values to list.")
+      df <- as.list(df)
+      
+    }
+    
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st, this_df){
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
-        if(length(st[[1]]$S)==1 & length(st)==1) S <- st[[1]]$S[[1]] else if(length(st[[1]]$S)!=1)
-          S <- Reduce("+", st[[1]]$S) else S <- Matrix::bdiag(lapply(st,function(x)x$S[[1]]))
-          if(length(st)==1) X <- st[[1]]$X else X <- do.call("cbind", lapply(st,"[[","X"))
-          st[[1]]$sp = DRO(X, df = this_df, dmat = S, hat1 = hat1)["lambda"]/sp_scale + null_space_penalty
-          return(st)
+        if(length(st[[1]]$S)==1 & length(st)==1){ 
+          S <- st[[1]]$S[[1]]
+        }else if(length(st[[1]]$S)!=1){
+          if(!anisotropic){
+            S <- Reduce("+", st[[1]]$S) 
+          }else{
+            S <- st[[1]]$S
+          }
+        }else{ 
+          S <- Matrix::bdiag(lapply(st,function(x)x$S[[1]]))
+        }
+        if(length(st)==1 & is.null(st[[1]]$margin)){ 
+          X <- st[[1]]$X 
+        }else{ 
+          if(anisotropic){
+            if(length(this_df)==1) this_df <- rep(this_df, length(st[[1]]$margin))
+            st[[1]]$sp <- sapply(1:length(st[[1]]$margin), function(i)
+            { 
+              DRO(st[[1]]$margin[[i]]$X, 
+                  df = this_df[i], 
+                  dmat = S[[i]], 
+                  hat1 = hat1
+              )["lambda"]/sp_scale + 
+                null_space_penalty
+            })
+            return(st)
+          }else{
+            X <- do.call("cbind", lapply(st,"[[","X"))
+          }
+        }
+        st[[1]]$sp = DRO(X, df = this_df, dmat = S, hat1 = hat1)["lambda"]/sp_scale + 
+          null_space_penalty
+        return(st)
       }
     if(sum(smooths_w_pen)>0)
       smoothterms[smooths_w_pen] <-
@@ -332,7 +369,7 @@ get_contents <- function(lf, data, df,
              function(i)
                defaultSmoothing(
                  smoothterms[smooths_w_pen][[i]],
-                 df[i]
+                 df[[i]]
                )
       )
     attr(smoothterms, "names") <-
