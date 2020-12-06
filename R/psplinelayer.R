@@ -195,3 +195,76 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
   )
 
 }
+
+combine_lambda_and_penmat <- function(lambdas, Ps)
+{
+  
+  bigP <- list()
+  
+  for(i in seq_along(length(lambdas)))
+  {
+    
+    if(is.list(lambdas)){
+      bigP[[i]] <- do.call("+", combine_lambda_and_penmat(lambdas[[i]], Ps[[i]]))
+    }else{
+      bigP[[i]] <- lambdas[[i]]*Ps[[i]]
+    }
+    
+  }
+  
+  return(bigP)
+  
+}
+
+tf_block_diag <- function(listMats)
+{
+  lob = lapply(listMats, function(x) tf$linalg$LinearOperatorFullMatrix(x))
+  res = tf$linalg$LinearOperatorBlockDiag(lob)
+  return(res)
+}
+
+
+# CustomLayer <- R6::R6Class("penalizedLikelihoodLoss",
+#                            
+#                            inherit = KerasLayer,
+#                            
+#                            public = list(
+#                              
+#                              self$lambdas = NULL
+#                              self$penalty = NULL
+#                              
+#                              initialize = function(lambdas, Ps, model) {
+#                                self$lambdas <- lapply(lambdas, function(l) 
+#                                  if(is.list(l)) lapply(l, function(ll) tf$Variable(ll)) else
+#                                    tf$Variable(ll))
+#                                bigP <- tf_block_diag(combine_lambda_and_penmat(self$lambdas, Ps))
+#                                self$penalty <- function(x) k_sum(k_batch_dot(x, k_dot(
+#                                  # tf$constant(
+#                                  bigP,
+#                                  # dtype = "float32"),
+#                                  x),
+#                                  axes=2) # 1-based
+#                                )
+#                              },
+#                              
+#                              get_lambdas = function() {
+#                                return(self$lambdas)
+#                              },
+#                              
+#                              get_penalty = function {
+#                                return(self$penalty)
+#                              },
+#                              
+#                              custom_loss = function(y, model) {
+#                                (model %>% tfd_log_prob(y)) + self$penalty() 
+#                              },
+#                              
+#                              call = function(x, mask = NULL) {
+#                                k_dot(x, self$kernel)
+#                              },
+#                              
+#                              compute_output_shape = function(input_shape) {
+#                                list(input_shape[[1]], self$output_dim)
+#                              }
+#                            )
+# )

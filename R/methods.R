@@ -752,7 +752,7 @@ coef.deepregression <- function(
   if(is.null(params)) params <- 1:nrparams
   layer_names <- sapply(object$model$layers, "[[", "name")
   lret <- vector("list", length(params))
-  names(lret) <- object$init_params$param_names
+  names(lret) <- object$init_params$param_names[params]
   if(is.null(type))
     type <- c("linear", "smooth")
   for(i in params){

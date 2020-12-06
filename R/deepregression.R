@@ -109,7 +109,7 @@
 #' If > 0, the minimum value plus the \code{addconst_interaction} is added to each predictor
 #' in the interaction term.
 #' @param additional_penalty a penalty that is added to the negative log-likelihood; must be
-#' a \code{function(x)}, where \code{x} is actually not used and
+#' a function of the keras model's \code{trainable_weights} (including necessary subsetting)
 #' @param penalty_summary keras function; summary function for the penalty in the spline layer;
 #' default is \code{k_sum}. Another option could be \code{k_mean}.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
