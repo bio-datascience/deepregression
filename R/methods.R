@@ -626,18 +626,36 @@ fit.deepregression <- function(
 
   }
 
-  if(any(sapply(input_x, function(x)class(x)[1])=="placeholder")){
-    input_y <- x$init_params$y
-    phs <- which(sapply(input_x, function(x)class(x)[1])=="placeholder")
+  # if(any(sapply(input_x, function(x)class(x)[1])=="placeholder")){
+  if(length(x$init_params$image_var)>0){
+      
     batch_size <- list(...)$batch_size
     if(is.null(batch_size)) batch_size <- 32
+    input_y <- matrix(x$init_params$y, ncol=1)
+
+    if(is.null(generator))
+      gen <- image_data_generator() else
+        gen <- generator
+    
     if(is.null(x$init_params$validation_split) & 
        is.null(list(...)$validation_split))
     {
+      
+      data_tab <- list(input_x, input_y)
+      data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)
+      
       # only fit generator
       max_data <- NROW(input_x[[1]])
       steps_per_epoch <- max_data%/%batch_size+1
-      generator <- make_generator(batch_size, max_data, phs, input_x, input_y)
+
+      generator <- make_generator(data_image, data_tab, batch_size, 
+                                  # FIXME: multiple images
+                                  target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                  color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                                      "rgb", "grayscale")),
+                                  x_col = names(x$init_params$image_var),
+                                  generator = gen)
       
       if(!is.null(list(...)$validation_data) | 
          !is.null(x$init_params$validation_data)){
@@ -645,9 +663,17 @@ fit.deepregression <- function(
           list(...)$validation_data else
             x$init_params$validation_data
         max_data <- NROW(validation_data[[1]][[1]])
-        validation_data <- make_generator(batch_size, max_data, phs, 
-                                          validation_data[[1]], 
-                                          validation_data[[2]])
+        data_tab_val <- list(validation_data[[1]], 
+                             validation_data[[2]])
+        data_image_val <- as.data.frame(x$init_params$validation_data[names(x$init_params$image_var)], 
+                                    stringsAsFactors = FALSE)
+        validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
+                                          # FIXME: multiple images
+                                          target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                          color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                                                     "rgb", "grayscale")),
+                                          x_col = names(x$init_params$image_var),
+                                          generator = gen)
         validation_steps <- max_data%/%batch_size+1
       }else{
         validation_data <- NULL
@@ -665,17 +691,38 @@ fit.deepregression <- function(
       ind_train <- setdiff(1:NROW(input_y), ind_val)
       input_x_train <- subset_input_cov(input_x, ind_train)
       input_x_val <- subset_input_cov(input_x, ind_val)
-      input_y_train <- subset_array(input_y, ind_train)
-      input_y_val <- subset_array(input_y, ind_val)
+      input_y_train <- matrix(subset_array(input_y, ind_train), ncol=1)
+      input_y_val <- matrix(subset_array(input_y, ind_val), ncol=1)
                 
       max_data_train <- NROW(input_x_train[[1]])
       steps_per_epoch <- max_data_train%/%batch_size+1
-      generator <- make_generator(batch_size, max_data_train, phs, 
-                                  input_x_train, input_y_train)
+
+      data_tab <- list(input_x_train, input_y_train)
+      data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)[ind_train,,drop=FALSE]
+      
+      generator <- make_generator(data_image, data_tab, batch_size, 
+                                  # FIXME: multiple images
+                                  target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                  color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                                             "rgb", "grayscale")),
+                                  x_col = names(x$init_params$image_var),
+                                  generator = gen)
+      
       max_data_val <- NROW(input_x_val[[1]])
       validation_steps <- max_data_val%/%batch_size+1
-      validation_data <- make_generator(batch_size, max_data_val, phs, 
-                                        input_x_val, input_y_val)
+
+      data_tab_val <- list(input_x_val, input_y_val)
+      data_image_val <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)[ind_val,,drop=FALSE]
+      
+      validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
+                                        # FIXME: multiple images
+                                        target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                        color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                                                   "rgb", "grayscale")),
+                                        x_col = names(x$init_params$image_var),
+                                        generator = gen)
       
     }
     

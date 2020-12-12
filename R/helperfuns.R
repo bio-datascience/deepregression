@@ -166,7 +166,9 @@ get_contents <- function(lf, data, df,
                          null_space_penalty = FALSE,
                          hat1 = TRUE,
                          sp_scale = 1, 
-                         anisotropic = TRUE){
+                         anisotropic = TRUE,
+                         image_var = list())
+  {
   # extract which parts are modelled as deep parts
   # which by smooths, which linear
   specials <- c("s", "te", "ti", network_names)
@@ -420,18 +422,29 @@ get_contents <- function(lf, data, df,
       }
       ##### the actual deep part
 
-      if(is.data.frame(data)){
-        deepterms <- data[,extract_from_special(dt),drop=FALSE]
+      this_var <- extract_from_special(dt)
+      
+      if(!(length(this_var)==1 & this_var%in%names(image_var))){
+        
+        if(is.data.frame(data)){
+          deepterms <- data[,this_var,drop=FALSE]
+          attr(deepterms, "names") <- names(deepterms)
+        }else{
+          deepterms <- data[extract_from_special(dt)]
+          
+          if(length(this_var)>1)
+            deepterms <- as.data.frame(deepterms)
+          
+        }
         attr(deepterms, "names") <- names(deepterms)
+        
       }else{
-        deepterms <- data[extract_from_special(dt)]
-
-        if(length(extract_from_special(dt))>1)
-          deepterms <- as.data.frame(deepterms)
-
+        
+        deepterms <- data.frame(matrix(nrow=c(nROW(data), ncol=0)))
+        attr(deepterms, "dims") <- c(nrow(deepterms), image_var[[names(image_var)==this_var]])
+        
       }
-      attr(deepterms, "names") <- names(deepterms)
-
+      
       ##### end actual deep part
 
       if(!is.null(dtoz)){
@@ -897,6 +910,7 @@ nROW <- function(x)
 
 nCOL <- function(x)
 {
+  if(!is.null(attr(x, "dims"))) return(attr(x, "dims")[-1])
   lapply(x, function(y) if(is.null(dim(y))) 1 else dim(y)[-1])
 }
 

@@ -165,6 +165,7 @@ deepregression <- function(
   ),
   train_together = list(),
   data,
+  image_var = list(),
   dim_deep = NULL,
   # batch_size = NULL,
   # epochs = 10L,
@@ -322,6 +323,10 @@ deepregression <- function(
   }
   if(!is.null(df) && !is.list(df)) df <- list(df)[rep(1,length(list_of_formulae))]
 
+  if(length(image_var)>0 & (
+    !is.list(image_var) | is.null(names(image_var))))
+    stop("image_var must be a named list with lists as elements.")
+  
   cat("Preparing additive formula(e)...")
   # parse formulae
   parsed_formulae_contents <- lapply(1:length(list_of_formulae),
@@ -336,7 +341,8 @@ deepregression <- function(
                                          absorb_cons = absorb_cons,
                                          null_space_penalty = null_space_penalty,
                                          hat1 = hat1,
-                                         sp_scale = sp_scale
+                                         sp_scale = sp_scale,
+                                         image_var = image_var
                                        )
   )
   cat(" Done.\n")
@@ -551,7 +557,8 @@ deepregression <- function(
                   ellipsis = list(...),
                   family = family,
                   orthogonalize = orthogonalize,
-                  list_of_formulae = list_of_formulae
+                  list_of_formulae = list_of_formulae,
+                  image_var = image_var
                 ))
 
   class(ret) <- "deepregression"

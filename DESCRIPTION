@@ -29,6 +29,7 @@ Imports:
     keras,
     mgcv,
     dplyr,
+    purrr,
     R6,
     reticulate (>= 1.14),
     Matrix,
