@@ -16,7 +16,7 @@ deepregression(
     "student_t_ls", "truncated_normal", "uniform", "zinb", "zip", "transformation_model"),
   train_together = list(),
   data,
-  image_var = list(names = c(), dims = list()),
+  image_var = list(),
   dim_deep = NULL,
   df = NULL,
   lambda_lasso = NULL,
@@ -55,6 +55,7 @@ deepregression(
   addconst_interaction = NULL,
   additional_penalty = NULL,
   penalty_summary = k_sum,
+  convertfun = as.matrix,
   ...
 )
 }
@@ -212,6 +213,8 @@ a function of the keras model's \code{trainable_weights} (including necessary su
 
 \item{penalty_summary}{keras function; summary function for the penalty in the spline layer;
 default is \code{k_sum}. Another option could be \code{k_mean}.}
+
+\item{convertfun}{function to convert objects into a matrix or tensor format.}
 
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }

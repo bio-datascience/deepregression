@@ -112,6 +112,7 @@
 #' a function of the keras model's \code{trainable_weights} (including necessary subsetting)
 #' @param penalty_summary keras function; summary function for the penalty in the spline layer;
 #' default is \code{k_sum}. Another option could be \code{k_mean}.
+#' @param convertfun function to convert objects into a matrix or tensor format.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -211,6 +212,7 @@ deepregression <- function(
   addconst_interaction = NULL,
   additional_penalty = NULL,
   penalty_summary = k_sum,
+  convertfun = as.matrix,
   # compress = TRUE,
   ...
 )
@@ -402,7 +404,7 @@ deepregression <- function(
 
 
   cat("Translating data into tensors...")
-  input_cov <- make_cov(parsed_formulae_contents)
+  input_cov <- make_cov(parsed_formulae_contents, convertfun = convertfun)
   cat(" Done.\n")
   if(orthogonalize)
     ox <- lapply(parsed_formulae_contents, make_orthog,
@@ -415,7 +417,7 @@ deepregression <- function(
                                       function(x_per_param)
                                         unlist(lapply(x_per_param[!sapply(x_per_param,is.null)],
                                                       function(x)
-                                                        tf$constant(x, dtype="float32")))),
+                                                        convertfun(x)))),
                                recursive = F)
   ))
 
@@ -423,8 +425,7 @@ deepregression <- function(
 
     cat("Using an offset.")
     input_cov <- c(input_cov, unlist(lapply(offset[!sapply(offset, is.null)],
-                                            function(x) tf$constant(matrix(x, ncol = 1),
-                                                                    dtype="float32")),
+                                            function(x) convertfun(matrix(x, ncol = 1))),
                                      recursive = FALSE))
 
   }
@@ -447,8 +448,7 @@ deepregression <- function(
       # print("Using an offset.")
       validation_data[[1]] <- c(validation_data[[1]],
                                 unlist(lapply(offset_val[!sapply(offset_val, is.null)],
-                                              function(x) tf$constant(matrix(x, ncol = 1),
-                                                                      dtype="float32")),
+                                              function(x) convertfun(matrix(x, ncol = 1))),
                                        recursive = FALSE))
     }
   }

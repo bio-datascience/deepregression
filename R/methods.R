@@ -552,9 +552,6 @@ fit <- function (x, ...) {
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param val_data optional specified validation data
 #' @param callbacks a list of callbacks for fitting
-#' @param generator if not NULL, fitting is done using the provided generator
-#' using \code{keras::fit_generator}. In this case \code{steps_per_epoch} also have to be provided. 
-#' Further arguments can be passed via \code{...}.
 #' @param ... further arguments passed to
 #' \code{keras:::fit.keras.engine.training.Model}
 #'
@@ -573,7 +570,7 @@ fit.deepregression <- function(
   auc_callback = FALSE,
   val_data = NULL,
   callbacks = list(),
-  generator = NULL,
+  convertfun = function(x) tf$constant(x, dtype="float32"),
   ...
 )
 {
@@ -633,10 +630,6 @@ fit.deepregression <- function(
     if(is.null(batch_size)) batch_size <- 32
     input_y <- matrix(x$init_params$y, ncol=1)
 
-    if(is.null(generator))
-      gen <- image_data_generator() else
-        gen <- generator
-    
     if(is.null(x$init_params$validation_split) & 
        is.null(list(...)$validation_split))
     {
@@ -654,8 +647,7 @@ fit.deepregression <- function(
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                   color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
                                                       "rgb", "grayscale")),
-                                  x_col = names(x$init_params$image_var),
-                                  generator = gen)
+                                  x_col = names(x$init_params$image_var))
       
       if(!is.null(list(...)$validation_data) | 
          !is.null(x$init_params$validation_data)){
@@ -670,10 +662,10 @@ fit.deepregression <- function(
         validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
                                           # FIXME: multiple images
                                           target_size = unname(unlist(x$init_params$image_var)[1:2]),
-                                          color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
-                                                                     "rgb", "grayscale")),
-                                          x_col = names(x$init_params$image_var),
-                                          generator = gen)
+                                          color_mode = unname(ifelse(
+                                            unlist(x$init_params$image_var)[3]==3, 
+                                            "rgb", "grayscale")),
+                                          x_col = names(x$init_params$image_var))
         validation_steps <- max_data%/%batch_size+1
       }else{
         validation_data <- NULL
@@ -687,6 +679,8 @@ fit.deepregression <- function(
         list(...)$validation_split else
           x$init_params$validation_split
 
+      input_x <- lapply(input_x, as.matrix)
+      
       ind_val <- sample(1:NROW(input_y), round(NROW(input_y)*val_split))
       ind_train <- setdiff(1:NROW(input_y), ind_val)
       input_x_train <- subset_input_cov(input_x, ind_train)
@@ -706,8 +700,7 @@ fit.deepregression <- function(
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                   color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
                                                              "rgb", "grayscale")),
-                                  x_col = names(x$init_params$image_var),
-                                  generator = gen)
+                                  x_col = names(x$init_params$image_var))
       
       max_data_val <- NROW(input_x_val[[1]])
       validation_steps <- max_data_val%/%batch_size+1
@@ -719,12 +712,16 @@ fit.deepregression <- function(
       validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
                                         # FIXME: multiple images
                                         target_size = unname(unlist(x$init_params$image_var)[1:2]),
-                                        color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
-                                                                   "rgb", "grayscale")),
-                                        x_col = names(x$init_params$image_var),
-                                        generator = gen)
+                                        color_mode = unname(ifelse(unlist(
+                                          x$init_params$image_var)[3]==3, 
+                                          "rgb", "grayscale")),
+                                        x_col = names(x$init_params$image_var))
       
     }
+    
+  }else{
+    
+    generator <- NULL
     
   }
 

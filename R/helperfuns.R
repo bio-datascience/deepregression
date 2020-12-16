@@ -513,8 +513,7 @@ get_contents_newdata <- function(pcf, newdata)
                                        defaultSmoothing = attr(x, "defaultSmoothing")))
 
 make_cov <- function(pcf, newdata=NULL,
-                     convertfun = function(x)
-                       tf$constant(x, dtype="float32"),
+                     convertfun = as.matrix,
                      pred = !is.null(newdata),
                      zc = FALSE){
 
@@ -719,7 +718,9 @@ get_indices <- function(x)
       )
 }
 
-prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
+prepare_newdata <- function(pfc, data, pred = FALSE, 
+                            index = NULL, cv = FALSE,
+                            convertfun = as.matrix)
 {
   n_obs <- nROW(data)
   if(attr(pfc, "zero_cons") & is.null(data))
@@ -737,21 +738,20 @@ prepare_newdata <- function(pfc, data, pred = FALSE, index = NULL, cv = FALSE)
     ox <- unlist(lapply(ox, function(x_per_param)
       if(is.null(x_per_param)) return(NULL) else
         unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
-          tf$constant(x, dtype="float32")))), recursive=F)
+          convertfun(x)))), recursive=F)
   }
   if(!is.null(index)){
     ox <- unlist(lapply(ox, function(x_per_param)
       if(is.null(x_per_param)) return(NULL) else
         unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
-          tf$constant(as.matrix(xox)[index,,drop=FALSE],
-                      dtype="float32")))),
+          convertfun(as.matrix(xox)[index,,drop=FALSE])))),
       recursive=F)
   }
   if(is.null(index) & !pred){
     ox <- unlist(lapply(ox, function(x_per_param)
       if(is.null(x_per_param)) return(NULL) else
         unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
-          tf$constant(x, dtype="float32")))), recursive=F)
+          convertfun(x)))), recursive=F)
   }
   newdata_processed <- append(
     c(unname(input_cov_new)),
@@ -1022,3 +1022,5 @@ applySumToZero <- function(X, apply=TRUE)
     return(orthog_structured_smooths(X, NULL, matrix(rep(1,nrow(X)),ncol=1)))
   return(X)
 }
+
+convertfun_tf <- function(x) tf$constant(x, dtype="float32")

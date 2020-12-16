@@ -49,7 +49,7 @@ prepare_data(x, data, pred = TRUE)
   auc_callback = FALSE,
   val_data = NULL,
   callbacks = list(),
-  generator = NULL,
+  convertfun = function(x) tf$constant(x, dtype = "float32"),
   ...
 )
 
@@ -128,10 +128,6 @@ per default \code{as.matrix}}
 \item{val_data}{optional specified validation data}
 
 \item{callbacks}{a list of callbacks used for fitting}
-
-\item{generator}{if not NULL, fitting is done using the provided generator
-using \code{keras::fit_generator}. In this case \code{steps_per_epoch} also have to be provided. 
-Further arguments can be passed via \code{...}.}
 
 \item{variational}{logical, if TRUE, the function takes into account
 that coefficients have both a mean and a variance}

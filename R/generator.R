@@ -53,8 +53,7 @@
 #'  
 make_generator <- function(data_image, data_tab, batch_size, 
                            target_size, color_mode,
-                           x_col, shuffle = TRUE, seed = 42L,
-                           generator)
+                           x_col, shuffle = TRUE, seed = 42L)
 {
   
   gen_images <- flow_images_from_dataframe(data_image, 
@@ -68,186 +67,85 @@ make_generator <- function(data_image, data_tab, batch_size,
   
   # str(gen_images$`__next__`())
   
-  gen_tab <- BatchDataIteratorX(data_tab[[1]], 
-                                batch_size = batch_size, 
-                                shuffle = shuffle, 
-                                seed = seed)
-  # )
+  gen_tab <- make_generator_from_matrix(
+    x = data_tab[[1]][-1], y = data_tab[[2]], 
+    batch_size = batch_size, shuffle = shuffle, seed = seed
+    )
   
   # str(gen_tab$`__next__`())
   
-  gen_y <- BatchDataIterator(data_tab[[2]], 
-                             batch_size = batch_size, 
-                             shuffle = shuffle, 
-                             seed = seed
-  )
+  # gen_y <- BatchDataIterator(data_tab[[2]], 
+  #                            batch_size = batch_size, 
+  #                            shuffle = shuffle, 
+  #                            seed = seed
+  # )
   
   # str(gen_y$`__next__`())
   
-  gen <- MultiIteratorImageTab(list(gen_images, gen_tab))
+  # gen_tabs <- gen_tab[[1]]
+  # for(i in 2:length(gen_tab))
+    # gen_tabs <- combine_generators_list(gen_tabs, gen_tab[[i]])
   
-  # str(gen$`__next__`())
+  # str(gen_tabs$`__getitem__`(1L))
   
-  gen_all <- MultiIteratorXY(c(gen, gen_y))
+  gen <- combine_generators_x( #MultiIteratorImageTab(
+    #list(
+      gen_images, gen_tab
+      #)
+  )
   
-  # str(gen_all$`__next__`())
+  # str(gen$`__getitem__`(1L))
   
-  return(gen_all)
-      
+  # gen_all <- combine_generators_list(#MultiIteratorXY(
+  #   #c(
+  #     gen, gen_y
+  #     #)
+  # )
+  
+  # str(gen_all$`__getitem__`(1L))
+  
+  return(gen)
+  
 }
 
 
-# Parallel Iterator over N data generators
-MultiIteratorXY = reticulate::PyClass("MultiIteratorXY",
-                                      defs = list(
-                                        seqs = NULL,
-                                        `__init__` = function(self, seqs, shuffle = TRUE){
-                                          self$seqs = seqs
-                                          super()$`__init__`(
-                                            n = as.integer(seqs[[1]]$n),
-                                            batch_size = as.integer(seqs[[1]]$batch_size),
-                                            shuffle = shuffle,
-                                            seed = as.integer(self$seqs[[1]]$seed)
-                                          )
-                                          return(NULL)
-                                        },
-                                        `__len__` = function(self){
-                                          self$seqs[[1]]$`__len__`()
-                                        },
-                                        `_get_batches_of_transformed_samples` = function(self, index_array) {
-                                          xys = purrr::map(self$seqs, function(x) {
-                                            x$`_get_batches_of_transformed_samples`(as.integer(index_array))
-                                          })
-                                          #list(purrr::map(xys, 1L), xys[[1]][[2]])
-                                        }
-                                        # `__getitem__` = function(self, idx) {
-                                        #   xys = map(self$seqs, function(x) {
-                                        #     x$`__getitem__`(idx)[[1]]
-                                        #   })
-                                        #  list(map(xys, 1L), xys[[1]][[2]])
-                                        # },
-                                        # `__next__` = function(self, idx) {
-                                        #   xys = map(self$seqs, function(x) {
-                                        #     x$`__getitem__`(idx)[[1]]
-                                        #   })
-                                        #   list(map(xys, 1L), xys[[1]][[2]])
-                                        # }
-                                      ),
-                                      inherit = tensorflow::tf$keras$preprocessing$image$Iterator
-)
+# from mlr3keras
 
-MultiIteratorImageTab = reticulate::PyClass("MultiIteratorImageTab",
-                                            defs = list(
-                                              seqs = NULL,
-                                              `__init__` = function(self, seqs, shuffle = TRUE){
-                                                self$seqs = seqs
-                                                super()$`__init__`(
-                                                  n = as.integer(seqs[[1]]$n),
-                                                  batch_size = as.integer(seqs[[1]]$batch_size),
-                                                  shuffle = shuffle,
-                                                  seed = as.integer(self$seqs[[1]]$seed)
-                                                )
-                                                return(NULL)
-                                              },
-                                              `__len__` = function(self){
-                                                self$seqs[[1]]$`__len__`()
-                                              },
-                                              `_get_batches_of_transformed_samples` = function(self, index_array) {
-                                                c(list(
-                                                  self$seqs[[1]]$`_get_batches_of_transformed_samples`(
-                                                    as.integer(index_array))
-                                                  ),
-                                                  self$seqs[[2]]$`_get_batches_of_transformed_samples`(
-                                                    as.integer(index_array))
-                                                )
-                                              }
-                                              # `__getitem__` = function(self, idx) {
-                                              #   xys = map(self$seqs, function(x) {
-                                              #     x$`__getitem__`(idx)[[1]]
-                                              #   })
-                                              #  list(map(xys, 1L), xys[[1]][[2]])
-                                              # },
-                                              # `__next__` = function(self, idx) {
-                                              #   xys = map(self$seqs, function(x) {
-                                              #     x$`__getitem__`(idx)[[1]]
-                                              #   })
-                                              #   list(map(xys, 1L), xys[[1]][[2]])
-                                              # }
-                                            ),
-                                            inherit = tensorflow::tf$keras$preprocessing$image$Iterator
-)
+#' Make a DataGenerator from a data.frame or matrix
+#'
+#' Creates a Python Class that internally iterates over the data.
+#' @param x matrix;
+#' @param y vector;
+#' @param generator generator as e.g. obtained from `keras::image_data_generator`.
+#'   Used for consistent train-test splits.
+#' @param batch_size integer 
+#' @param shuffle logical; Should data be shuffled?
+#' @param seed integer; seed for shuffling data.
+#' @export
+make_generator_from_matrix = function(x, y = NULL, generator=image_data_generator(), 
+                                      batch_size=32L, shuffle=TRUE, seed=1L) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$Numpy2DArrayIterator(x, y, generator, batch_size=as.integer(batch_size), 
+                                  shuffle=shuffle,seed=as.integer(seed))
+}
 
 
-## Iterator over a list of tensors
-BatchDataIterator = reticulate::PyClass("BatchDataIterator",
-                                        defs = list(
-                                          data = NULL,
-                                          `__init__` = function(self, data, batch_size=32L, shuffle=TRUE, seed = 1L){
-                                            self$data = data
-                                            n = as.integer(nrow(data))
-                                            super()$`__init__`(
-                                               n = n,
-                                               batch_size = as.integer(batch_size),
-                                               shuffle = shuffle,
-                                               seed = as.integer(seed)
-                                             )
-                                             return(NULL)
-                                           },
-                                           `_get_batches_of_transformed_samples` = function(self, index_array){
-                                             
-                                             self$data[index_array, ,drop=FALSE]
-                                             
-                                           }
-                                         ),
-                                         inherit = tensorflow::tf$keras$preprocessing$image$Iterator
-)
+combine_generators = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGenerator(gen1, gen2)
+}
 
-## Iterator over a list of tensors
-BatchDataIteratorX = reticulate::PyClass("BatchDataIteratorX",
-                                         defs = list(
-                                           data = NULL,
-                                           `__init__` = function(self, data, batch_size=32L, shuffle=TRUE, seed = 1L){
-                                             self$data = data
-                                             n = as.integer(nrow(data[[1]]))
-                                             super()$`__init__`(
-                                               n = n,
-                                               batch_size = as.integer(batch_size),
-                                               shuffle = shuffle,
-                                               seed = as.integer(seed)
-                                             )
-                                             return(NULL)
-                                           },
-                                           `_get_batches_of_transformed_samples` = function(self, index_array){
-                                             
-                                             lapply(self$data, function(x) x[index_array, ,drop=FALSE])
-                                             
-                                           }
-                                         ),
-                                         inherit = tensorflow::tf$keras$preprocessing$image$Iterator
-)
+combine_generators_x = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorX(gen1, gen2)
+}
 
-# iterate over vector / matrix
-BatchDataIteratorY = reticulate::PyClass("BatchDataIteratorY",
-                                         defs = list(
-                                           data = NULL,
-                                           `__init__` = function(self, data, batch_size=32L, shuffle=TRUE, seed = 1L){
-                                             self$data = data
-                                             n = as.integer(NROW(data))
-                                             super()$`__init__`(
-                                               n = n,
-                                               batch_size = as.integer(batch_size),
-                                               shuffle = shuffle,
-                                               seed = as.integer(seed)
-                                             )
-                                             return(NULL)
-                                           },
-                                           `_get_batches_of_transformed_samples` = function(self, index_array){
-                                             
-                                             if(is.null(dim(data))) self$data[index_array] else
-                                               self$data[index_array,]
-                                             
-                                           }
-                                         ),
-                                         inherit = tensorflow::tf$keras$preprocessing$image$Iterator
-)
+combine_generators_list = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorList(gen1, gen2)
+}
 
