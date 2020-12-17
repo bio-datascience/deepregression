@@ -161,7 +161,7 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
 
   if(trafo){
 
-    return(bdiag(lapply(1:length(Ps), function(j) lambdas[[j]] * Ps[[j]])))
+    return(bdiag(lapply(1:length(Ps), function(j) lambdas[[j]] * Ps[[j]][[1]])))
 
   }
 
