@@ -424,9 +424,10 @@ deepregression <- function(
   if(!is.null(offset)){
 
     cat("Using an offset.")
-    input_cov <- c(input_cov, unlist(lapply(offset[!sapply(offset, is.null)],
-                                            function(x) convertfun(matrix(x, ncol = 1))),
-                                     recursive = FALSE))
+    input_cov <- c(input_cov, lapply(offset[!sapply(offset, is.null)],
+                                     function(x) convertfun(matrix(x, ncol = 1)))
+                   # recursive = FALSE)
+                   )
 
   }
 
@@ -447,9 +448,10 @@ deepregression <- function(
     if(!is.null(offset_val)){
       # print("Using an offset.")
       validation_data[[1]] <- c(validation_data[[1]],
-                                unlist(lapply(offset_val[!sapply(offset_val, is.null)],
-                                              function(x) convertfun(matrix(x, ncol = 1))),
-                                       recursive = FALSE))
+                                lapply(offset_val[!sapply(offset_val, is.null)],
+                                              function(x) convertfun(matrix(x, ncol = 1)))#,
+                                       # recursive = FALSE)
+                                )
     }
   }
 

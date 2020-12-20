@@ -583,6 +583,8 @@ fit.deepregression <- function(
   if(early_stopping)
     callbacks <- append(callbacks,
                         callback_early_stopping(patience = patience))
+  
+  is_trafo = x$init_params$family=="transformation_model"
 
   if(auc_callback){
 
@@ -647,7 +649,8 @@ fit.deepregression <- function(
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                   color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
                                                       "rgb", "grayscale")),
-                                  x_col = names(x$init_params$image_var))
+                                  x_col = names(x$init_params$image_var),
+                                  is_trafo = is_trafo)
       
       if(!is.null(list(...)$validation_data) | 
          !is.null(x$init_params$validation_data)){
@@ -665,7 +668,8 @@ fit.deepregression <- function(
                                           color_mode = unname(ifelse(
                                             unlist(x$init_params$image_var)[3]==3, 
                                             "rgb", "grayscale")),
-                                          x_col = names(x$init_params$image_var))
+                                          x_col = names(x$init_params$image_var),
+                                          is_trafo = is_trafo)
         validation_steps <- max_data%/%batch_size+1
       }else{
         validation_data <- NULL
@@ -700,7 +704,8 @@ fit.deepregression <- function(
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                   color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
                                                              "rgb", "grayscale")),
-                                  x_col = names(x$init_params$image_var))
+                                  x_col = names(x$init_params$image_var),
+                                  is_trafo = is_trafo)
       
       max_data_val <- NROW(input_x_val[[1]])
       validation_steps <- max_data_val%/%batch_size+1
@@ -715,7 +720,8 @@ fit.deepregression <- function(
                                         color_mode = unname(ifelse(unlist(
                                           x$init_params$image_var)[3]==3, 
                                           "rgb", "grayscale")),
-                                        x_col = names(x$init_params$image_var))
+                                        x_col = names(x$init_params$image_var),
+                                        is_trafo = is_trafo)
       
     }
     

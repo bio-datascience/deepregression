@@ -5,7 +5,6 @@ import numpy as np
 from tensorflow.python.keras.preprocessing.image import Iterator, ImageDataGenerator
 from tensorflow.python.keras.utils.data_utils import Sequence
 
-
 class Numpy2DArrayIterator(Iterator):
     """Iterator yielding data from a Numpy array.
     # Arguments
@@ -179,6 +178,37 @@ class CombinedGeneratorX(Sequence):
         X_batch = X1_batch, *X2_batch #[val for sublist in [[X1_batch], X2_batch] for val in sublist]
         return X_batch, Y2_batch
 
+class CombinedGeneratorXY(Sequence):
+    """Wraps 2 DataGenerators"""
+
+    seed=None,
+    batch_size=None,
+
+    def __init__(self, gen1, gen2):
+
+        # Real time multiple input data augmentation
+        assert gen1.batch_size == gen2.batch_size
+        self.batch_size = gen1.batch_size
+
+        if gen1.seed != gen2.seed:
+            Warning("Generator seeds do not match!")
+        self.seed = gen1.seed
+
+        self.gen1 = gen1
+        self.gen2 = gen2
+	# self.shape = [gen1.shape, gen2.shape]
+
+    def __len__(self):
+        """It is mandatory to implement it on Keras Sequence"""
+        return self.gen1.__len__()
+
+    def __getitem__(self, index):
+        """Getting items from the 2 generators and packing them, dropping first target"""
+        X1_batch = self.gen1.__getitem__(index)
+        X2_batch, Y2_batch = self.gen2.__getitem__(index)
+        X_batch = *X1_batch, *X2_batch #[val for sublist in [[X1_batch], X2_batch] for val in sublist]
+        return X_batch, Y2_batch
+
 class CombinedGeneratorList(Sequence):
     """Wraps 2 DataGenerators"""
 
@@ -207,7 +237,7 @@ class CombinedGeneratorList(Sequence):
         """Getting items from the 2 generators and packing them, dropping first target"""
         X_batch = self.gen1.__getitem__(index)
         Y_batch = self.gen2.__getitem__(index)
-        XY_batch = [val for sublist in X_batch for val in sublist], Y_batch
+        XY_batch = X_batch, *Y_batch
         return XY_batch
 
 class CombinedGenerator(Sequence):
