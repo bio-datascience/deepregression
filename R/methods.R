@@ -181,7 +181,9 @@ plot.deeptrafo <- function(
   if(which_param==1){
     phi <- matrix(get_shift(x), ncol=1)
   }else{
-    phi <- t(get_theta(x))
+    phi <- get_theta(x)
+    # FIXME: Is the following necessary?
+    if(nrow(phi)==1 & ncol(phi)>1) phi <- t(phi)
   }
 
   for(w in which){
