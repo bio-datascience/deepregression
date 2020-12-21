@@ -1222,7 +1222,7 @@ get_shift <- function(x)
   nonlin_names <- grep("structured_nonlinear_1", names_weights)
   if(length(c(lin_names, nonlin_names))==0)
     stop("Not sure which layer to access for shift. Have you specified a structured shift predictor?")
-  -1 * as.matrix(x$model$weights[[c(lin_names, nonlin_names)]] + 0)
+  -1 * as.matrix(x$model$trainable_weights[[c(lin_names, nonlin_names)]] + 0)
 
 }
 
