@@ -513,7 +513,6 @@ deepregression <- function(
       list_structured = list_structured,
       list_deep = list_of_deep_models,
       nr_params = nr_params,
-      lss = TRUE,
       train_together = train_together_ind(train_together),
       family = family,
       variational = variational,
@@ -598,8 +597,6 @@ deepregression <- function(
 #' @param use_bias_in_structured logical, whether or not to use a bias in
 #' structured layer
 #' @param nr_params number of distribution parameters
-#' @param lss whether or not to model the whole distribution
-#' (lss in the style of location, scale and shape approaches)
 #' @param train_together see \code{?deepregression}
 #' @param lambda_lasso penalty parameter for l1 penalty of structured layers
 #' @param lambda_ridge penalty parameter for l2 penalty of structured layers
@@ -642,7 +639,6 @@ deepregression_init <- function(
   list_deep,
   use_bias_in_structured = FALSE,
   nr_params = 2,
-  lss = TRUE,
   train_together = NULL,
   lambda_lasso=NULL,
   lambda_ridge=NULL,
@@ -957,59 +953,46 @@ deepregression_init <- function(
 
 
   # define the distribution function applied in the last layer
-
-  if(lss){
-
-    # special families needing transformations
-
-    if(family %in% c("betar", "gammar", "pareto_ls")){
-
-      # trafo_list <- family_trafo_funs(family)
-      # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
-      # preds <- layer_concatenate(predsTrafo)
-
-      dist_fun <- family_trafo_funs_special(family)
-
-    }
-
-    # apply the transformation for each parameter
-    # and put in the right place of the distribution
-    if(is.null(dist_fun))
-      dist_fun <- make_tfd_dist(family)
-
-    # make model variational and output distribution
-    # if(variational){
-    #
-    #   out <- preds %>%
-    #     layer_dense_variational(
-    #       units = length(nr_params),
-    #       make_posterior_fn = posterior,
-    #       make_prior_fn = prior,
-    #       kl_weight = kl_weight
-    #     ) %>%
-    #     layer_distribution_lambda(dist_fun)
-    #
-    # }else{
-
-    out <- preds %>%
-      tfprobability::layer_distribution_lambda(dist_fun)
-
-    # }
-
-  }else{
-    # no location scale and shape model
-    # -> just modelling the mean
-
-    # Use the specified distribution
-    # check for mean in distribution
-    # model remaining parameter with constant
-    stop("Not implemented yet.")
-
+  
+  # special families needing transformations
+  
+  if(family %in% c("betar", "gammar", "pareto_ls")){
+    
+    # trafo_list <- family_trafo_funs(family)
+    # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
+    # preds <- layer_concatenate(predsTrafo)
+    
+    dist_fun <- family_trafo_funs_special(family)
+    
   }
-
+  
+  # apply the transformation for each parameter
+  # and put in the right place of the distribution
+  if(is.null(dist_fun))
+    dist_fun <- make_tfd_dist(family)
+  
+  # make model variational and output distribution
+  # if(variational){
+  #
+  #   out <- preds %>%
+  #     layer_dense_variational(
+  #       units = length(nr_params),
+  #       make_posterior_fn = posterior,
+  #       make_prior_fn = prior,
+  #       kl_weight = kl_weight
+  #     ) %>%
+  #     layer_distribution_lambda(dist_fun)
+  #
+  # }else{
+  
+  out <- preds %>%
+    tfprobability::layer_distribution_lambda(dist_fun)
+  
+  # }
+  
   ############################################################
   ################# Define and Compile Model #################
-
+  
   # define all inputs
   inputList <- unname(c(
     unlist(inputs_deep[!sapply(inputs_deep, is.null)],
@@ -1017,9 +1000,9 @@ deepregression_init <- function(
     inputs_struct[!sapply(inputs_struct, is.null)],
     unlist(ox[!sapply(ox, is.null)]))
   )
-
+  
   if(!is.null(offset)){
-
+    
     inputList <- c(inputList,
                    unlist(offset_inputs[!sapply(offset_inputs, is.null)]))
 
