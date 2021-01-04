@@ -1,4 +1,4 @@
-#'@title Fitting Deep Distributional Regression
+#' @title Fitting Semi-Structured Deep Distributional Regression
 #'
 #' @param y response variable
 #' @param list_of_formulae a named list of right hand side formulae,
