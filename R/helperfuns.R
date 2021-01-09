@@ -1,10 +1,18 @@
 # function that extracts variables from special symbols in formulae
 extract_from_special <- function(x)
+{
+  # remove c()
+  if(grepl("c\\(",x))
+  {
+    x <- gsub("c\\([0-9]+ *, *[0-9]+\\)","", x)
+  }
+  #
   trimws(
     strsplit(regmatches(x,
                         gregexpr("(?<=\\().*?(?=\\))", x, perl=T))[[1]],
              split = ",")[[1]]
   )
+}
 # convert sparse matrix to sparse tensor
 sparse_mat_to_tensor <- function(X)
 {
@@ -287,9 +295,9 @@ get_contents <- function(lf, data, df,
 
   # get gam terms
   spec <- attr(tf, "specials")
-  sTerms <- terms[unlist(spec[names(spec) %in% c("s", "te", "ti")])]
-  if(any(!sapply(spec[c("te","ti")], is.null)))
-    warning("2-dimensional smooths and higher currently not well tested.")
+  sTerms <- terms[sort(unlist(spec[names(spec) %in% c("s", "te", "ti")]))]
+  # if(any(!sapply(spec[c("te","ti")], is.null)))
+  #  warning("2-dimensional smooths and higher currently not well tested.")
   if(length(sTerms)>0)
   {
     names_sTerms <- names(sTerms)
@@ -322,10 +330,8 @@ get_contents <- function(lf, data, df,
 
     if(!is.list(df))
     {
-      
-      warning("Converting vector of df values to list.")
+      message("Converting vector of df values to list.")
       df <- as.list(df)
-      
     }
     
     if(is.null(defaultSmoothing))
@@ -351,7 +357,7 @@ get_contents <- function(lf, data, df,
             { 
               DRO(st[[1]]$margin[[i]]$X, 
                   df = this_df[i], 
-                  dmat = S[[i]], 
+                  dmat = st[[1]]$margin[[i]]$S[[1]], 
                   hat1 = hat1
               )["lambda"]/sp_scale + 
                 null_space_penalty
@@ -424,7 +430,7 @@ get_contents <- function(lf, data, df,
 
       this_var <- extract_from_special(dt)
       
-      if(!(length(this_var)==1 & this_var%in%names(image_var))){
+      if(!(length(this_var)==1 && this_var%in%names(image_var))){
         
         if(is.data.frame(data)){
           deepterms <- data[,this_var,drop=FALSE]
@@ -1024,3 +1030,14 @@ applySumToZero <- function(X, apply=TRUE)
 }
 
 convertfun_tf <- function(x) tf$constant(x, dtype="float32")
+
+mismatch_brackets <- function(x, logical=TRUE)
+{
+  
+  open_matches <- lengths(regmatches(x, gregexpr("\\{", x)))
+  close_matches <- lengths(regmatches(x, gregexpr("\\}", x)))
+  
+  if(logical) return(open_matches!=close_matches) else
+    return(c(open_matches, close_matches))
+  
+}

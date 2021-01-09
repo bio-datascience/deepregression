@@ -353,6 +353,7 @@ prepare_data <- function(
 #'
 #' @param object a deepregression model
 #' @param newdata optional new data, either data.frame or list
+#' @param batch_size batch_size for generator (image use cases)
 #' @param apply_fun which function to apply to the predicted distribution,
 #' per default \code{tfd_mean}, i.e., predict the mean of the distribution
 #' @param convert_fun how should the resulting tensor be converted,
@@ -364,25 +365,65 @@ prepare_data <- function(
 predict.deepregression <- function(
   object,
   newdata = NULL,
+  batch_size = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
   ...
 )
 {
 
-  if(is.null(newdata)){
-    yhat <- object$model(unname(object$init_params$input_cov))
+  if(length(object$init_params$image_var)>0){
+   
+    if(!is.null(newdata)){
+      if(is.data.frame(newdata)) newdata <- as.list(newdata)
+      newdata_processed <- prepare_data(object, newdata, pred=FALSE)
+      
+      data_tab <- list(newdata_processed)
+      data_image <- as.data.frame(newdata[names(object$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)
+      
+    }else{
+
+      data_tab <- list(unname(object$init_params$input_cov))
+      data_image <- as.data.frame(object$init_params$data[names(object$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)
+    }
+    # prepare generator
+    max_data <- NROW(data_image)
+    if(is.null(batch_size)) batch_size <- 20
+    steps_per_epoch <- max_data%/%batch_size+1
+    
+    generator <- make_generator(data_image, data_tab, batch_size, 
+                                # FIXME: multiple images
+                                target_size = unname(unlist(object$init_params$image_var)[1:2]),
+                                color_mode = unname(ifelse(
+                                  unlist(object$init_params$image_var)[3]==3, 
+                                  "rgb", "grayscale")),
+                                x_col = names(object$init_params$image_var),
+                                is_trafo = object$init_params$family=="transformation_model")
+    
+    # predict
+    yhat <- object$model$predict(x = generator, 
+                                 steps = steps_per_epoch)
+    
+    return(convert_fun(yhat))
+  
   }else{
-    # preprocess data
-    if(is.data.frame(newdata)) newdata <- as.list(newdata)
-    newdata_processed <- prepare_data(object, newdata, pred=FALSE)
-    yhat <- object$model(newdata_processed)
+    
+    if(is.null(newdata)){
+      yhat <- object$model(unname(object$init_params$input_cov))
+    }else{
+      # preprocess data
+      if(is.data.frame(newdata)) newdata <- as.list(newdata)
+      newdata_processed <- prepare_data(object, newdata, pred=FALSE)
+      yhat <- object$model(newdata_processed)
+    }
+   
+    if(!is.null(apply_fun))
+      return(convert_fun(apply_fun(yhat))) else
+        return(convert_fun(yhat))
+     
   }
-
-
-  if(!is.null(apply_fun))
-    return(convert_fun(apply_fun(yhat))) else
-      return(convert_fun(yhat))
 
 }
 
@@ -662,11 +703,13 @@ fit.deepregression <- function(
         max_data <- NROW(validation_data[[1]][[1]])
         data_tab_val <- list(validation_data[[1]], 
                              validation_data[[2]])
-        data_image_val <- as.data.frame(x$init_params$validation_data[names(x$init_params$image_var)], 
+        data_image_val <- as.data.frame(x$init_params$validation_data[
+          names(x$init_params$image_var)], 
                                     stringsAsFactors = FALSE)
         validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
                                           # FIXME: multiple images
-                                          target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                          target_size = unname(
+                                            unlist(x$init_params$image_var)[1:2]),
                                           color_mode = unname(ifelse(
                                             unlist(x$init_params$image_var)[3]==3, 
                                             "rgb", "grayscale")),
@@ -807,31 +850,32 @@ coef.deepregression <- function(
   names(lret) <- object$init_params$param_names[params]
   if(is.null(type))
     type <- c("linear", "smooth")
-  for(i in params){
+  for(j in 1:length(params)){
+    i = params[j]
     sl <- paste0("structured_linear_",i)
     slas <- paste0("structured_lasso_",i)
     snl <- paste0("structured_nonlinear_",i)
-    lret[[i]] <- list(structured_linear = NULL,
+    lret[[j]] <- list(structured_linear = NULL,
                       structured_lasso = NULL,
                       structured_nonlinear = NULL)
 
-    lret[[i]]$structured_linear <-
+    lret[[j]]$structured_linear <-
       if(sl %in% layer_names)
         object$model$get_layer(sl)$get_weights()[[1]] else
           NULL
-    lret[[i]]$structured_lasso <-
+    lret[[j]]$structured_lasso <-
       if(slas %in% layer_names)
         object$model$get_layer(slas)$get_weights()[[1]] else
           NULL
     if(snl %in% layer_names){
       cf <- object$model$get_layer(snl)$get_weights()
       if(length(cf)==2 & variational){
-        lret[[i]]$structured_nonlinear <-  cf[[1]]
+        lret[[j]]$structured_nonlinear <-  cf[[1]]
       }else{
-        lret[[i]]$structured_nonlinear <- cf[[length(cf)]]
+        lret[[j]]$structured_nonlinear <- cf[[length(cf)]]
       }
     }else{
-      lret[[i]]$structured_nonlinear <- NULL
+      lret[[j]]$structured_nonlinear <- NULL
     }
 
     sel <- which(c("linear", "smooth") %in% type)
@@ -844,21 +888,22 @@ coef.deepregression <- function(
           object$init_params$ind_structterms[[i]]$start + 1
       )
     sel_ind <- rep(struct_terms_fitting_type, length_names)
-    if(any(sapply(lret[[i]], NCOL)>1)){
-      lret[[i]] <- lapply(lret[[i]], function(x) x[sel_ind,])
-      lret[[i]]$linterms <- do.call("rbind", lret[[i]][c("structured_linear", "structured_lasso")])
-      lret[[i]]$smoothterms <- lret[[i]]["structured_nonlinear"]
-      lret[[i]] <- lret[[i]][c("linterms","smoothterms")[sel]]
-      lret[[i]] <- lret[[i]][!sapply(lret[[i]],function(x) is.null(x) | is.null(x[[1]]))]
-      lret[[i]] <- do.call("rbind", lret[[i]])
-      rownames(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
+    if(any(sapply(lret[[j]], NCOL)>1)){
+      lret[[j]] <- lapply(lret[[j]], function(x) x[sel_ind,])
+      lret[[j]]$linterms <- do.call("rbind", lret[[j]][
+        c("structured_linear", "structured_lasso")])
+      lret[[j]]$smoothterms <- lret[[j]]["structured_nonlinear"]
+      lret[[j]] <- lret[[j]][c("linterms","smoothterms")[sel]]
+      lret[[j]] <- lret[[j]][!sapply(lret[[j]],function(x) is.null(x) | is.null(x[[1]]))]
+      lret[[j]] <- do.call("rbind", lret[[j]])
+      rownames(lret[[j]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
         c("linterms","smoothterms")]),
         length_names[struct_terms_fitting_type])
     }else{
-      lret[[i]] <- unlist(lret[[i]])
-      lret[[i]] <- lret[[i]][sel_ind]
-      names(lret[[i]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
-        c("linterms","smoothterms")]),
+      lret[[j]] <- unlist(lret[[j]])
+      lret[[j]] <- lret[[j]][sel_ind]
+      names(lret[[j]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
+        c("linterms","smoothterms")[sel]]),
         length_names[struct_terms_fitting_type])
     }
     
@@ -1221,7 +1266,8 @@ get_shift <- function(x)
   lin_names <- grep("structured_linear_1", names_weights)
   nonlin_names <- grep("structured_nonlinear_1", names_weights)
   if(length(c(lin_names, nonlin_names))==0)
-    stop("Not sure which layer to access for shift. Have you specified a structured shift predictor?")
+    stop("Not sure which layer to access for shift. ", 
+         "Have you specified a structured shift predictor?")
   -1 * as.matrix(x$model$trainable_weights[[c(lin_names, nonlin_names)]] + 0)
 
 }
@@ -1332,5 +1378,40 @@ compile.deepregression <- function(object, add_loss = NULL, weights = NULL, ind_
   
   object$model <- models
   return(object)
+  
+}
+
+#' Return partial effect of one smooth term
+#' 
+#' @param object deepregression object
+#' @param name string; for partial match with smooth term
+#' @param return_matrix logical; whether to return the design matrix or
+#' @param param integer; which distribution parameter
+#' the partial effect (\code{FALSE}, default)
+#' @param newdata data.frame; new data (optional)
+#' 
+#' @export
+#' 
+get_partial_effect <- function(object, name, return_matrix = FALSE, param = 1, newdata = NULL)
+{
+  
+  if(is.null(newdata)) newdata <- object$init_params$data
+  
+  nms <- names(object$init_params$parsed_formulae_contents[[param]]$smoothterms)
+  match <- grep(name, nms)
+  if(all(!match)) stop("No matching name found.")
+  
+  sTerm <- object$init_params$parsed_formulae_contents[[param]]$smoothterms[[match]]
+  if(is.list(sTerm)) sTerm <- sTerm[[1]]
+  
+  pmat <- PredictMat(sTerm, data = newdata)
+  if(attr(object$init_params$parsed_formulae_contents,"zero_cons"))
+    pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
+  if(return_matrix) return(pmat)
+  
+  coefs <- coef(object, params = param, type = "smooth")[[1]]
+  coefs <- coefs[grepl(name, names(coefs))]
+
+  return(pmat%*%coefs)
   
 }

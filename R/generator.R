@@ -67,8 +67,8 @@ make_generator <- function(data_image, data_tab, batch_size,
   
   # str(gen_images$`__next__`())
   
-  if(is.na(data_tab[[1]][[1]][[1]]))
-    data_tab[[1]] <- data_tab[[1]][-1]
+  if(is.logical(data_tab[[1]][[1]]) || is.na(data_tab[[1]][[1]][[1]]))
+      data_tab[[1]] <- data_tab[[1]][-1]
   
   ldt <- length(data_tab[[1]])
   
@@ -80,68 +80,69 @@ make_generator <- function(data_image, data_tab, batch_size,
     
     for(i in 1:ceiling((ldt-2)/2)){
       
-      gen_images <- combine_generators_list(
-        gen_images, 
-        make_generator_from_matrix(
-          x = data_tab[[1]][(i-1)*2 + 1:lens[i]], y = NULL, 
-          batch_size = batch_size, shuffle = shuffle, seed = seed
-        ) 
-      )
+      this_ind <- (i-1)*2 + 1:lens[i]
+      
+      if(length(this_ind)>1){
+        
+        gen_images <- combine_generators_list_unlist(
+          gen_images, 
+          make_generator_from_matrix(
+            x = data_tab[[1]][this_ind], y = NULL, 
+            batch_size = batch_size, shuffle = shuffle, seed = seed
+          ) 
+        )
+        
+      }else{
+      
+          gen_images <- combine_generators_unlist_list(
+            gen_images, 
+            make_generator_from_matrix(
+              x = data_tab[[1]][[this_ind]], y = NULL, 
+              batch_size = batch_size, shuffle = shuffle, seed = seed
+            ) 
+          ) 
+      }
+      
     }
     
     # str(gen_images$`__getitem__`(1L))
     
   }
   
+  if(length(data_tab)==1) this_y <- NULL else this_y <- data_tab[[2]]
   gen_tab <- make_generator_from_matrix(
-    x = data_tab[[1]][(ldt-1):ldt], y = data_tab[[2]], 
+    x = data_tab[[1]][(ldt-1):ldt], y = this_y, 
     batch_size = batch_size, shuffle = shuffle, seed = seed
   ) 
     
   # str(gen_tab$`__next__`())
-  
-  # gen_y <- BatchDataIterator(data_tab[[2]], 
-  #                            batch_size = batch_size, 
-  #                            shuffle = shuffle, 
-  #                            seed = seed
-  # )
-  
-  # str(gen_y$`__next__`())
-  
-  # gen_tabs <- gen_tab[[1]]
-  # for(i in 2:length(gen_tab))
-    # gen_tabs <- combine_generators_list(gen_tabs, gen_tab[[i]])
-  
-  # str(gen_tabs$`__getitem__`(1L))
-  
-  if(ldt>2){
+
+  if(is.null(this_y)){
     
-    gen <- combine_generators_xy( #MultiIteratorImageTab(
-      #list(
-      gen_images, gen_tab
-      #)
-    )
+    if(ldt>2)
+      gen <- combine_generators_twolists(gen_images, gen_tab) else
+        gen <- combine_generators_list_yless(gen_images, gen_tab)
     
   }else{
     
-    gen <- combine_generators_x( #MultiIteratorImageTab(
-      #list(
-      gen_images, gen_tab
-      #)
-    )
+    if(ldt>2){
+      
+      gen <- combine_generators_xy( 
+        gen_images, gen_tab
+      )
+      
+    }else{
+      
+      gen <- combine_generators_x( 
+        gen_images, gen_tab
+      )
+      
+    }
     
   }
     
   # str(gen$`__getitem__`(1L))
-  
-  # gen_all <- combine_generators_list(#MultiIteratorXY(
-  #   #c(
-  #     gen, gen_y
-  #     #)
-  # )
-  
-  # str(gen_all$`__getitem__`(1L))
-  
+
   return(gen)
   
 }
@@ -193,3 +194,26 @@ combine_generators_list = function(gen1, gen2) {
   generators$CombinedGeneratorList(gen1, gen2)
 }
 
+combine_generators_list_unlist = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorListUnlist(gen1, gen2)
+}
+
+combine_generators_unlist_list = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorUnlistList(gen1, gen2)
+}
+
+combine_generators_twolists = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorTwoLists(gen1, gen2)
+}
+
+combine_generators_list_yless = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorListYless(gen1, gen2)
+}

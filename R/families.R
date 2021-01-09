@@ -42,6 +42,7 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"half_normal": }{half normal with scale (exp)}
 #'  \item{"horseshoe": }{horseshoe with scale (exp)}
 #'  \item{"inverse_gamma": }{inverse gamma with concentation (exp) and rate (exp)}
+#'  \item{"inverse_gamma_ls": }{inverse gamma with location (exp) and variance (1/exp)}
 #'  \item{"inverse_gaussian": }{inverse Gaussian with location (exp) and concentation
 #'  (exp)}
 #'  \item{"laplace": }{Laplace with location (identity) and scale (exp)}
@@ -50,6 +51,7 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"logistic": }{logistic with location (identity) and scale (exp)}
 #'  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
 #'  \item{"negbinom_ls": }{neg. binomail with mean (exp) and clutter factor (exp)}
+#'  \item{"pareto": }{Pareto with concentration (exp) and scale (1/exp)} 
 #'  \item{"pareto_ls": }{Pareto location scale version with mean (exp) 
 #'  and scale (exp), which corresponds to a Pareto distribution with parameters scale = mean
 #'  and concentration = 1/sigma, where sigma is the scale in the pareto_ls version.}
@@ -59,7 +61,8 @@ tfmult <- function(x,y) tf$math$multiply(x,y)
 #'  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and
 #'  scale (exp)}
 #'  \item{"uniform": }{uniform with upper and lower (both identity)}
-#'  \item{"zinb": }{Zero-inflated negative binomial with mean (exp), variance (exp) and prob (sigmoid)}
+#'  \item{"zinb": }{Zero-inflated negative binomial with mean (exp), 
+#'  variance (exp) and prob (sigmoid)}
 #'  \item{"zip":  }{Zero-inflated poisson distribution with mean (exp) and prob (sigmoid)}
 #' }
 #' @param add_const small positive constant to stabilize calculations
@@ -99,6 +102,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                      half_normal = tfd_half_normal,
                      horseshoe = tfd_horseshoe,
                      inverse_gamma = tfd_inverse_gamma,
+                     inverse_gamma_ls = tfd_inverse_gamma,
                      inverse_gaussian = tfd_inverse_gaussian,
                      kumaraswamy = tfd_kumaraswamy,
                      laplace = tfd_laplace,
@@ -117,6 +121,7 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                              # validate_args = TRUE
                        ),
                      negbinom_ls = tfd_negative_binomial_ls,
+                     pareto = tfd_pareto,
                      pareto_ls = tfd_pareto,
                      poisson = tfd_poisson,
                      poisson_lograte = function(log_rate)
@@ -189,6 +194,8 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                          horseshoe = list(function(x) add_const + tfe(x)),
                          inverse_gamma = list(function(x) add_const + tfe(x),
                                               function(x) add_const + tfe(x)),
+                         inverse_gamma_ls = list(function(x) add_const + tfe(x),
+                                              function(x) add_const + tfe(x)),
                          inverse_gaussian = list(function(x) add_const + tfe(x),
                                                  function(x)
                                                    add_const + tfe(x)),
@@ -205,6 +212,8 @@ make_tfd_dist <- function(family, add_const = 1e-8,
                                             function(x) add_const + tfe(x)),
                          multinomial = list(function(x) tfsoft(x)),
                          multinoulli = list(function(x) x),
+                         pareto = list(function(x) add_const + tfe(x),
+                                       function(x) add_const + tfe(-x)),
                          pareto_ls = list(function(x) add_const + tfe(x),
                                        function(x) add_const + tfe(x)),
                          poisson = list(function(x) add_const + tfe(x)),
@@ -275,12 +284,14 @@ names_families <- function(family)
                  half_normal = "scale",
                  horseshoe = "scale",
                  inverse_gamma = c("concentation", "rate"),
+                 inverse_gamma_ls = c("location", "scale"),
                  inverse_gaussian = c("location", "concentation"),
                  laplace = c("location", "scale"),
                  log_normal = c("location", "scale"),
                  logistic = c("location", "scale"),
                  negbinom = c("count", "prob"),
                  negbinom_ls = c("mean", "clutter_factor"),
+                 pareto = c("concentration", "scale"),
                  pareto_ls = c("location", "scale"),
                  poisson = "rate",
                  poisson_lograte = "lograte",
@@ -318,7 +329,7 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
       # rate = tfrec(tfe(x[,2,drop=FALSE]))
       # con = tfdiv(tfe(x[,1,drop=FALSE]), tfe(x[,1,drop=FALSE]))
 
-      return(list(con,rate))
+      return(list(concentration = con, rate = rate))
     },
     betar = function(x){
 
@@ -335,7 +346,7 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
         tfmult(a, tfdiv(tf$constant(1) - mu,mu)),
         tf$constant(0) + add_const)
 
-      return(list(a,b))
+      return(list(concentration1 = a, concentration0 = b))
     },
     pareto_ls = function(x){
       
@@ -344,38 +355,28 @@ family_trafo_funs_special <- function(family, add_const = 1e-8)
       # k_print_tensor(scale, message = "This is scale")
       con = tfe(-x[,2,drop=FALSE])
       # k_print_tensor(con, message = "This is con")
-      return(list(con, scale)) 
+      return(list(concentration = con, scale = scale)) 
+      
+      
+    },
+    inverse_gamma_ls = function(x){
+      
+      # alpha = 1/sigma^2
+      alpha = add_const + tfe(-x[,2,drop=FALSE])
+      # beta = mu (alpha + 1)
+      beta = add_const + tfe(x[,1,drop=FALSE]) * (alpha + 1)
+      
+      return(list(concentration = alpha, scale = beta)) 
       
       
     }
-    # },
-    # negbinom = function(x){
-    #
-    #   # see, e.g., https://www.johndcook.com/negative_binomial.pdf
-    #
-    #   mu <- tfe(x[,1,drop=FALSE])
-    #   sig2 <- tfsq(tfe(x[,2,drop=FALSE]))
-    #   f = tf$compat$v2$clip_by_value(
-    #     tfdiv(tfsq(mu),sig2-mu),
-    #     add_const, Inf
-    #     )
-    #   p = tf$compat$v2$clip_by_value(
-    #     tfdiv(f, f+mu),
-    #     0, 1
-    #     )
-    #
-    #   return(list(f,p))
-    # }
   )
 
   tfd_dist <- switch(family,
                      betar = tfd_beta,
                      gammar = tfd_gamma,
-                     pareto_ls = tfd_pareto
-                     # negbinom = function(fail, probs)
-                     #   tfd_negative_binomial(total_count = fail, probs = probs#,
-                                             # validate_args = TRUE
-                       # )
+                     pareto_ls = tfd_pareto,
+                     inverse_gamma_ls = tfd_inverse_gamma
   )
 
   ret_fun <- function(x) do.call(tfd_dist, trafo_fun(x))

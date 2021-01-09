@@ -200,7 +200,7 @@ orthog_tf <- function(Y, X)
 
 orthog_nt <- function(Y,X) Y <- X%*%solve(crossprod(X))%*%crossprod(X,Y)
 
-split_model <- function(model, where)
+split_model <- function(model, where = -1)
 {
 
   fun_as_string <- Reduce(paste, deparse(body(model)))
@@ -211,10 +211,16 @@ split_model <- function(model, where)
   # as input is also part of split_fun
   where <- where + 1
 
-  # define functions as strings
-  first_part <- paste(split_fun[1:where], collapse = "%>%")
-  second_part <- paste(split_fun[c(1,(where+1):(length_model+1))], collapse = "%>%")
+  # # define functions as strings
+  # first_part <- paste(split_fun[1:where], collapse = "%>%")
+  # second_part <- paste(split_fun[c(1,(where+1):(length_model+1))], collapse = "%>%")
 
+  # add missing brackets
+  if(mismatch_brackets(first_part))
+    first_part <- paste0(first_part, "}")
+  if(mismatch_brackets(second_part))
+    first_part <- paste0("{", second_part)
+  
   # define functions with strings
   first_part <- eval(parse(text = paste0('function(x) ', first_part)))
   second_part <- eval(parse(text = paste0('function(x) ', second_part)))

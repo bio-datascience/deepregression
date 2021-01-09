@@ -158,8 +158,10 @@ deepregression <- function(
     "normal", "bernoulli", "bernoulli_prob", "beta", "betar",
     "cauchy", "chi2", "chi","exponential", "gamma_gamma",
     "gamma", "gammar", "gumbel", "half_cauchy", "half_normal", "horseshoe",
-    "inverse_gamma", "inverse_gaussian", "laplace", "log_normal", "logistic",
-    "multinomial", "multinoulli", "negbinom", "negbinom_ls", "pareto_ls", "poisson",
+    "inverse_gamma", "inverse_gamma_ls", "inverse_gaussian", 
+    "laplace", "log_normal", "logistic",
+    "multinomial", "multinoulli", "negbinom", "negbinom_ls", 
+    "pareto", "pareto_ls", "poisson",
     "poisson_lograte", "student_t",
     "student_t_ls", "truncated_normal", "uniform", "zinb", "zip",
     "transformation_model"
@@ -841,7 +843,7 @@ deepregression_init <- function(
   deep_split <- lapply(ncol_deep[1:nr_params], function(param_list){
     lapply(names(param_list), function(nn){
       if(is.null(nn)) return(NULL) else
-        split_fun(list_deep[[nn]], -1)
+        split_fun(list_deep[[nn]])
     })
   })
 
@@ -913,7 +915,6 @@ deepregression_init <- function(
   }
   )
 
-
   if(!is.null(offset)){
 
     for(i in 1:length(list_pred_param)){
@@ -956,7 +957,7 @@ deepregression_init <- function(
   
   # special families needing transformations
   
-  if(family %in% c("betar", "gammar", "pareto_ls")){
+  if(family %in% c("betar", "gammar", "pareto_ls", "inverse_gamma_ls")){
     
     # trafo_list <- family_trafo_funs(family)
     # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
