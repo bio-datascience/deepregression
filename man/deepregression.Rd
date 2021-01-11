@@ -2,7 +2,7 @@
 % Please edit documentation in R/deepregression.R
 \name{deepregression}
 \alias{deepregression}
-\title{Fitting Deep Distributional Regression}
+\title{Fitting Semi-Structured Deep Distributional Regression}
 \usage{
 deepregression(
   y,
@@ -10,10 +10,11 @@ deepregression(
   list_of_deep_models,
   family = c("normal", "bernoulli", "bernoulli_prob", "beta", "betar", "cauchy",
     "chi2", "chi", "exponential", "gamma_gamma", "gamma", "gammar", "gumbel",
-    "half_cauchy", "half_normal", "horseshoe", "inverse_gamma", "inverse_gaussian",
-    "laplace", "log_normal", "logistic", "multinomial", "multinoulli", "negbinom",
-    "negbinom_ls", "pareto_ls", "poisson", "poisson_lograte", "student_t",
-    "student_t_ls", "truncated_normal", "uniform", "zinb", "zip", "transformation_model"),
+    "half_cauchy", "half_normal", "horseshoe", "inverse_gamma", "inverse_gamma_ls",
+    "inverse_gaussian", "laplace", "log_normal", "logistic", "multinomial",
+    "multinoulli", "negbinom", "negbinom_ls", "pareto", "pareto_ls", "poisson",
+    "poisson_lograte", "student_t", "student_t_ls", "truncated_normal", "uniform",
+    "zinb", "zip", "transformation_model"),
   train_together = list(),
   data,
   image_var = list(),
@@ -90,6 +91,9 @@ network is added to the linear predictor of the second and fourth distribution p
 Those network names should then be excluded from the \code{list_of_formulae}}
 
 \item{data}{data.frame or named list with input features}
+
+\item{image_var}{names list; names correspond to image variables, values for each list item
+corresponds to the input size of the respective image, e.g., \code{list(image = list(c(200,200,3)))}.}
 
 \item{dim_deep}{list for each distribution parameter with NULL or integer vector entries; 
 this is an optional argument to manually specify the input dimensions for the unstructured 
@@ -219,7 +223,7 @@ default is \code{k_sum}. Another option could be \code{k_mean}.}
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
 }
 \description{
-Fitting Deep Distributional Regression
+Fitting Semi-Structured Deep Distributional Regression
 }
 \examples{
 library(deepregression)

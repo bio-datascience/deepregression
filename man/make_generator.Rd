@@ -2,35 +2,7 @@
 % Please edit documentation in R/generator.R
 \name{make_generator}
 \alias{make_generator}
-\title{#' Generator for placeholder object
-#'
-#' @param var variable to be transformed; each entry must be a path to an
-#' existing file
-#' @param read_method function that is used to load the object from the path
-#' @param dim the dimension of the actual data; if NULL, \code{read_method} is
-#' applied to the first entry of \code{var}.
-#'
-#' @export
-#'
-path_to_placeholder <- function(var, read_method, dim = NULL)
-{
-  
-  # check if data exists
-  if(!all(sapply(var, file.exists)))
-    stop("Not all files exist in the path variable. Can't create placeholder.")
-  
-  # check dimension
-  if(is.null(dim))
-    dim <- dim(read_method(var[1]))
-  
-  # create placeholder
-  class(var) <- c("placeholder", "character")
-  attr(var, "dims") <- c(length(var),dim)
-  attr(var, "read_method") <- read_method
-  
-  return(var)
-  
-}}
+\title{creates a generator for training}
 \usage{
 make_generator(
   data_image,
@@ -38,34 +10,29 @@ make_generator(
   batch_size,
   target_size,
   color_mode,
+  is_trafo = FALSE,
   x_col,
   shuffle = TRUE,
   seed = 42L
 )
 }
 \arguments{
+\item{data_image}{data.frame with image location as character}
+
+\item{data_tab}{tabular data as given by \code{prepare_data}}
+
 \item{batch_size}{integer}
 
-\item{x_col}{name of image column}
+\item{target_size}{size of the image without sample and colour channel}
+
+\item{color_mode}{character; \code{'rgb'} or \code{'grayscale'}}
+
+\item{x_col}{name of image column in \code{data_image}}
 
 \item{shuffle}{logical for shuffling data}
 
-\item{seed}{}
+\item{seed}{seed for shuffling in generators}
 }
 \description{
-#' Methods for placeholder class
-#' 
-#' @method dim placeholder
-#' @export
-#' @rdname methodPlaceholder
-dim.placeholder <- function(x) attr(x, "dims")
-}
-\details{
-#' @export
-#' @rdname methodPlaceholder
-`[.placeholder` <- function(x, i, ...) {
-  path_to_placeholder(NextMethod(),  read_method = attr(x, "read_method"), dim = attr(x, "dim"))
-}
-
 creates a generator for training
 }

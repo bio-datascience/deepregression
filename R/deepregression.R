@@ -25,6 +25,8 @@
 #' network is added to the linear predictor of the second and fourth distribution parameter.
 #' Those network names should then be excluded from the \code{list_of_formulae}
 #' @param data data.frame or named list with input features
+#' @param image_var names list; names correspond to image variables, values for each list item
+#' corresponds to the input size of the respective image, e.g., \code{list(image = list(c(200,200,3)))}.
 #' @param dim_deep list for each distribution parameter with NULL or integer vector entries; 
 #' this is an optional argument to manually specify the input dimensions for the unstructured 
 #' model part(s) and required if placeholders are used for unstructured data sources. E.g.,

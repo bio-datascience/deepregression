@@ -30,6 +30,7 @@ prepare_data(x, data, pred = TRUE)
 \method{predict}{deepregression}(
   object,
   newdata = NULL,
+  batch_size = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
   ...
@@ -106,6 +107,8 @@ is evaluated for plotting.}
 \item{object}{a deepregression model}
 
 \item{newdata}{optional new data, either data.frame or list}
+
+\item{batch_size}{batch_size for generator (image use cases)}
 
 \item{apply_fun}{function applied to fitted distribution,
 per default \code{tfd_mean}}

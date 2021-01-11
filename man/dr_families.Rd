@@ -55,6 +55,7 @@ with parameters (and corresponding inverse link function in brackets):
  \item{"half_normal": }{half normal with scale (exp)}
  \item{"horseshoe": }{horseshoe with scale (exp)}
  \item{"inverse_gamma": }{inverse gamma with concentation (exp) and rate (exp)}
+ \item{"inverse_gamma_ls": }{inverse gamma with location (exp) and variance (1/exp)}
  \item{"inverse_gaussian": }{inverse Gaussian with location (exp) and concentation
  (exp)}
  \item{"laplace": }{Laplace with location (identity) and scale (exp)}
@@ -63,6 +64,7 @@ with parameters (and corresponding inverse link function in brackets):
  \item{"logistic": }{logistic with location (identity) and scale (exp)}
  \item{"negbinom": }{neg. binomial with count (exp) and prob (sigmoid)}
  \item{"negbinom_ls": }{neg. binomail with mean (exp) and clutter factor (exp)}
+ \item{"pareto": }{Pareto with concentration (exp) and scale (1/exp)} 
  \item{"pareto_ls": }{Pareto location scale version with mean (exp) 
  and scale (exp), which corresponds to a Pareto distribution with parameters scale = mean
  and concentration = 1/sigma, where sigma is the scale in the pareto_ls version.}
@@ -72,7 +74,8 @@ with parameters (and corresponding inverse link function in brackets):
  \item{"student_t_ls": }{Student's t with df (exp), location (identity) and
  scale (exp)}
  \item{"uniform": }{uniform with upper and lower (both identity)}
- \item{"zinb": }{Zero-inflated negative binomial with mean (exp), variance (exp) and prob (sigmoid)}
+ \item{"zinb": }{Zero-inflated negative binomial with mean (exp), 
+ variance (exp) and prob (sigmoid)}
  \item{"zip":  }{Zero-inflated poisson distribution with mean (exp) and prob (sigmoid)}
 }
 }

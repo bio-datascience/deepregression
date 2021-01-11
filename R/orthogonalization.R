@@ -211,9 +211,9 @@ split_model <- function(model, where = -1)
   # as input is also part of split_fun
   where <- where + 1
 
-  # # define functions as strings
-  # first_part <- paste(split_fun[1:where], collapse = "%>%")
-  # second_part <- paste(split_fun[c(1,(where+1):(length_model+1))], collapse = "%>%")
+  # define functions as strings
+  first_part <- paste(split_fun[1:where], collapse = "%>%")
+  second_part <- paste(split_fun[c(1,(where+1):(length_model+1))], collapse = "%>%")
 
   # add missing brackets
   if(mismatch_brackets(first_part))

@@ -3,7 +3,8 @@ Title: Fitting Deep Distributional Regression
 Version: 0.0.0.9000
 Authors@R: c(
     person("David", "Ruegamer", , "david.ruegamer@gmail.com", role = c("aut", "cre")),
-    person("Florian", "Pfisterer", , "florian.pfisterer@stat.uni-muenchen.de", role = c("aut")))
+    person("Florian", "Pfisterer", , "florian.pfisterer@stat.uni-muenchen.de", role = c("aut")),
+    person("Philipp", "Baumann", , "baumann@kof.ethz.ch", role = c("ctb")))
 Description:
     Allows for the specification of deep distributional regression models which are fitted as part of a possibly large neural network.
     Potential predictors can be modeled using structured linear effects, structured non-linear effects or using an unstructured deep network model.

@@ -12,7 +12,6 @@ deepregression_init(
   list_deep,
   use_bias_in_structured = FALSE,
   nr_params = 2,
-  lss = TRUE,
   train_together = NULL,
   lambda_lasso = NULL,
   lambda_ridge = NULL,
@@ -64,9 +63,6 @@ non-zero while the others must be zero.}
 structured layer}
 
 \item{nr_params}{number of distribution parameters}
-
-\item{lss}{whether or not to model the whole distribution
-(lss in the style of location, scale and shape approaches)}
 
 \item{train_together}{see \code{?deepregression}}
 

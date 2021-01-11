@@ -400,7 +400,8 @@ predict.deepregression <- function(
                                   unlist(object$init_params$image_var)[3]==3, 
                                   "rgb", "grayscale")),
                                 x_col = names(object$init_params$image_var),
-                                is_trafo = object$init_params$family=="transformation_model")
+                                is_trafo = object$init_params$family=="transformation_model", 
+                                shuffle = FALSE)
     
     # predict
     yhat <- object$model$predict(x = generator, 
@@ -1330,54 +1331,6 @@ set_weights <- function(x,
                            
 
   x$model$get_layer(name)$set_weights(weights)
-  
-}
-
-#' Compile an uncompiled deepregression object
-#' 
-#' @param object deepregression object
-#' @param add_loss an additional penalty added to the loss function
-#' @param weights scalar or vector; weights used in the log-likelihood
-#' @param ind_fun see \code{?deepregression_init}
-#' 
-#' @export
-#' 
-compile.deepregression <- function(object, add_loss = NULL, weights = NULL, ind_fun = function(x) x)
-{
-  
-  model <- object$model
-  
-  if(is.null(weights)) weights <- 1
-  
-  # the negative log-likelihood is given by the negative weighted
-  # log probability of the model
-  if(family!="pareto_ls"){  
-    negloglik <- function(y, model)
-      - weights * (model %>% ind_fun() %>% tfd_log_prob(y)) 
-  }else{
-    negloglik <- function(y, model)
-      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$scale))
-  }
-  
-  if(!is.null(additional_penalty)){
-    
-    add_loss <- function(x) additional_penalty(
-      model$trainable_weights
-    )
-    model$add_loss(add_loss)
-    
-  }
-  
-  # compile the model using the defined optimizer,
-  # the negative log-likelihood as loss funciton
-  # and the defined monitoring metrics as metrics
-  if(compile_model)
-    model %>% compile(optimizer = optimizer,
-                      loss = negloglik,
-                      metrics = monitor_metric)
-  
-  object$model <- models
-  return(object)
   
 }
 
