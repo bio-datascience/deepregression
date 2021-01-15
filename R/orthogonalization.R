@@ -123,6 +123,7 @@ make_orthog <- function(
 
       for(nm in nn){
 
+        # FIXME: deal with factor variables
         if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
         if(nm %in% nms$smoothterms){
 

@@ -84,7 +84,9 @@ test_that("generalized additive model", {
     list_of_formulae = list(loc = ~ s(X3, bs = "ts") + s(X1, bs = "cr") + g(X2), scale = ~1),
     list_of_deep_models = list(d = deep_model, g = deep_model)
   )
-  suppressWarnings(expect_object_dims(mod, data, 19, 1))
+  suppressMessages(
+    suppressWarnings(expect_object_dims(mod, data, 19, 1))
+  )
 
   # # 2 deep 1 structured no intercept
   mod <- deepregression(

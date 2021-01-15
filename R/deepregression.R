@@ -89,7 +89,8 @@
 #' @param absorb_cons logical; adds identifiability constraint to the basisi.
 #' See \code{?mgcv::smoothCon} for more details.
 #' @param zero_constraint_for_smooths logical; the same as absorb_cons,
-#' but done explicitly. If true a constraint is put on each smooth to have zero mean.
+#' but done explicitly. If true a constraint is put on each smooth to have zero mean. Can
+#' be a vector of \code{length(list_of_formulae)} for each distribution parameter.
 #' @param orthog_type one of two types; if \code{"manual"}, the QR decomposition is calculated
 #' before model fitting, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
 #' The first only works well for larger batch sizes or ideally batch_size == NROW(y).
@@ -123,7 +124,7 @@
 #' @importFrom Metrics auc
 #' @importFrom tfruns is_run_active view_run_metrics update_run_metrics write_run_metadata
 #' @importFrom graphics abline filled.contour matplot par points
-#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var dbeta
+#' @importFrom stats as.formula model.matrix terms terms.formula uniroot var dbeta coef
 #' @importFrom methods slotNames is as
 #'
 #' @export
@@ -359,10 +360,16 @@ deepregression <- function(
       parsed_formulae_contents[[i]]["linterms"] <- list(NULL)
   }
 
-  parsed_formulae_contents <- lapply(parsed_formulae_contents, orthog_smooth,
-                                     zero_cons = zero_constraint_for_smooths)
+  if(length(zero_constraint_for_smooths)==1)
+    zero_constraint_for_smooths <- rep(zero_constraint_for_smooths, 
+                                       length(parsed_formulae_contents))
+  parsed_formulae_contents <- lapply(1:length(parsed_formulae_contents), 
+                                     function(i) orthog_smooth(parsed_formulae_contents[[i]],
+                                                               zero_cons = zero_constraint_for_smooths[i])
+                                     )
 
-  attr(parsed_formulae_contents,"zero_cons") <- zero_constraint_for_smooths
+  for(i in 1:length(parsed_formulae_contents))
+    attr(parsed_formulae_contents[[i]],"zero_cons") <- zero_constraint_for_smooths[i]
 
 
   if(family=="transformation_model" & !is.null(addconst_interaction)){
@@ -419,9 +426,9 @@ deepregression <- function(
   input_cov <- unname(c(input_cov,
                         unlist(lapply(ox[!sapply(ox,is.null)],
                                       function(x_per_param)
-                                        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)],
+                                        lapply(x_per_param[!sapply(x_per_param,is.null)],
                                                       function(x)
-                                                        convertfun(x)))),
+                                                        convertfun(x))),
                                recursive = F)
   ))
 

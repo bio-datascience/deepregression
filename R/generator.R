@@ -41,7 +41,7 @@ make_generator <- function(data_image, data_tab, batch_size,
       this_ind <- (i-1)*2 + 1:lens[i]
       
       if(length(this_ind)>1){
-        
+
         gen_images <- combine_generators_list_unlist(
           gen_images, 
           make_generator_from_matrix(
@@ -50,15 +50,26 @@ make_generator <- function(data_image, data_tab, batch_size,
           ) 
         )
         
-      }else{
+      }else if(i==1){
       
-          gen_images <- combine_generators_unlist_list(
+          gen_images <- combine_generators_list(
             gen_images, 
             make_generator_from_matrix(
               x = data_tab[[1]][[this_ind]], y = NULL, 
               batch_size = batch_size, shuffle = shuffle, seed = seed
             ) 
+          )
+          
+      }else{
+        
+        gen_images <- combine_generators_unlist_list(
+          gen_images, 
+          make_generator_from_matrix(
+            x = data_tab[[1]][[this_ind]], y = NULL, 
+            batch_size = batch_size, shuffle = shuffle, seed = seed
           ) 
+        )
+        
       }
       
     }

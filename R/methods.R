@@ -119,7 +119,7 @@ plot.deepregression <- function(
                                         this_y))
         colnames(df) <- sTerm$term
         pmat <- PredictMat(sTerm, data = df)
-        if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+        if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons"))
           pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
         pred <- pmat%*%phi[this_ind_this_w,]
         #this_z <- plotData[[w]]$partial_effect
@@ -229,7 +229,7 @@ plot.deeptrafo <- function(
                                           this_y))
           colnames(df) <- sTerm$term
           pmat <- PredictMat(sTerm, data = df)
-          if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+          if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons"))
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
@@ -268,7 +268,7 @@ plot.deeptrafo <- function(
                                           this_z))
           colnames(df) <- sTerm$term
           pmat <- PredictMat(sTerm, data = df)
-          if(attr(x$init_params$parsed_formulae_contents,"zero_cons"))
+          if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons"))
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
@@ -412,7 +412,7 @@ predict.deepregression <- function(
   }else{
     
     if(is.null(newdata)){
-      yhat <- object$model(unname(object$init_params$input_cov))
+      yhat <- object$model(lapply(unname(object$init_params$input_cov), function(x) tf$cast(x,"float32")))
     }else{
       # preprocess data
       if(is.data.frame(newdata)) newdata <- as.list(newdata)
@@ -1339,30 +1339,30 @@ set_weights <- function(x,
 #' @param object deepregression object
 #' @param name string; for partial match with smooth term
 #' @param return_matrix logical; whether to return the design matrix or
-#' @param param integer; which distribution parameter
+#' @param which_param integer; which distribution parameter
 #' the partial effect (\code{FALSE}, default)
 #' @param newdata data.frame; new data (optional)
 #' 
 #' @export
 #' 
-get_partial_effect <- function(object, name, return_matrix = FALSE, param = 1, newdata = NULL)
+get_partial_effect <- function(object, name, return_matrix = FALSE, which_param = 1, newdata = NULL)
 {
   
   if(is.null(newdata)) newdata <- object$init_params$data
   
-  nms <- names(object$init_params$parsed_formulae_contents[[param]]$smoothterms)
+  nms <- names(object$init_params$parsed_formulae_contents[[which_param]]$smoothterms)
   match <- grep(name, nms)
   if(all(!match)) stop("No matching name found.")
   
-  sTerm <- object$init_params$parsed_formulae_contents[[param]]$smoothterms[[match]]
+  sTerm <- object$init_params$parsed_formulae_contents[[which_param]]$smoothterms[[match]]
   if(is.list(sTerm)) sTerm <- sTerm[[1]]
   
   pmat <- PredictMat(sTerm, data = newdata)
-  if(attr(object$init_params$parsed_formulae_contents,"zero_cons"))
+  if(attr(object$init_params$parsed_formulae_contents[[which_param]],"zero_cons"))
     pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
   if(return_matrix) return(pmat)
   
-  coefs <- coef(object, params = param, type = "smooth")[[1]]
+  coefs <- coef(object, params = which_param, type = "smooth")[[1]]
   coefs <- coefs[grepl(name, names(coefs))]
 
   return(pmat%*%coefs)

@@ -471,9 +471,10 @@ get_contents <- function(lf, data, df,
               X <- do.call("cbind", lapply(st,"[[","X"))
             return(X)
           }else{
+            
             if(is.data.frame(data))
-              return(data[,ddd,drop=TRUE]) else
-                return(data[[ddd]])
+              return(model.matrix(~ 1+data[,ddd,drop=TRUE])[,-1]) else
+                return(model.matrix(~ 1+data[[ddd]])[,-1])
           }
         })
         manoz <- do.call("cbind", manoz)
@@ -520,8 +521,8 @@ get_contents_newdata <- function(pcf, newdata)
 
 make_cov <- function(pcf, newdata=NULL,
                      convertfun = as.matrix,
-                     pred = !is.null(newdata),
-                     zc = FALSE){
+                     pred = !is.null(newdata)
+                     ){
 
   if(is.null(newdata)){
     input_cov <- lapply(pcf, function(x){
@@ -729,35 +730,38 @@ prepare_newdata <- function(pfc, data, pred = FALSE,
                             convertfun = as.matrix)
 {
   n_obs <- nROW(data)
-  if(attr(pfc, "zero_cons") & is.null(data))
+  zcons <- sapply(pfc, function(x) attr(x, "zero_cons"))
+  if(any(zcons) & is.null(data))
   {
-    pfc <-
-      lapply(pfc, orthog_smooth, TRUE)
-    attr(pfc, "zero_cons") <- TRUE
+    pfc[which(zcons)] <-
+      lapply(pfc[which(zcons)], orthog_smooth, TRUE)
+    for(z in zcons) attr(pfc[[z]], "zero_cons") <- TRUE
   }
-  input_cov_new <- make_cov(pfc, data, pred = pred,
-                            zc = attr(pfc, "zero_cons"))
-  # if(pred & !is.null(data))
-  #   pfc <- get_contents_newdata(pfc, data)
-  ox <- lapply(pfc, make_orthog)
-  if(pred){
+  input_cov_new <- make_cov(pfc, data, pred = pred)
+  
+  if(!is.null(data) & is.null(index)){
+    pfc <- get_contents_newdata(pfc, data)
+    ox <- lapply(pfc, make_orthog)
     ox <- unlist(lapply(ox, function(x_per_param)
       if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
+        (lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
           convertfun(x)))), recursive=F)
-  }
-  if(!is.null(index)){
-    ox <- unlist(lapply(ox, function(x_per_param)
-      if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
-          convertfun(as.matrix(xox)[index,,drop=FALSE])))),
-      recursive=F)
-  }
-  if(is.null(index) & !pred){
-    ox <- unlist(lapply(ox, function(x_per_param)
-      if(is.null(x_per_param)) return(NULL) else
-        unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
-          convertfun(x)))), recursive=F)
+  }else{
+    ox <- lapply(pfc, make_orthog)
+    
+    if(!is.null(index)){
+      ox <- unlist(lapply(ox, function(x_per_param)
+        if(is.null(x_per_param)) return(NULL) else
+          unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
+            convertfun(as.matrix(xox)[index,,drop=FALSE])))),
+        recursive=F)
+    }
+    if(is.null(index) & !pred){
+      ox <- unlist(lapply(ox, function(x_per_param)
+        if(is.null(x_per_param)) return(NULL) else
+          lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
+            convertfun(x))), recursive=F)
+    }
   }
   newdata_processed <- append(
     c(unname(input_cov_new)),
@@ -886,7 +890,7 @@ make_folds <- function(mat, val_train=0, val_test=1)
 subset_array <- function(x, index)
 {
 
-  if(class(x)[1]=="placeholder") return(x[index])
+  # if(class(x)[1]=="placeholder") return(x[index])
   dimx <- dim(x)
   if(is.null(dimx)) dimx = 1
   tryCatch(
@@ -1040,4 +1044,10 @@ mismatch_brackets <- function(x, logical=TRUE)
   if(logical) return(open_matches!=close_matches) else
     return(c(open_matches, close_matches))
   
+}
+
+remove_attr <- function(x)
+{
+  attributes(x) <- NULL
+  return(x)
 }

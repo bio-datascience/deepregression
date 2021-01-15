@@ -1,5 +1,6 @@
 # from keras
 as_constraint <- getFromNamespace("as_constraint", "keras")
+compose_layer <- getFromNamespace("compose_layer", "keras")
 
 create_layer <- function (layer_class, object, args = list()) 
 {
