@@ -411,11 +411,10 @@ predict.deepregression <- function(
                                 is_trafo = object$init_params$family=="transformation_model", 
                                 shuffle = FALSE)
     
-    # predict
-    yhat <- object$model$predict(x = generator, 
-                                 steps = steps_per_epoch)
-    
-    return(convert_fun(yhat))
+    if(is.null(apply_fun)) apply_fun <- function(x){x}
+    return(sapply(1:steps_per_epoch, function(i) 
+      convert_fun(apply_fun(object$model(generator$`__getitem__`(as.integer(i-1))))))
+    )
   
   }else{
     
@@ -909,7 +908,7 @@ coef.deepregression <- function(
       rownames(lret[[j]]) <- rep(unlist(object$init_params$l_names_effects[[i]][
         c("linterms","smoothterms")]),
         length_names[struct_terms_fitting_type])
-    }else{
+    }else if(length(lret[[j]])>0){
       lret[[j]] <- unlist(lret[[j]])
       lret[[j]] <- lret[[j]][sel_ind]
       names(lret[[j]]) <- rep(unlist(object$init_params$l_names_effects[[i]][

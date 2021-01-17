@@ -1060,3 +1060,4 @@ remove_attr <- function(x)
   attributes(x) <- NULL
   return(x)
 }
+
