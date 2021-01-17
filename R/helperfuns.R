@@ -618,7 +618,7 @@ make_cov <- function(pcf, newdata=NULL,
       if(!is.null(newdata)){
         Xp <- lapply(x$smoothterms, function(sm)
         {
-          if(length(sm)==1){
+          if(length(sm)==1 & !(is.list(sm) & length(sm[[1]])>1)){
             sm <- sm[[1]]
             sterms <- sm$term
             Lcontent <- sm$Lcontent
