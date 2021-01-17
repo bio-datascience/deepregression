@@ -232,7 +232,8 @@ plot.deeptrafo <- function(
           colnames(df) <- gsub("by = ","",strsplit(nam,",")[[1]])
           pmat <- PredictMat(sTerm, data = df)
           if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons") & 
-             !is.null(x$init_params$parsed_formulae_contents[[which_param]]$linterms))
+             !is.null(x$init_params$parsed_formulae_contents[[which_param]]$linterms) & 
+             !any(grepl("by =", strsplit(nam,",")[[1]])))
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
