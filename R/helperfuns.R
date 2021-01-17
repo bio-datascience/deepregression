@@ -319,9 +319,14 @@ get_contents <- function(lf, data, df,
     # ranks <- sapply(smoothterms, function(x) rankMatrix(x$X, method = 'qr',
     # warn.t = FALSE))
     if(is.null(df)) df <- pmax(min(sapply(smoothterms,
-                                          function(x) if(length(x)>1)
-                                            sum(sapply(x, "[[", "df")) else
-                                              x[[1]]$df)) - null_space_penalty, 1)
+                                          function(x){ 
+                                            
+                                            if(length(x)>1 & x[[1]]$by=="NA") 
+                                              return(sum(sapply(x, "[[", "df")))
+                                            if(x[[1]]$by!="NA") return(min(sapply(x,"[[","df")))
+                                            return(x[[1]]$df)
+                               
+                               }) - null_space_penalty), 1)
     # check correct length when df is a vector
     smooths_w_pen <- sapply(smoothterms,function(x) is.null(x[[1]]$sp))
     if(length(df)>1)
@@ -336,6 +341,9 @@ get_contents <- function(lf, data, df,
     
     if(is.null(defaultSmoothing))
       defaultSmoothing = function(st, this_df){
+        if(st[[1]]$by!="NA" && length(st)!=1)
+          return(unlist(lapply(1:length(st), function(i) 
+            defaultSmoothing(st[i], this_df = this_df)), recursive = F))
         # TODO: Extend for TPs (S[[1]] is only the first matrix)
         if(length(st[[1]]$S)==1 & length(st)==1){ 
           S <- st[[1]]$S[[1]]
@@ -675,7 +683,8 @@ make_cov <- function(pcf, newdata=NULL,
   if(sum(input_cov_isdf)>0)
     input_cov[which(input_cov_isdf)] <-
     lapply(input_cov[which(input_cov_isdf)], as.matrix)
-  which_to_convert <- !sapply(input_cov,function(ic){is.factor(ic) | any(class(ic)=="placeholder")})
+  which_to_convert <- !sapply(input_cov,function(ic){is.factor(ic) | 
+      any(class(ic)=="placeholder") | length(dim(ic))>2})
   input_cov[which_to_convert] <- lapply(input_cov[which_to_convert], convertfun)
   return(input_cov)
 
@@ -735,7 +744,7 @@ prepare_newdata <- function(pfc, data, pred = FALSE,
   {
     pfc[which(zcons)] <-
       lapply(pfc[which(zcons)], orthog_smooth, TRUE)
-    for(z in zcons) attr(pfc[[z]], "zero_cons") <- TRUE
+    # for(z in zcons) attr(pfc[[z]], "zero_cons") <- TRUE
   }
   input_cov_new <- make_cov(pfc, data, pred = pred)
   

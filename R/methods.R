@@ -123,15 +123,17 @@ plot.deepregression <- function(
           pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
         pred <- pmat%*%phi[this_ind_this_w,]
         #this_z <- plotData[[w]]$partial_effect
-        filled.contour(
-          this_x,
-          this_y,
-          matrix(pred, ncol=length(this_y)),
-          ...,
-          xlab = colnames(df)[1],
-          ylab = colnames(df)[2],
-          # zlab = "partial effect",
-          main = sTerm$label
+        suppressWarnings(
+          filled.contour(
+            this_x,
+            this_y,
+            matrix(pred, ncol=length(this_y)),
+            ...,
+            xlab = colnames(df)[1],
+            ylab = colnames(df)[2],
+            # zlab = "partial effect",
+            main = sTerm$label
+          )
         )
         # warning("Plotting of effects with ", nrcols, "
         #         covariate inputs not supported yet.")
@@ -240,15 +242,17 @@ plot.deeptrafo <- function(
                                 pred = pred)
 
           if(plot)
-            filled.contour(
-              this_x,
-              this_y,
-              matrix(pred, ncol=length(this_y)),
-              ...,
-              xlab = colnames(df)[1],
-              ylab = colnames(df)[2],
-              # zlab = "partial effect",
-              main = sTerm$label
+            suppressWarnings(
+              filled.contour(
+                this_x,
+                this_y,
+                matrix(pred, ncol=length(this_y)),
+                ...,
+                xlab = colnames(df)[1],
+                ylab = colnames(df)[2],
+                # zlab = "partial effect",
+                main = sTerm$label
+              )
             )
           # warning("Plotting of effects with ", nrcols, "
           #         covariate inputs not supported yet.")
@@ -283,17 +287,19 @@ plot.deeptrafo <- function(
                   " covariate inputs not supported.")
         }
       }else{ # plot effects in theta
-
-        matplot(
-          #sort(plotData[[w]]$value[,1]),
-          #1:ncol(plotData[[w]]$partial_effects),
-          x=sort(plotData[[w]]$value[,1]),
-          y=(plotData[[w]]$partial_effects[order(plotData[[w]]$value[,1]),]),
-          ...,
-          xlab = plotData[[w]]$org_feature_name,
-          ylab = paste0("partial effects ", plotData[[w]]$org_feature_name),
-          # zlab = "partial effect",
-          type = "l"
+        
+        suppressWarnings(
+          matplot(
+            #sort(plotData[[w]]$value[,1]),
+            #1:ncol(plotData[[w]]$partial_effects),
+            x=sort(plotData[[w]]$value[,1]),
+            y=(plotData[[w]]$partial_effects[order(plotData[[w]]$value[,1]),]),
+            ...,
+            xlab = plotData[[w]]$org_feature_name,
+            ylab = paste0("partial effects ", plotData[[w]]$org_feature_name),
+            # zlab = "partial effect",
+            type = "l"
+          )
         )
 
       }
@@ -358,6 +364,7 @@ prepare_data <- function(
 #' per default \code{tfd_mean}, i.e., predict the mean of the distribution
 #' @param convert_fun how should the resulting tensor be converted,
 #' per default \code{as.matrix}
+#' @param dtype string for conversion 
 #'
 #' @export
 #' @rdname methodDR
@@ -368,6 +375,7 @@ predict.deepregression <- function(
   batch_size = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
+  dtype = "float32",
   ...
 )
 {
@@ -412,11 +420,12 @@ predict.deepregression <- function(
   }else{
     
     if(is.null(newdata)){
-      yhat <- object$model(lapply(unname(object$init_params$input_cov), function(x) tf$cast(x,"float32")))
+      yhat <- object$model(lapply(unname(object$init_params$input_cov), function(x) tf$cast(x,dtype)))
     }else{
       # preprocess data
       if(is.data.frame(newdata)) newdata <- as.list(newdata)
       newdata_processed <- prepare_data(object, newdata, pred=FALSE)
+      newdata_processed <- lapply(unname(newdata_processed), function(x) tf$cast(x,dtype))
       yhat <- object$model(newdata_processed)
     }
    

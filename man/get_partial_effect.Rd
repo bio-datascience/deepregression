@@ -8,7 +8,7 @@ get_partial_effect(
   object,
   name,
   return_matrix = FALSE,
-  param = 1,
+  which_param = 1,
   newdata = NULL
 )
 }
@@ -19,7 +19,7 @@ get_partial_effect(
 
 \item{return_matrix}{logical; whether to return the design matrix or}
 
-\item{param}{integer; which distribution parameter
+\item{which_param}{integer; which distribution parameter
 the partial effect (\code{FALSE}, default)}
 
 \item{newdata}{data.frame; new data (optional)}

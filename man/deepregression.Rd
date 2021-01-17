@@ -182,7 +182,8 @@ if NULL, no offset is used}
 See \code{?mgcv::smoothCon} for more details.}
 
 \item{zero_constraint_for_smooths}{logical; the same as absorb_cons,
-but done explicitly. If true a constraint is put on each smooth to have zero mean.}
+but done explicitly. If true a constraint is put on each smooth to have zero mean. Can
+be a vector of \code{length(list_of_formulae)} for each distribution parameter.}
 
 \item{orthog_type}{one of two types; if \code{"manual"}, the QR decomposition is calculated
 before model fitting, otherwise (\code{"tf"}) a QR is calculated in each batch iteration via TF.
