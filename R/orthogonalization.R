@@ -86,12 +86,13 @@ orthog_smooth <- function(pcf, zero_cons = TRUE){
 make_orthog <- function(
   pcf,
   retcol = FALSE,
-  returnX = FALSE
+  returnX = FALSE,
+  newdata = NULL
 )
 {
 
   if(is.null(pcf$deepterms)) return(NULL)
-  n_obs <- nROW(pcf)
+  if(is.null(newdata)) n_obs <- nROW(pcf) else n_obs <- nROW(newdata)
   if(n_obs==0){
     if(!is.null(pcf$smoothterms))
       n_obs <- NROW(pcf$smoothterms[[1]][[1]]$X) else
@@ -119,17 +120,32 @@ make_orthog <- function(
     # lambdas <- c()
     if(length(intersect(nn, struct_nms)) > 0 | !is.null(manoz[[i]])){
 
-      if(!is.null(manoz[[i]])) X <- cbind(X, manoz[[i]])
+      if(!is.null(manoz[[i]])){ 
+        
+        X <- cbind(X, do.call("cbind", lapply(manoz[[i]], 
+                                              get_X_manoz,
+                                              lint = pcf$linterms,
+                                              newdata = newdata)))
+        
+      }
 
       for(nm in nn){
 
         # FIXME: deal with factor variables
         if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
         if(nm %in% nms$smoothterms){
-
-          Z_nr <- drop_constant(pcf$smoothterms[[
+          
+          this_smooth <- pcf$smoothterms[[
             grep(paste0("\\b",nm,"\\b"),nms$smoothterms)
-            ]][[1]]$X)
+            ]]
+          
+          if(is.null(newdata)){ 
+            this_sX <- this_smooth[[1]]$X
+          }else{
+            this_sX <- get_X_from_smooth(this_smooth, newdata)
+          }
+          
+          Z_nr <- drop_constant(this_sX)
 
           X <- cbind(X,Z_nr[[1]])
           rem_cols <- rem_cols + Z_nr[[2]]
@@ -145,7 +161,15 @@ make_orthog <- function(
 
           if(length(setdiff(unlist(strsplit(nms$smoothterms[tpi],",")), nn))==0){
 
-            X <- cbind(X, pcf$smoothterms[[tpi]][[1]]$X)
+            this_smooth <- pcf$smoothterms[[tpi]]
+            
+            if(is.null(newdata)){ 
+              this_sX <- this_smooth[[1]]$X
+            }else{
+              this_sX <- get_X_from_smooth(this_smooth, newdata)
+            }
+            
+            X <- cbind(X, this_sX)
 
           }
         }
@@ -346,4 +370,26 @@ drop_constant <- function(X){
   return(list(X[,!this_notok],
               sum(this_notok))
   )
+}
+
+get_X_manoz <- function(m, lint, newdata=NULL)
+{
+  
+  if(is.list(m))
+  {
+    if(!is.null(newdata)){
+      return(get_X_from_smooth(m, newdata))
+    }else{
+      if(length(m)==1) X <- m[[1]]$X else
+        X <- do.call("cbind", lapply(m,"[[","X"))
+      return(X)
+    }
+  }else{
+    if(!is.null(newdata)){
+      return(get_X_lin_newdata(m, newdata))
+    }else{
+      return(get_X_lin_newdata(m, lint))
+    }
+  }
+  
 }

@@ -475,17 +475,18 @@ get_contents <- function(lf, data, df,
                             data=data.frame(data[unname(unlist(terms_w_s))]),
                             knots=NULL, absorb.cons = absorb_cons,
                             null.space.penalty = null_space_penalty)
-            if(length(st)==1) X <- st[[1]]$X else
-              X <- do.call("cbind", lapply(st,"[[","X"))
-            return(X)
+            # if(length(st)==1) X <- st[[1]]$X else
+            #   X <- do.call("cbind", lapply(st,"[[","X"))
+            # return(X)
+            return(st)
           }else{
-            
-            if(is.data.frame(data))
-              return(model.matrix(~ 1+data[,ddd,drop=TRUE])[,-1]) else
-                return(model.matrix(~ 1+data[[ddd]])[,-1])
+            return(ddd)
+            # if(is.data.frame(data))
+            #   return(model.matrix(~ 1+data[,ddd,drop=TRUE])[,-1]) else
+            #     return(model.matrix(~ 1+data[[ddd]])[,-1])
           }
         })
-        manoz <- do.call("cbind", manoz)
+        # manoz <- do.call("cbind", manoz)
 
         attr(deepterms,"manoz") <- manoz
 
@@ -571,23 +572,7 @@ make_cov <- function(pcf, newdata=NULL,
     x = pcf[[i]]
     ret <- NULL
     if(!is.null(x$linterms))
-      if(is.null(newdata)){
-        if(any(sapply(x$linterms,is.factor))){
-          ret <- model.matrix(~ 1 + ., data = x$linterms)[,-1]
-        }else{
-          ret <- model.matrix(~ 0 + ., data = x$linterms)
-        }
-      }else{
-        if("(Intercept)" %in% names(x$linterms))
-          newdata$`(Intercept)` <- rep(1, nROW(newdata))
-        if(any(sapply(x$linterms,is.factor))){
-          ret <- model.matrix(~ 1 + ., data = newdata[names(x$linterms)])[,-1]
-        }else{
-          if("X.Intercept." %in% names(x$linterms))
-            names(x$linterms)[which("X.Intercept." %in% names(x$linterms))] <- "(Intercept)"
-          ret <- model.matrix(~ 0 + ., data = newdata[names(x$linterms)])
-        }
-      }
+      ret <- get_X_from_linear(x$linterms, newdata = newdata)
     if(!is.null(x$smoothterms))
     {
       # put all terms that
@@ -616,35 +601,7 @@ make_cov <- function(pcf, newdata=NULL,
       #   }
       # }
       if(!is.null(newdata)){
-        Xp <- lapply(x$smoothterms, function(sm)
-        {
-          if(length(sm)==1 & !(is.list(sm) & length(sm[[1]])>1)){
-            sm <- sm[[1]]
-            sterms <- sm$term
-            Lcontent <- sm$Lcontent
-            pm <- PredictMat(sm,as.data.frame(newdata[sterms]))
-            if(length(Lcontent)>0)
-            {
-              if("int" %in% Lcontent)
-                thisL <- matrix(rep(1,NROW(newdata[[1]])), ncol=1)
-              if("lin" %in% Lcontent)
-                thisL <- cbind(thisL, newdata[[sterms]])
-            }else thisL <- NULL
-            if(is.null(thisL))
-              return(pm) else
-                return(
-                  orthog_structured_smooths(
-                    S = pm, P = NULL, L = thisL
-                  )
-                )
-          }else{
-            sterms <- c(sm[[1]]$term, sm[[1]]$by)
-            do.call("cbind", lapply(sm, function(smm)
-              applySumToZero(PredictMat(smm,as.data.frame(newdata[sterms])),
-                             apply = FALSE)))
-          }
-
-        })
+        Xp <- lapply(x$smoothterms, function(sm) get_X_from_smooth(sm, newdata))
         # }else if(!is.null(newdata) & pred){
         #   Xp <- lapply(pcfnew[[i]]$smoothterms, function(x)
         #     do.call("cbind", lapply(x, "[[", "X")))
@@ -686,6 +643,37 @@ make_cov <- function(pcf, newdata=NULL,
   which_to_convert <- !sapply(input_cov,function(ic){is.factor(ic) | 
       any(class(ic)=="placeholder") | length(dim(ic))>2})
   input_cov[which_to_convert] <- lapply(input_cov[which_to_convert], convertfun)
+  
+  ### OZ
+  
+  # if(!is.null(data) & is.null(index)){
+  #   pfc <- get_contents_newdata(pfc, data)
+  ox <- lapply(pcf, make_orthog, newdata = newdata)
+  ox <- unlist(lapply(ox, function(x_per_param)
+    if(is.null(x_per_param)) return(NULL) else
+      (lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
+        convertfun(x)))), recursive=F)
+
+    # if(!is.null(index)){
+    #   ox <- unlist(lapply(ox, function(x_per_param)
+    #     if(is.null(x_per_param)) return(NULL) else
+    #       unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
+    #         convertfun(as.matrix(xox)[index,,drop=FALSE])))),
+    #     recursive=F)
+    # }
+    # if(is.null(index) & !pred){
+    #   ox <- unlist(lapply(ox, function(x_per_param)
+    #     if(is.null(x_per_param)) return(NULL) else
+    #       lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
+    #         convertfun(x))), recursive=F)
+    # }
+  
+  input_cov <- 
+    append(
+      c(unname(input_cov)),
+      unname(ox[!sapply(ox, is.null)]))
+  
+  ####
   return(input_cov)
 
 }
@@ -735,7 +723,7 @@ get_indices <- function(x)
 }
 
 prepare_newdata <- function(pfc, data, pred = FALSE, 
-                            index = NULL, cv = FALSE,
+                            # index = NULL, cv = FALSE,
                             convertfun = as.matrix)
 {
   n_obs <- nROW(data)
@@ -746,35 +734,9 @@ prepare_newdata <- function(pfc, data, pred = FALSE,
       lapply(pfc[which(zcons)], orthog_smooth, TRUE)
     # for(z in zcons) attr(pfc[[z]], "zero_cons") <- TRUE
   }
-  input_cov_new <- make_cov(pfc, data, pred = pred)
+  newdata_processed <- make_cov(pfc, data, pred = pred,
+                                convertfun = convertfun)
   
-  if(!is.null(data) & is.null(index)){
-    pfc <- get_contents_newdata(pfc, data)
-    ox <- lapply(pfc, make_orthog)
-    ox <- unlist(lapply(ox, function(x_per_param)
-      if(is.null(x_per_param)) return(NULL) else
-        (lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
-          convertfun(x)))), recursive=F)
-  }else{
-    ox <- lapply(pfc, make_orthog)
-    
-    if(!is.null(index)){
-      ox <- unlist(lapply(ox, function(x_per_param)
-        if(is.null(x_per_param)) return(NULL) else
-          unlist(lapply(x_per_param[!sapply(x_per_param,is.null)], function(xox)
-            convertfun(as.matrix(xox)[index,,drop=FALSE])))),
-        recursive=F)
-    }
-    if(is.null(index) & !pred){
-      ox <- unlist(lapply(ox, function(x_per_param)
-        if(is.null(x_per_param)) return(NULL) else
-          lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
-            convertfun(x))), recursive=F)
-    }
-  }
-  newdata_processed <- append(
-    c(unname(input_cov_new)),
-    unname(ox[!sapply(ox, is.null)]))
   return(newdata_processed)
 }
 
@@ -1061,3 +1023,65 @@ remove_attr <- function(x)
   return(x)
 }
 
+get_X_from_smooth <- function(sm, newdata)
+{
+  
+  if(length(sm)==1 & sm[[1]]$by=="NA"){
+    sm <- sm[[1]]
+    sterms <- sm$term
+    Lcontent <- sm$Lcontent
+    pm <- PredictMat(sm,as.data.frame(newdata[sterms]))
+    if(length(Lcontent)>0)
+    {
+      if("int" %in% Lcontent)
+        thisL <- matrix(rep(1,NROW(newdata[[1]])), ncol=1)
+      if("lin" %in% Lcontent)
+        thisL <- cbind(thisL, newdata[[sterms]])
+    }else thisL <- NULL
+    if(is.null(thisL))
+      return(pm) else
+        return(
+          orthog_structured_smooths(
+            S = pm, P = NULL, L = thisL
+          )
+        )
+  }else{
+    sterms <- c(sm[[1]]$term, sm[[1]]$by)
+    do.call("cbind", lapply(sm, function(smm)
+      applySumToZero(PredictMat(smm,as.data.frame(newdata[sterms])),
+                     apply = FALSE)))
+  }
+  
+}
+
+get_X_from_linear <- function(lint, newdata = NULL)
+{
+  
+  if(is.null(newdata)){
+    if(any(sapply(lint,is.factor))){
+      ret <- model.matrix(~ 1 + ., data = lint)[,-1]
+    }else{
+      ret <- model.matrix(~ 0 + ., data = lint)
+    }
+  }else{
+    ret <- get_X_lin_newdata(linname = names(lint), newdata)
+  }
+  return(ret)
+}
+
+get_X_lin_newdata <- function(linname, newdata)
+{
+  
+  if("(Intercept)" %in% linname)
+    newdata$`(Intercept)` <- rep(1, nROW(newdata))
+  if("X.Intercept." %in% linname)
+    linname[which("X.Intercept." %in% linname)] <- "(Intercept)"
+  #if(any(sapply(lint,is.factor))){
+    ret <- model.matrix(~ 1 + ., data = newdata[linname])[,-1]
+  #}else{
+  #  ret <- model.matrix(~ 0 + ., data = newdata[linname])
+  #}
+  
+  return(ret)
+  
+}
