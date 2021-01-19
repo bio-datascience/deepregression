@@ -528,9 +528,13 @@ get_contents_newdata <- function(pcf, newdata)
                                        intercept = attr(x, "intercept"),
                                        defaultSmoothing = attr(x, "defaultSmoothing")))
 
-make_cov <- function(pcf, newdata=NULL,
+make_cov <- function(pcf,
+                     newdata=NULL,
                      convertfun = as.matrix,
-                     pred = !is.null(newdata)
+                     pred = !is.null(newdata), 
+                     olddata=NULL,
+                     orthogonalize = TRUE,
+                     ...
                      ){
 
   if(is.null(newdata)){
@@ -648,7 +652,12 @@ make_cov <- function(pcf, newdata=NULL,
   
   # if(!is.null(data) & is.null(index)){
   #   pfc <- get_contents_newdata(pfc, data)
-  ox <- lapply(pcf, make_orthog, newdata = newdata)
+  # if(!is.null(newdata))
+  ox <- oxx <- lapply(pcf, make_orthog, 
+                      newdata = newdata, 
+                      otherdata = olddata,
+                      ...) # else
+  # ox <- lapply(pcf, make_orthog, newdata = olddata)
   ox <- unlist(lapply(ox, function(x_per_param)
     if(is.null(x_per_param)) return(NULL) else
       (lapply(x_per_param[!sapply(x_per_param,is.null)], function(x)
@@ -670,8 +679,10 @@ make_cov <- function(pcf, newdata=NULL,
   
   input_cov <- 
     append(
-      c(unname(input_cov)),
-      unname(ox[!sapply(ox, is.null)]))
+      c(unname(input_cov)),unname(ox[!sapply(ox, is.null)]))
+  
+  if(!is.null(list(...)$returnX))
+    attr(input_cov, "ox") <- oxx
   
   ####
   return(input_cov)
@@ -724,7 +735,8 @@ get_indices <- function(x)
 
 prepare_newdata <- function(pfc, data, pred = FALSE, 
                             # index = NULL, cv = FALSE,
-                            convertfun = as.matrix)
+                            convertfun = as.matrix,
+                            orthogonalize)
 {
   n_obs <- nROW(data)
   zcons <- sapply(pfc, function(x) attr(x, "zero_cons"))
@@ -735,7 +747,8 @@ prepare_newdata <- function(pfc, data, pred = FALSE,
     # for(z in zcons) attr(pfc[[z]], "zero_cons") <- TRUE
   }
   newdata_processed <- make_cov(pfc, data, pred = pred,
-                                convertfun = convertfun)
+                                convertfun = convertfun,
+                                orthogonalize = orthogonalize)
   
   return(newdata_processed)
 }

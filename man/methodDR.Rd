@@ -33,6 +33,7 @@ prepare_data(x, data, pred = TRUE)
   batch_size = NULL,
   apply_fun = tfd_mean,
   convert_fun = as.matrix,
+  dtype = "float32",
   ...
 )
 
@@ -115,6 +116,8 @@ per default \code{tfd_mean}}
 
 \item{convert_fun}{how should the resulting tensor be converted,
 per default \code{as.matrix}}
+
+\item{dtype}{string for conversion}
 
 \item{early_stopping}{logical, whether early stopping should be user.}
 

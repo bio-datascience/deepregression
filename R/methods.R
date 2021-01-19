@@ -334,7 +334,8 @@ prepare_data <- function(
     message("Using the second list item of data as offset.")
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
-      data[[1]], pred=pred)
+      data[[1]], pred=pred,
+      orthogonalize = x$init_params$orthogonalize)
     if(is.list(data[[2]]))
       data[[2]] <- unlist(data[[2]], recursive = FALSE)
     newdata_processed <- c(newdata_processed,
@@ -345,7 +346,8 @@ prepare_data <- function(
 
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
-      data, pred=pred)
+      data, pred=pred,
+      orthogonalize = x$init_params$orthogonalize)
 
     # for trafo models
     if(length(x$init_params$parsed_formulae_contents)>1 &&
@@ -606,12 +608,14 @@ fit <- function (x, ...) {
 #' @param auc_callback logical, whether to use a callback for AUC
 #' @param val_data optional specified validation data
 #' @param callbacks a list of callbacks for fitting
+#' @param convertfun function to convert R into Tensor object
 #' @param ... further arguments passed to
 #' \code{keras:::fit.keras.engine.training.Model}
 #'
 #'
-#' @method fit deepregression
+#' @export fit deepregression
 #' @export
+#' 
 #' @rdname methodDR
 #'
 fit.deepregression <- function(
@@ -668,7 +672,8 @@ fit.deepregression <- function(
 
     input_x <- prepare_newdata(x$init_params$parsed_formulae_contents,
                                x$init_params$data,
-                               pred = FALSE)
+                               pred = FALSE,
+                               orthogonalize = x$init_params$orthogonalize)
     if(!is.null(x$init_params$offset))
       input_x <- c(input_x, unlist(lapply(x$init_params$offset, function(yy)
         tf$constant(matrix(yy, ncol = 1), dtype="float32")), recursive = FALSE))
@@ -1042,8 +1047,10 @@ cv <- function(
                           x$init_params$parsed_formulae_contents,
                           train_data,
                           pred = FALSE,
-                          index = train_ind,
-                          cv = TRUE),
+                          orthogonalize = x$init_params$orthogonalize
+                          #index = train_ind,
+                          #cv = TRUE
+                          ),
                         y = subset_fun(x$init_params$y,train_ind),
                         validation_split = NULL,
                         validation_data = list(
@@ -1051,8 +1058,10 @@ cv <- function(
                             x$init_params$parsed_formulae_contents,
                             test_data,
                             pred = FALSE,
-                            index = test_ind,
-                            cv = TRUE),
+                            orthogonalize = x$init_params$orthogonalize
+                            # index = test_ind,
+                            # cv = TRUE
+                            ),
                           subset_fun(x$init_params$y,test_ind)
                         ),
                         callbacks = this_callbacks,

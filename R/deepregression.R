@@ -148,11 +148,10 @@
 #' data = data, validation_data = list(data, y), y = y,
 #' list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
 #'
-#' # train for 100 epochs to get a better model
-#' if(!is.null(mod)){
-#'    mod %>% fit(epochs = 10)
-#'    mod %>% plot()
-#' }
+#' # train for 10 epochs to get a better model
+#' mod %>% fit(epochs = 10)
+#' mod %>% plot()
+#'
 deepregression <- function(
   y,
   list_of_formulae,
@@ -415,22 +414,29 @@ deepregression <- function(
 
 
   cat("Translating data into tensors...")
-  input_cov <- make_cov(parsed_formulae_contents, convertfun = convertfun)
+  input_cov <- make_cov(parsed_formulae_contents, 
+                        convertfun = convertfun,
+                        olddata = data,
+                        orthogonalize = orthogonalize,
+                        retcol = FALSE,
+                        returnX = (orthog_type=="tf"))
+  ox <- attr(input_cov, "ox")
+  if(is.null(ox)) ox <- list(NULL)[rep(1, length(parsed_formulae_contents))]
+  attr(input_cov, "ox") <- NULL
   cat(" Done.\n")
-  if(orthogonalize)
-    ox <- lapply(parsed_formulae_contents, make_orthog,
-                 retcol = FALSE,
-                 returnX = (orthog_type=="tf")) else
-                   ox <- list(NULL)[rep(1,length(parsed_formulae_contents))]
-
-  input_cov <- unname(c(input_cov,
-                        unlist(lapply(ox[!sapply(ox,is.null)],
-                                      function(x_per_param)
-                                        lapply(x_per_param[!sapply(x_per_param,is.null)],
-                                                      function(x)
-                                                        convertfun(x))),
-                               recursive = F)
-  ))
+  # if(orthogonalize)
+  #   ox <- lapply(parsed_formulae_contents, make_orthog,
+  #                retcol = FALSE,
+  #                returnX = (orthog_type=="tf")) else
+  #                  ox <- list(NULL)[rep(1,length(parsed_formulae_contents))]
+  # input_cov <- unname(c(input_cov,
+  #                       unlist(lapply(ox[!sapply(ox,is.null)],
+  #                                     function(x_per_param)
+  #                                       lapply(x_per_param[!sapply(x_per_param,is.null)],
+  #                                                     function(x)
+  #                                                       convertfun(x))),
+  #                              recursive = F)
+  # ))
 
   if(!is.null(offset)){
 

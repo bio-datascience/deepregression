@@ -245,9 +245,8 @@ mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
 data = data, validation_data = list(data, y), y = y,
 list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
 
-# train for 100 epochs to get a better model
-if(!is.null(mod)){
-   mod \%>\% fit(epochs = 10)
-   mod \%>\% plot()
-}
+# train for 10 epochs to get a better model
+mod \%>\% fit(epochs = 10)
+mod \%>\% plot()
+
 }

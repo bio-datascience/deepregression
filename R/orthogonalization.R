@@ -87,7 +87,8 @@ make_orthog <- function(
   pcf,
   retcol = FALSE,
   returnX = FALSE,
-  newdata = NULL
+  newdata = NULL,
+  otherdata = NULL
 )
 {
 
@@ -125,7 +126,7 @@ make_orthog <- function(
         X <- cbind(X, do.call("cbind", lapply(manoz[[i]], 
                                               get_X_manoz,
                                               lint = pcf$linterms,
-                                              newdata = newdata)))
+                                              newdata = c(newdata, otherdata))))
         
       }
 

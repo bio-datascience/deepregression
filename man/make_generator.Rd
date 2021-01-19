@@ -27,6 +27,8 @@ make_generator(
 
 \item{color_mode}{character; \code{'rgb'} or \code{'grayscale'}}
 
+\item{is_trafo}{logical; indicating whether model is a trafo model}
+
 \item{x_col}{name of image column in \code{data_image}}
 
 \item{shuffle}{logical for shuffling data}

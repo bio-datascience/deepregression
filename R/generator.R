@@ -5,6 +5,7 @@
 #' @param batch_size integer
 #' @param target_size size of the image without sample and colour channel
 #' @param color_mode character; \code{'rgb'} or \code{'grayscale'}
+#' @param is_trafo logical; indicating whether model is a trafo model
 #' @param x_col name of image column in \code{data_image}
 #' @param shuffle logical for shuffling data
 #' @param seed seed for shuffling in generators
