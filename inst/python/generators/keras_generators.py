@@ -366,6 +366,37 @@ class CombinedGeneratorTwoLists(Sequence):
         XY_batch = *X_batch, *Y_batch
         return XY_batch, 
 
+class CombinedGeneratorUnListUnlist(Sequence):
+    """Wraps 2 DataGenerators"""
+
+    seed=None,
+    batch_size=None,
+
+    def __init__(self, gen1, gen2):
+
+        # Real time multiple input data augmentation
+        assert gen1.batch_size == gen2.batch_size
+        self.batch_size = gen1.batch_size
+
+        if gen1.seed != gen2.seed:
+            Warning("Generator seeds do not match!")
+        self.seed = gen1.seed
+
+        self.gen1 = gen1
+        self.gen2 = gen2
+	# self.shape = [gen1.shape, gen2.shape]
+
+    def __len__(self):
+        """It is mandatory to implement it on Keras Sequence"""
+        return self.gen2.__len__()
+
+    def __getitem__(self, index):
+        """Getting items from the 2 generators and packing them, dropping first target"""
+        X_batch = self.gen1.__getitem__(index)
+        Y_batch = self.gen2.__getitem__(index)
+        XY_batch = *X_batch, *Y_batch
+        return XY_batch
+
 class CombinedGenerator(Sequence):
     """Wraps 2 DataGenerators"""
 

@@ -34,14 +34,14 @@ make_generator <- function(data_image, data_tab, batch_size,
   if(ldt>2)
   {
     
-    lens <- rep(2, ceiling((ldt-2)/2))
-    lens[length(lens)] <- ifelse(ldt%%2==0, 2, 1)
+    this_ind <- 0
+    i <- 1
     
-    for(i in 1:ceiling((ldt-2)/2)){
+    while(all(this_ind<ldt)){
       
-      this_ind <- (i-1)*2 + 1:lens[i]
+      this_ind <- unique(pmin((i-1)*2 + 1:2, ldt))
       
-      if(length(this_ind)>1){
+      if(length(this_ind)>1 & i==1){
 
         gen_images <- combine_generators_list_unlist(
           gen_images, 
@@ -50,18 +50,18 @@ make_generator <- function(data_image, data_tab, batch_size,
             batch_size = batch_size, shuffle = shuffle, seed = seed
           ) 
         )
-        
-      }else if(i==1){
-      
-          gen_images <- combine_generators_list(
-            gen_images, 
-            make_generator_from_matrix(
-              x = data_tab[[1]][[this_ind]], y = NULL, 
-              batch_size = batch_size, shuffle = shuffle, seed = seed
-            ) 
-          )
+      #   
+      # }else if(length(this_ind)==1 & i>1){
+      # 
+      #     gen_images <- combine_generators_list(
+      #       gen_images, 
+      #       make_generator_from_matrix(
+      #         x = data_tab[[1]][[this_ind]], y = NULL, 
+      #         batch_size = batch_size, shuffle = shuffle, seed = seed
+      #       ) 
+      #     )
           
-      }else{
+      }else if(length(this_ind)==1){
         
         gen_images <- combine_generators_unlist_list(
           gen_images, 
@@ -71,7 +71,19 @@ make_generator <- function(data_image, data_tab, batch_size,
           ) 
         )
         
+      }else{
+        
+        gen_images <- combine_generators_unlist_unlist(
+          gen_images, 
+          make_generator_from_matrix(
+            x = data_tab[[1]][this_ind], y = NULL, 
+            batch_size = batch_size, shuffle = shuffle, seed = seed
+          ) 
+        )
+        
       }
+      
+      i <- i + 1
       
     }
     
@@ -174,6 +186,12 @@ combine_generators_unlist_list = function(gen1, gen2) {
   python_path <- system.file("python", package = "deepregression")
   generators <- reticulate::import_from_path("generators", path = python_path)
   generators$CombinedGeneratorUnlistList(gen1, gen2)
+}
+
+combine_generators_unlist_unlist = function(gen1, gen2) {
+  python_path <- system.file("python", package = "deepregression")
+  generators <- reticulate::import_from_path("generators", path = python_path)
+  generators$CombinedGeneratorUnListUnlist(gen1, gen2)
 }
 
 combine_generators_twolists = function(gen1, gen2) {
