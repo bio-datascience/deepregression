@@ -208,7 +208,7 @@ plot.deeptrafo <- function(
 
     nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
 
-    if(plot | nrcols == 2){
+    if(plot | nrcols > 2){
       if(which_param==1){
 
         if(nrcols==1)
@@ -273,8 +273,11 @@ plot.deeptrafo <- function(
                                           this_y,
                                           this_z))
           colnames(df) <- sTerm$term
+          if(sTerm$by!="NA") colnames(df)[ncol(df)] <- sTerm$by
           pmat <- PredictMat(sTerm, data = df)
-          if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons"))
+          if(attr(x$init_params$parsed_formulae_contents[[which_param]],"zero_cons") & 
+             !is.null(x$init_params$parsed_formulae_contents[[which_param]]$linterms) & 
+             sTerm$by=="NA")
             pmat <- orthog_structured_smooths(pmat,P=NULL,L=matrix(rep(1,nrow(pmat)),ncol=1))
           pred <- pmat%*%phi[this_ind_this_w,]
           #this_z <- plotData[[w]]$partial_effect
