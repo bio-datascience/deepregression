@@ -169,6 +169,7 @@ plot.deeptrafo <- function(
   which_param = 1, # for which parameter
   plot = TRUE,
   grid_length = 40,
+  eval_grid = FALSE,
   ... # passed to plot function
 )
 {
@@ -208,7 +209,7 @@ plot.deeptrafo <- function(
 
     nrcols <- pmax(NCOL(plotData[[w]]$value), length(unlist(strsplit(nam,","))))
 
-    if(plot | nrcols > 2){
+    if(plot | nrcols > 2 | eval_grid){
       if(which_param==1){
 
         if(nrcols==1)
