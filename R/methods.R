@@ -186,7 +186,7 @@ plot.deeptrafo <- function(
   }else{
     phi <- get_theta(x)
     # FIXME: Is the following necessary?
-    if(nrow(phi)==1 & ncol(phi)>1) phi <- t(phi)
+    if(ncol(phi)>1) phi <- t(phi)
   }
 
   for(w in which){
