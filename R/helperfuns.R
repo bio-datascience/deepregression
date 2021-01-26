@@ -714,7 +714,9 @@ get_indices <- function(x)
             is.null(y[[1]]$margin) & y[[1]]$by!="NA")
             return(sapply(y, "[[", "bs.dim")) else{
               # Tensorprod
-              res <- prod(sapply(y[[1]]$margin,"[[", "bs.dim"))
+              if(grepl("ti\\(", y[[1]]$label))
+                res <- prod(sapply(y[[1]]$margin,function(sp)ncol(sp$X))) else
+                  res <- prod(sapply(y[[1]]$margin,"[[", "bs.dim"))
               # check z2s constraint
               if(!is.null(y[[1]]$X) && NCOL(y[[1]]$X)==res-1)
                 return(res-1) else return(res)
