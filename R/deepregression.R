@@ -1138,7 +1138,7 @@ deeptransformation_init <- function(
   addconst_interaction = NULL,
   penalize_bsp = 0,
   order_bsp_penalty = 2,
-  base_distribution = "normal"
+  base_distribution = NULL
 )
 {
 
@@ -1434,57 +1434,31 @@ deeptransformation_init <- function(
   
   # }
   
-  # copy-pasting the same term here because otherwise
-  # first_term would be a symbolic tensor which does not wrok
-  # with eager
-  if(base_distribution=="normal"){
+  # evaluate base_distribution once
+  # otherwise it will be a symbolic tensor
+  bd <- if(is.null(base_distribution)) 
+    tfd_normal(loc = 0, scale = 1) else base_distribution
+  
+  neg_ll <- function(y, model) {
     
-    neg_ll <- function(y, model) {
-      
-      # shift term/lin pred
-      w_eta <- model[, 1, drop = FALSE]
-      
-      # first part of the loglikelihood, n x (order + 1)
-      aTtheta <- model[, 2, drop = FALSE]
-      aTtheta_shift <- aTtheta + w_eta
-      first_term <- tfd_normal(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
-      
-      # second part of the loglikelihood
-      aPrimeTtheta <- model[, 3, drop =  FALSE]
-      sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
-      
-      neglogLik <- -1 * (first_term + sec_term)
-      
-      return(neglogLik)
-    }
+    # shift term/lin pred
+    w_eta <- model[, 1, drop = FALSE]
     
-  }else if(base_distribution=="logistic"){
+    # first part of the loglikelihood, n x (order + 1)
+    aTtheta <- model[, 2, drop = FALSE]
+    aTtheta_shift <- aTtheta + w_eta
+    first_term <- bd %>% tfd_log_prob(aTtheta_shift)
     
-    neg_ll <- function(y, model) {
-      
-      # shift term/lin pred
-      w_eta <- model[, 1, drop = FALSE]
-      
-      # first part of the loglikelihood, n x (order + 1)
-      aTtheta <- model[, 2, drop = FALSE]
-      aTtheta_shift <- aTtheta + w_eta
-      first_term <- tfd_logistic(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
-      
-      # second part of the loglikelihood
-      aPrimeTtheta <- model[, 3, drop =  FALSE]
-      sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
-      
-      neglogLik <- -1 * (first_term + sec_term)
-      
-      return(neglogLik)
-    }
+    # second part of the loglikelihood
+    aPrimeTtheta <- model[, 3, drop =  FALSE]
+    sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
     
-  }else{
+    neglogLik <- -1 * (first_term + sec_term)
     
-    stop("Base distribution not implemented.")
-    
+    return(neglogLik)
   }
-
+  
+  
   inputList <- unname(c(
     unlist(inputs_deep[!sapply(inputs_deep, is.null)],
            recursive = F),
