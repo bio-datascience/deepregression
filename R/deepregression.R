@@ -116,6 +116,7 @@
 #' @param penalty_summary keras function; summary function for the penalty in the spline layer;
 #' default is \code{k_sum}. Another option could be \code{k_mean}.
 #' @param convertfun function to convert objects into a matrix or tensor format.
+#' @param compile logical; whether to compile the model or not
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
@@ -217,6 +218,7 @@ deepregression <- function(
   additional_penalty = NULL,
   penalty_summary = k_sum,
   convertfun = as.matrix,
+  compile = TRUE,
   # compress = TRUE,
   ...
 )
@@ -550,6 +552,7 @@ deepregression <- function(
       offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
       orthog_fun = orthog_fun,
       additional_penalty = additional_penalty,
+      compile_model = compile,
       ...
     )
     #############################################################
@@ -1134,7 +1137,8 @@ deeptransformation_init <- function(
   interact_pred_trafo = NULL,
   addconst_interaction = NULL,
   penalize_bsp = 0,
-  order_bsp_penalty = 2
+  order_bsp_penalty = 2,
+  base_distribution = "normal"
 )
 {
 
@@ -1421,32 +1425,64 @@ deeptransformation_init <- function(
   #   ))
   #
   # }else{
-
-    modeled_terms <- layer_concatenate(list(
-      final_eta_pred,
-      aTtheta,
-      aPrimeTtheta
-    ))
-
+  
+  modeled_terms <- layer_concatenate(list(
+    final_eta_pred,
+    aTtheta,
+    aPrimeTtheta
+  ))
+  
   # }
-
-  neg_ll <- function(y, model) {
-
-    # shift term/lin pred
-    w_eta <- model[, 1, drop = FALSE]
-
-    # first part of the loglikelihood, n x (order + 1)
-    aTtheta <- model[, 2, drop = FALSE]
-    aTtheta_shift <- aTtheta + w_eta
-    first_term <- tfd_normal(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
-
-    # second part of the loglikelihood
-    aPrimeTtheta <- model[, 3, drop =  FALSE]
-    sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
-
-    neglogLik <- -1 * (first_term + sec_term)
-
-    return(neglogLik)
+  
+  # copy-pasting the same term here because otherwise
+  # first_term would be a symbolic tensor which does not wrok
+  # with eager
+  if(base_distribution=="normal"){
+    
+    neg_ll <- function(y, model) {
+      
+      # shift term/lin pred
+      w_eta <- model[, 1, drop = FALSE]
+      
+      # first part of the loglikelihood, n x (order + 1)
+      aTtheta <- model[, 2, drop = FALSE]
+      aTtheta_shift <- aTtheta + w_eta
+      first_term <- tfd_normal(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
+      
+      # second part of the loglikelihood
+      aPrimeTtheta <- model[, 3, drop =  FALSE]
+      sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
+      
+      neglogLik <- -1 * (first_term + sec_term)
+      
+      return(neglogLik)
+    }
+    
+  }else if(base_distribution=="logistic"){
+    
+    neg_ll <- function(y, model) {
+      
+      # shift term/lin pred
+      w_eta <- model[, 1, drop = FALSE]
+      
+      # first part of the loglikelihood, n x (order + 1)
+      aTtheta <- model[, 2, drop = FALSE]
+      aTtheta_shift <- aTtheta + w_eta
+      first_term <- tfd_logistic(loc = 0, scale = 1) %>% tfd_log_prob(aTtheta_shift)
+      
+      # second part of the loglikelihood
+      aPrimeTtheta <- model[, 3, drop =  FALSE]
+      sec_term <- tf$math$log(tf$clip_by_value(aPrimeTtheta, 1e-8, Inf))
+      
+      neglogLik <- -1 * (first_term + sec_term)
+      
+      return(neglogLik)
+    }
+    
+  }else{
+    
+    stop("Base distribution not implemented.")
+    
   }
 
   inputList <- unname(c(
