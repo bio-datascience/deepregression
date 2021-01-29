@@ -218,7 +218,7 @@ deepregression <- function(
   additional_penalty = NULL,
   penalty_summary = k_sum,
   convertfun = as.matrix,
-  compile = TRUE,
+  compile_model = TRUE,
   # compress = TRUE,
   ...
 )
@@ -552,7 +552,7 @@ deepregression <- function(
       offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
       orthog_fun = orthog_fun,
       additional_penalty = additional_penalty,
-      compile_model = compile,
+      compile_model = compile_model,
       ...
     )
     #############################################################
@@ -582,15 +582,21 @@ deepregression <- function(
                   image_var = image_var
                 ))
 
-  class(ret) <- "deepregression"
+  
+  this_class <- ifelse(compile_model, 
+                       "deepregression",
+                       "deepregression_custom"
+  )
+                  
+  
+  class(ret) <-  this_class
   if(family=="transformation_model"){
-    class(ret) <- c("deeptrafo","deepregression")
+    class(ret) <- c("deeptrafo", this_class)
     ret$init_params <- c(ret$init_params,
                          order_bsp = order_bsp,
                          y_basis_fun = y_basis_fun,
                          y_basis_fun_prime = y_basis_fun_prime)
   }
-
 
   return(ret)
 
@@ -1063,9 +1069,16 @@ deepregression_init <- function(
     model %>% compile(optimizer = optimizer,
                       loss = negloglik,
                       metrics = monitor_metric)
-  }
   
   return(model)
+    
+  }else{
+    
+    return(list(model = model,
+                loss = negloglik,
+                monitor_metric = monitor_metric))
+    
+  }
 
 }
 
@@ -1112,6 +1125,10 @@ deepregression_init <- function(
 #' @param order_bsp_penalty integer; order of Bernstein polynomial penalty. 0 results in a
 #' penalty based on integrated squared second order derivatives, values >= 1 in difference
 #' penalties
+#' @param base_distribution a string ("normal", "logistic") or TFP distribution; 
+#' the base distribution for the transformation model. 
+#' Per default \code{tfd_normal(loc = 0, scale = 1)} but any other distribution is possible (e.g.,
+#' \code{tfd_logistic(loc = 0, scale = 1)}).
 #'
 #' @export
 #'
@@ -1138,7 +1155,7 @@ deeptransformation_init <- function(
   addconst_interaction = NULL,
   penalize_bsp = 0,
   order_bsp_penalty = 2,
-  base_distribution = NULL
+  base_distribution = "normal"
 )
 {
 
@@ -1436,8 +1453,15 @@ deeptransformation_init <- function(
   
   # evaluate base_distribution once
   # otherwise it will be a symbolic tensor
-  bd <- if(is.null(base_distribution)) 
-    tfd_normal(loc = 0, scale = 1) else base_distribution
+  if(is.null(base_distribution) || (is.character(base_distribution) & 
+                                    base_distribution=="normal")){
+    bd <- tfd_normal(loc = 0, scale = 1)
+  }else if((is.character(base_distribution) & 
+            base_distribution=="logistic")){ 
+    bd <- tfd_logistic(loc = 0, scale = 1)
+  }else{
+    bd <- base_distribution
+  }
   
   neg_ll <- function(y, model) {
     

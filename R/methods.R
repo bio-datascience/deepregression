@@ -823,10 +823,10 @@ fit.deepregression <- function(
   args <- append(args,
                  input_list_model[!names(input_list_model) %in%
                                     names(args)])
-  if(length(x$init_params$ellipsis)>0)
-    args <- append(args,
-                   x$init_params$ellipsis[
-                     !names(x$init_params$ellipsis) %in% names(args)])
+  # if(length(x$init_params$ellipsis)>0)
+  #   args <- append(args,
+  #                  x$init_params$ellipsis[
+  #                    !names(x$init_params$ellipsis) %in% names(args)])
   
   if(!is.null(generator)){ 
     args$validation_split <- NULL
@@ -839,6 +839,52 @@ fit.deepregression <- function(
   if(save_weights) ret$weighthistory <- weighthistory$weights_last_layer
   invisible(ret)
 }
+
+#' Fit a custom deepregression models 
+#' 
+#' @param x a deepregression_custom model (created by a call to 
+#' \code{deepregression} with argument \code{compile_model = FALSE})
+#' @param train function taking the keras model, inputs and outputs as an
+#' updates the model
+#' @param epochs integer; the number of epochs to train
+#' @param verbose logical; whether or not to print progress
+#' @param print_fun function to print metrics
+#' @param ... further arguments passed to \code{train} function
+#' 
+# fit.deepregression_custom <- function(
+#   x,
+#   train,
+#   epochs,
+#   verbose = TRUE,
+#   print_fun = function(x) paste(x, collapse = ", "),
+#   ...
+# )
+# {
+#   
+#   data_image <- NULL
+#   if(length(x$init_params$image_var)>0)
+#     data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
+#                                 stringsAsFactors = FALSE)
+#   
+#   for (epoch in epochs)) {
+#     
+#     current_loss <- train(model = x$model$model, 
+#                           loss = x$model$loss
+#                           inputs = x$init_params$input_cov, 
+#                           outputs = x$init_params$y,
+#                           images = data_image
+#                           )
+#     if(verbose) cat("Epoch:", epoch,", Loss:", as.numeric(current_loss), "\n")
+#     # Track progress
+#     # if(length(model$model$monitor_metric)>0){
+#     #   if(is.list(model$model$monitor_metric))
+#     #     sapply(model$model$monitor_metric(current_loss) else
+#     #       model$model$monitor_metric(current_loss)
+#     #   
+#     # }
+#   } 
+#   
+# }
 
 #' Extract layer weights / coefficients from model
 #'
