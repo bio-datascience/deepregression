@@ -479,8 +479,19 @@ predict.deeptrafo <- function(
     }
     inpCov <- c(inpCov, list(NULL), list(NULL))
   }
+  
+  image_data <- NULL
+  if(length(object$init_params$image_var)>0){
+    if(!is.null(newdata)){
+      image_data <- as.data.frame(newdata[names(object$init_params$image_var)], 
+                                  stringsAsFactors = FALSE)
+    }else{
+      image_data <- as.data.frame(object$init_params$data[names(object$init_params$image_var)], 
+                                  stringsAsFactors = FALSE) 
+    }
+  }
 
-  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction", "shift"),
+  trafo_fun <- function(y, type = c("trafo", "pdf", "cdf", "interaction", "shift", "output"),
                         which = NULL, grid = FALSE)
   {
     type <- match.arg(type)
@@ -490,7 +501,8 @@ predict.deeptrafo <- function(
     ay <- tf$cast(object$init_params$y_basis_fun(y), tf$float32)
     aPrimey <- tf$cast(object$init_params$y_basis_fun_prime(y), tf$float32)
     inpCov[length(inpCov)-c(1,0)] <- list(ay, aPrimey)
-    mod_output <- object$model(list(inpCov, tf$cast(matrix(y, ncol=1), tf$float32)))
+    mod_output <- evaluate.deeptrafo(object, inpCov, y, image_data)
+    if(type=="output") return(mod_output)
     w_eta <- mod_output[, 1, drop = FALSE]
     aTtheta <- mod_output[, 2, drop = FALSE]
     # if(!is.null(minval))
@@ -569,6 +581,41 @@ predict.deeptrafo <- function(
 
   return(trafo_fun)
 
+}
+
+evaluate.deeptrafo <- function(object, newdata, y, data_image, batch_size = 32)
+{
+  
+  
+  if(length(object$init_params$image_var)>0){
+    
+    data_tab <- list(newdata, tf$cast(matrix(y, ncol=1), tf$float32))
+    
+    # prepare generator
+    max_data <- NROW(data_image)
+    if(is.null(batch_size)) batch_size <- 20
+    steps_per_epoch <- max_data%/%batch_size+1
+    
+    generator <- make_generator(data_image, data_tab, batch_size, 
+                                # FIXME: multiple images
+                                target_size = unname(unlist(object$init_params$image_var)[1:2]),
+                                color_mode = unname(ifelse(
+                                  unlist(object$init_params$image_var)[3]==3, 
+                                  "rgb", "grayscale")),
+                                x_col = names(object$init_params$image_var),
+                                is_trafo = object$init_params$family=="transformation_model", 
+                                shuffle = FALSE)
+    
+    mod_output <- object$model$predict(generator)
+    
+  }else{
+    
+    mod_output <- object$model(list(newdata, tf$cast(matrix(y, ncol=1), tf$float32)))
+    
+  }
+  
+  return(mod_output)
+  
 }
 
 
@@ -1284,7 +1331,12 @@ log_score <- function(
       this_data <- list(this_data, tf$constant(matrix(x$init_params$y,
                                                       ncol=1),
                                                dtype = "float32"))
+    if(length(x$init_params$image_var)>0)
+    {
+      disthat <- unlist(x$model %>% predict(newdata = this_data))
+    }else{
     disthat <- x$model(this_data)
+    }
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
@@ -1303,7 +1355,12 @@ log_score <- function(
                     dtype = "float32")
       )
     }
-    disthat <- x$model(newdata_processed)
+    if(length(x$init_params$image_var)>0)
+    {
+      disthat <- unlist(x$model %>% predict(newdata = newdata_processed))
+    }else{
+      disthat <- x$model(newdata_processed)
+    }
   }
 
   if(is_trafo)
