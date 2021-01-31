@@ -407,7 +407,7 @@ predict.deepregression <- function(
     # prepare generator
     max_data <- NROW(data_image)
     if(is.null(batch_size)) batch_size <- 20
-    steps_per_epoch <- max_data%/%batch_size+1*(max_data%%batch_size>1)
+    steps_per_epoch <- ceiling(max_data%/%batch_size)
     
     generator <- make_generator(data_image, data_tab, batch_size, 
                                 # FIXME: multiple images
@@ -594,7 +594,7 @@ evaluate.deeptrafo <- function(object, newdata, y, data_image, batch_size = 32)
     # prepare generator
     max_data <- NROW(data_image)
     if(is.null(batch_size)) batch_size <- 20
-    steps_per_epoch <- max_data%/%batch_size+1*(max_data%%batch_size>1)
+    steps_per_epoch <- ceiling(max_data%/%batch_size)
     
     generator <- make_generator(data_image, data_tab, batch_size, 
                                 # FIXME: multiple images
@@ -752,7 +752,7 @@ fit.deepregression <- function(
       
       # only fit generator
       max_data <- NROW(input_x[[1]])
-      steps_per_epoch <- max_data%/%batch_size+1*(max_data%%batch_size>1)
+      steps_per_epoch <- ceiling(max_data%/%batch_size)
 
       generator <- make_generator(data_image, data_tab, batch_size, 
                                   # FIXME: multiple images
@@ -782,7 +782,7 @@ fit.deepregression <- function(
                                             "rgb", "grayscale")),
                                           x_col = names(x$init_params$image_var),
                                           is_trafo = is_trafo)
-        validation_steps <- max_data%/%batch_size+1*(max_data%%batch_size>1)
+        validation_steps <- ceiling(max_data%/%batch_size)
       }else{
         validation_data <- NULL
         validation_steps <- NULL
@@ -805,7 +805,7 @@ fit.deepregression <- function(
       input_y_val <- matrix(subset_array(input_y, ind_val), ncol=1)
                 
       max_data_train <- NROW(input_x_train[[1]])
-      steps_per_epoch <- max_data_train%/%batch_size+1*(max_data_train%%batch_size>1)
+      steps_per_epoch <- ceiling(max_data_train%/%batch_size)
 
       data_tab <- list(input_x_train, input_y_train)
       data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
@@ -822,7 +822,7 @@ fit.deepregression <- function(
                                   is_trafo = is_trafo)
       
       max_data_val <- NROW(input_x_val[[1]])
-      validation_steps <- max_data_val%/%batch_size+1*(max_data_val%%batch_size>0)
+      validation_steps <- ceiling(max_data_val%/%batch_size)
 
       data_tab_val <- list(input_x_val, input_y_val)
       data_image_val <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
