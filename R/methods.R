@@ -1166,6 +1166,26 @@ cv <- function(
                         view_metrics = FALSE
                    )
     )
+    
+    if(x$init_params$family=="transformation_model"){
+      
+      this_y <- subset_fun(x$init_params$y,train_ind)
+      args$x <- c(args$x, 
+                  list(x$init_params$y_basis_fun(this_y)),
+                  list(x$init_params$y_basis_fun_prime(this_y)))
+      if(!is.null(args$validation_data))
+      {
+        
+        this_y <- subset_fun(x$init_params$y,test_ind)
+        args$validation_data[[1]] <- 
+          c(args$validation_data[[1]],
+            list(x$init_params$y_basis_fun(this_y)),
+            list(x$init_params$y_basis_fun_prime(this_y)))
+        
+      }
+      
+    }
+    
     args <- append(args, x$init_params$ellipsis)
 
     ret <- do.call(fit_fun, args)
@@ -1186,7 +1206,7 @@ cv <- function(
 
   class(res) <- c("drCV","list")
 
-  if(plot) try(plot_cv(res))
+  if(plot) try(plot_cv(res), silent = TRUE)
 
   x$model$set_weights(old_weights)
 
