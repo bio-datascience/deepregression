@@ -1333,15 +1333,20 @@ log_score <- function(
                                                dtype = "float32"))
     if(length(x$init_params$image_var)>0)
     {
-      disthat <- unlist(x$model %>% predict(newdata = this_data))
+      if(is_trafo){
+        preds <- x %>% predict(newdata = this_data)
+        disthat <- preds(this_y, type="output")
+      }else{
+        disthat <- unlist(x$model %>% predict(newdata = this_data))
+      }
     }else{
-    disthat <- x$model(this_data)
+      disthat <- x$model(this_data)
     }
   }else{
     # preprocess data
     if(is.data.frame(data)) data <- as.list(data)
     newdata_processed <- prepare_data(x, data, pred=TRUE)
-    if(is_trafo){
+    if(is_trafo & length(x$init_params$image_var)==0){
       if(missing(this_y)) stop("Must provide this_y for transformation models and new data.")
       if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
         newdata_processed <- newdata_processed[[1]]
@@ -1354,10 +1359,17 @@ log_score <- function(
                            ncol=1),
                     dtype = "float32")
       )
+    }else if(is_trafo & length(x$init_params$image_var)>0){
+      newdata_processed <- data
     }
     if(length(x$init_params$image_var)>0)
     {
-      disthat <- unlist(x$model %>% predict(newdata = newdata_processed))
+      if(is_trafo){
+        preds <- x %>% predict(newdata = newdata_processed)
+        disthat <- preds(this_y, type="output")
+      }else{
+        disthat <- unlist(x$model %>% predict(newdata = newdata_processed))
+      }
     }else{
       disthat <- x$model(newdata_processed)
     }
@@ -1366,9 +1378,7 @@ log_score <- function(
   if(is_trafo)
     return(summary_fun(
       convert_fun(
-        tfd_normal(loc = 0, scale = 1) %>%
-          tfd_log_prob(disthat[,2,drop=F] +
-                         disthat[,1,drop=F])
+        calculate_log_score(x, disthat)
       ))
     )
 

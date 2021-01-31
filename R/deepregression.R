@@ -219,6 +219,7 @@ deepregression <- function(
   penalty_summary = k_sum,
   convertfun = as.matrix,
   compile_model = TRUE,
+  base_distribution = "normal",
   # compress = TRUE,
   ...
 )
@@ -518,6 +519,7 @@ deepregression <- function(
       train_together = train_together_ind(train_together),
       split_between_shift_and_theta = split_between_shift_and_theta,
       addconst_interaction = addconst_interaction,
+      base_distribution = base_distribution,
       ...
     )
 
@@ -595,7 +597,9 @@ deepregression <- function(
     ret$init_params <- c(ret$init_params,
                          order_bsp = order_bsp,
                          y_basis_fun = y_basis_fun,
-                         y_basis_fun_prime = y_basis_fun_prime)
+                         y_basis_fun_prime = y_basis_fun_prime,
+                         base_distribution = base_distribution
+                         )
   }
 
   return(ret)
