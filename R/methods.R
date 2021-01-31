@@ -811,7 +811,9 @@ fit.deepregression <- function(
       data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
                                   stringsAsFactors = FALSE)[ind_train,,drop=FALSE]
       
-      generator <- make_generator(data_image, data_tab, batch_size, 
+      generator <- make_generator(data_image = data_image, 
+                                  data_tab = data_tab, 
+                                  batch_size = batch_size, 
                                   # FIXME: multiple images
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                   color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
@@ -820,13 +822,15 @@ fit.deepregression <- function(
                                   is_trafo = is_trafo)
       
       max_data_val <- NROW(input_x_val[[1]])
-      validation_steps <- max_data_val%/%batch_size+1*(max_data_val%%batch_size>1)
+      validation_steps <- max_data_val%/%batch_size+1*(max_data_val%%batch_size>0)
 
       data_tab_val <- list(input_x_val, input_y_val)
       data_image_val <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
                                   stringsAsFactors = FALSE)[ind_val,,drop=FALSE]
       
-      validation_data <- make_generator(data_image_val, data_tab_val, batch_size, 
+      validation_data <- make_generator(data_image = data_image_val, 
+                                        data_tab = data_tab_val, 
+                                        batch_size = batch_size, 
                                         # FIXME: multiple images
                                         target_size = unname(unlist(x$init_params$image_var)[1:2]),
                                         color_mode = unname(ifelse(unlist(
