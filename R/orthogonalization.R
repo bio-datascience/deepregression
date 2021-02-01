@@ -109,6 +109,8 @@ make_orthog <- function(
   if(is.null(pcf$linterms) & is.null(pcf$smoothterms) & is.null(manoz))
     return(NULL)
 
+  if(is.list(newdata)) newdata <- as.data.frame(newdata)
+  
   qList <- lapply(1:length(nmsd), function(i){
 
     nn <- nmsd[[i]]
@@ -133,7 +135,13 @@ make_orthog <- function(
       for(nm in nn){
 
         # FIXME: deal with factor variables
-        if(nm %in% nms$linterms) X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
+        if(nm %in% nms$linterms){ 
+          if(!is.null(newdata)){
+            X <- cbind(X,newdata[,nm,drop=FALSE])
+          }else{
+            X <- cbind(X,pcf$linterms[,nm,drop=FALSE])
+          }
+        }
         if(nm %in% nms$smoothterms){
           
           this_smooth <- pcf$smoothterms[[
@@ -146,10 +154,17 @@ make_orthog <- function(
             this_sX <- get_X_from_smooth(this_smooth, newdata)
           }
           
-          Z_nr <- drop_constant(this_sX)
-
-          X <- cbind(X,Z_nr[[1]])
-          rem_cols <- rem_cols + Z_nr[[2]]
+          if(is.null(newdata)){ 
+            
+            Z_nr <- drop_constant(this_sX)
+            X <- cbind(X,Z_nr[[1]])
+            rem_cols <- rem_cols + Z_nr[[2]]
+            
+          }else{
+            
+            X <- cbind(X, this_sX)
+            
+          }
 
         }
       }

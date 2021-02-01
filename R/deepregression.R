@@ -580,6 +580,7 @@ deepregression <- function(
                   ellipsis = list(...),
                   family = family,
                   orthogonalize = orthogonalize,
+                  orthog_type = orthog_type,
                   list_of_formulae = list_of_formulae,
                   image_var = image_var
                 ))

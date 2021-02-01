@@ -339,7 +339,8 @@ prepare_data <- function(
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
       data[[1]], pred=pred,
-      orthogonalize = x$init_params$orthogonalize)
+      orthogonalize = x$init_params$orthogonalize,
+      returnX = (x$init_params$orthog_type=="tf"))
     if(is.list(data[[2]]))
       data[[2]] <- unlist(data[[2]], recursive = FALSE)
     newdata_processed <- c(newdata_processed,
@@ -351,7 +352,8 @@ prepare_data <- function(
     newdata_processed <- prepare_newdata(
       x$init_params$parsed_formulae_contents,
       data, pred=pred,
-      orthogonalize = x$init_params$orthogonalize)
+      orthogonalize = x$init_params$orthogonalize,
+      returnX = (x$init_params$orthog_type=="tf"))
 
     # for trafo models
     if(length(x$init_params$parsed_formulae_contents)>1 &&
@@ -407,7 +409,7 @@ predict.deepregression <- function(
     # prepare generator
     max_data <- NROW(data_image)
     if(is.null(batch_size)) batch_size <- 20
-    steps_per_epoch <- ceiling(max_data%/%batch_size)
+    steps_per_epoch <- ceiling(max_data/batch_size)
     
     generator <- make_generator(data_image, data_tab, batch_size, 
                                 # FIXME: multiple images
@@ -594,7 +596,7 @@ evaluate.deeptrafo <- function(object, newdata, y, data_image, batch_size = 32)
     # prepare generator
     max_data <- NROW(data_image)
     if(is.null(batch_size)) batch_size <- 20
-    steps_per_epoch <- ceiling(max_data%/%batch_size)
+    steps_per_epoch <- ceiling(max_data/batch_size)
     
     generator <- make_generator(data_image, data_tab, batch_size, 
                                 # FIXME: multiple images
@@ -724,7 +726,8 @@ fit.deepregression <- function(
     input_x <- prepare_newdata(x$init_params$parsed_formulae_contents,
                                x$init_params$data,
                                pred = FALSE,
-                               orthogonalize = x$init_params$orthogonalize)
+                               orthogonalize = x$init_params$orthogonalize,
+                               returnX = (x$init_params$orthog_type=="tf"))
     if(!is.null(x$init_params$offset))
       input_x <- c(input_x, unlist(lapply(x$init_params$offset, function(yy)
         tf$constant(matrix(yy, ncol = 1), dtype="float32")), recursive = FALSE))
@@ -752,7 +755,7 @@ fit.deepregression <- function(
       
       # only fit generator
       max_data <- NROW(input_x[[1]])
-      steps_per_epoch <- ceiling(max_data%/%batch_size)
+      steps_per_epoch <- ceiling(max_data/batch_size)
 
       generator <- make_generator(data_image, data_tab, batch_size, 
                                   # FIXME: multiple images
@@ -782,7 +785,7 @@ fit.deepregression <- function(
                                             "rgb", "grayscale")),
                                           x_col = names(x$init_params$image_var),
                                           is_trafo = is_trafo)
-        validation_steps <- ceiling(max_data%/%batch_size)
+        validation_steps <- ceiling(max_data/batch_size)
       }else{
         validation_data <- NULL
         validation_steps <- NULL
@@ -791,9 +794,11 @@ fit.deepregression <- function(
       
     }else{
       
-      val_split <- if(!is.null(list(...)$validation_split))
-        list(...)$validation_split else
-          x$init_params$validation_split
+      if(!is.null(list(...)$validation_split)){
+        val_split <- list(...)$validation_split 
+      }else{
+        val_split <- x$init_params$validation_split
+      }
 
       input_x <- lapply(input_x, as.matrix)
       
@@ -805,7 +810,7 @@ fit.deepregression <- function(
       input_y_val <- matrix(subset_array(input_y, ind_val), ncol=1)
                 
       max_data_train <- NROW(input_x_train[[1]])
-      steps_per_epoch <- ceiling(max_data_train%/%batch_size)
+      steps_per_epoch <- ceiling(max_data_train/batch_size)
 
       data_tab <- list(input_x_train, input_y_train)
       data_image <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
@@ -822,7 +827,7 @@ fit.deepregression <- function(
                                   is_trafo = is_trafo)
       
       max_data_val <- NROW(input_x_val[[1]])
-      validation_steps <- ceiling(max_data_val%/%batch_size)
+      validation_steps <- ceiling(max_data_val/batch_size)
 
       data_tab_val <- list(input_x_val, input_y_val)
       data_image_val <- as.data.frame(x$init_params$data[names(x$init_params$image_var)], 
@@ -1148,7 +1153,8 @@ cv <- function(
                           x$init_params$parsed_formulae_contents,
                           train_data,
                           pred = FALSE,
-                          orthogonalize = x$init_params$orthogonalize
+                          orthogonalize = x$init_params$orthogonalize,
+                          returnX = (x$init_params$orthog_type=="tf")
                           #index = train_ind,
                           #cv = TRUE
                           ),
@@ -1159,7 +1165,8 @@ cv <- function(
                             x$init_params$parsed_formulae_contents,
                             test_data,
                             pred = FALSE,
-                            orthogonalize = x$init_params$orthogonalize
+                            orthogonalize = x$init_params$orthogonalize,
+                            returnX = (x$init_params$orthog_type=="tf")
                             # index = test_ind,
                             # cv = TRUE
                             ),

@@ -738,7 +738,8 @@ get_indices <- function(x)
 prepare_newdata <- function(pfc, data, pred = FALSE, 
                             # index = NULL, cv = FALSE,
                             convertfun = as.matrix,
-                            orthogonalize)
+                            orthogonalize,
+                            ...)
 {
   n_obs <- nROW(data)
   zcons <- sapply(pfc, function(x) attr(x, "zero_cons"))
@@ -750,7 +751,8 @@ prepare_newdata <- function(pfc, data, pred = FALSE,
   }
   newdata_processed <- make_cov(pfc, data, pred = pred,
                                 convertfun = convertfun,
-                                orthogonalize = orthogonalize)
+                                orthogonalize = orthogonalize,
+                                ...)
   
   return(newdata_processed)
 }
