@@ -327,8 +327,8 @@ calculate_log_score <- function(x, output)
     bd <- x$init_params$base_distribution
   }
   return(
-    (bd %>% tfd_log_prob(output[,2,drop=F] + output[,1,drop=F])) +  
-      log(output[,3,drop=F])
+    as.matrix(bd %>% tfd_log_prob(output[,2,drop=F] + output[,1,drop=F])) +  
+      as.matrix(log(tf$clip_by_value(output[,3,drop=F], 1e-8, Inf)))
   )
   
 }
