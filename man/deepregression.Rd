@@ -57,6 +57,8 @@ deepregression(
   additional_penalty = NULL,
   penalty_summary = k_sum,
   convertfun = as.matrix,
+  compile_model = TRUE,
+  base_distribution = "normal",
   ...
 )
 }
@@ -222,6 +224,8 @@ default is \code{k_sum}. Another option could be \code{k_mean}.}
 \item{convertfun}{function to convert objects into a matrix or tensor format.}
 
 \item{...}{further arguments passed to the \code{deepregression\_init} function}
+
+\item{compile}{logical; whether to compile the model or not}
 }
 \description{
 Fitting Semi-Structured Deep Distributional Regression

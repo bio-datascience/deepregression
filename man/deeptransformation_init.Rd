@@ -26,7 +26,8 @@ deeptransformation_init(
   interact_pred_trafo = NULL,
   addconst_interaction = NULL,
   penalize_bsp = 0,
-  order_bsp_penalty = 2
+  order_bsp_penalty = 2,
+  base_distribution = "normal"
 )
 }
 \arguments{
@@ -89,6 +90,11 @@ ensure positivity}
 \item{order_bsp_penalty}{integer; order of Bernstein polynomial penalty. 0 results in a
 penalty based on integrated squared second order derivatives, values >= 1 in difference
 penalties}
+
+\item{base_distribution}{a string ("normal", "logistic") or TFP distribution; 
+the base distribution for the transformation model. 
+Per default \code{tfd_normal(loc = 0, scale = 1)} but any other distribution is possible (e.g.,
+\code{tfd_logistic(loc = 0, scale = 1)}).}
 }
 \description{
 Initializing Deep Transformation Models

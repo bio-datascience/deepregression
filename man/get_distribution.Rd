@@ -4,12 +4,14 @@
 \alias{get_distribution}
 \title{Function to return the fitted distribution}
 \usage{
-get_distribution(x, data = NULL)
+get_distribution(x, data = NULL, force_float = FALSE)
 }
 \arguments{
 \item{x}{the fitted deepregression object}
 
 \item{data}{an optional data set}
+
+\item{force_float}{forces conversion into float tensors}
 }
 \description{
 Function to return the fitted distribution

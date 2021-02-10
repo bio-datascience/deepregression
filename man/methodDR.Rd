@@ -135,6 +135,8 @@ per default \code{as.matrix}}
 
 \item{callbacks}{a list of callbacks used for fitting}
 
+\item{convertfun}{function to convert R into Tensor object}
+
 \item{variational}{logical, if TRUE, the function takes into account
 that coefficients have both a mean and a variance}
 
@@ -154,6 +156,13 @@ smooth terms}
 \item{mylapply}{lapply function to be used; defaults to \code{lapply}}
 
 \item{value}{the quantile value(s)}
+
+\item{train}{function taking the keras model, inputs and outputs as an
+updates the model}
+
+\item{epochs}{integer; the number of epochs to train}
+
+\item{print_fun}{function to print metrics}
 }
 \value{
 returns a function with two parameters: the actual response
@@ -176,7 +185,7 @@ Function to extract fitted distribution
 
 Fit a deepregression model
 
-Extract layer weights / coefficients from model
+Fit a custom deepregression models
 
 Print function for deepregression model
 

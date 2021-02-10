@@ -156,6 +156,7 @@ plot.deepregression <- function(
 #' @param plot logical, if FALSE, only the data for plotting is returned
 #' @param grid_length the length of an equidistant grid at which a two-dimensional function
 #' is evaluated for plotting.
+#' @param eval_grid logical; should plot be evaluated on a grid
 #' @param ... further arguments, passed to fit, plot or predict function
 #'
 #' @method plot deeptrafo
@@ -896,20 +897,20 @@ fit.deepregression <- function(
   invisible(ret)
 }
 
-#' Fit a custom deepregression models 
-#' 
-#' @param x a deepregression_custom model (created by a call to 
-#' \code{deepregression} with argument \code{compile_model = FALSE})
-#' @param train function taking the keras model, inputs and outputs as an
-#' updates the model
-#' @param epochs integer; the number of epochs to train
-#' @param verbose logical; whether or not to print progress
-#' @param print_fun function to print metrics
-#' @param ... further arguments passed to \code{train} function
-#' 
-# fit.deepregression_custom <- function(
-#   x,
-#   train,
+##' Fit a custom deepregression models 
+##' 
+##' @param x a deepregression_custom model (created by a call to 
+##' \code{deepregression} with argument \code{compile_model = FALSE})
+##' @param train function taking the keras model, inputs and outputs as an
+##' updates the model
+##' @param epochs integer; the number of epochs to train
+##' @param verbose logical; whether or not to print progress
+##' @param print_fun function to print metrics
+##' @param ... further arguments passed to \code{train} function
+##' 
+## fit.deepregression_custom <- function(
+##   x,
+##   train,
 #   epochs,
 #   verbose = TRUE,
 #   print_fun = function(x) paste(x, collapse = ", "),
@@ -1312,12 +1313,14 @@ quantile.deepregression <- function(
 #'
 #' @param x the fitted deepregression object
 #' @param data an optional data set
+#' @param force_float forces conversion into float tensors
 #'
 #' @export
 #'
 get_distribution <- function(
   x,
-  data = NULL
+  data = NULL,
+  force_float = FALSE
 )
 {
   if(is.null(data)){
@@ -1328,6 +1331,8 @@ get_distribution <- function(
     newdata_processed <- prepare_data(x, data, pred=TRUE)
     if(!is.null(attr(x$init_params$parsed_formulae_contents[[2]], "minval")))
       newdata_processed <- newdata_processed[[1]]
+    if(force_float | !is.null(attr(newdata_processed, "ox"))) 
+      newdata_processed <- lapply(newdata_processed, function(x) tf$cast(x, "float32"))
     disthat <- x$model(newdata_processed)
   }
   return(disthat)

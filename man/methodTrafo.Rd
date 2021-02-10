@@ -4,7 +4,15 @@
 \alias{plot.deeptrafo}
 \title{Generic functions for deeptrafo models}
 \usage{
-\method{plot}{deeptrafo}(x, which = NULL, which_param = 1, plot = TRUE, grid_length = 40, ...)
+\method{plot}{deeptrafo}(
+  x,
+  which = NULL,
+  which_param = 1,
+  plot = TRUE,
+  grid_length = 40,
+  eval_grid = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{deepregression object}

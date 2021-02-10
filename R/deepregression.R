@@ -116,7 +116,9 @@
 #' @param penalty_summary keras function; summary function for the penalty in the spline layer;
 #' default is \code{k_sum}. Another option could be \code{k_mean}.
 #' @param convertfun function to convert objects into a matrix or tensor format.
-#' @param compile logical; whether to compile the model or not
+#' @param compile_model logical; whether to compile the model or not
+#' @param base_distribution tfd_distribution or string; the base distribution for 
+#' transformation models, see \code{?deeptransformation\_init}.
 #' @param ... further arguments passed to the \code{deepregression\_init} function
 #'
 #' @import tensorflow tfprobability keras mgcv dplyr R6 reticulate Matrix
