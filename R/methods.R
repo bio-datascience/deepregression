@@ -531,7 +531,7 @@ predict.deeptrafo <- function(
       if(is.null(newdata))
         newdata <- object$init_params$data
 
-      return(cbind(shift = -as.matrix(w_eta),
+      return(cbind(shift = as.matrix(w_eta),
                    as.data.frame(newdata)))
 
     }
