@@ -25,7 +25,7 @@
 #' network is added to the linear predictor of the second and fourth distribution parameter.
 #' Those network names should then be excluded from the \code{list_of_formulae}
 #' @param data data.frame or named list with input features
-#' @param image_var names list; names correspond to image variables, values for each list item
+#' @param image_var named list; names correspond to image variables, values for each list item
 #' corresponds to the input size of the respective image, e.g., \code{list(image = list(c(200,200,3)))}.
 #' @param dim_deep list for each distribution parameter with NULL or integer vector entries; 
 #' this is an optional argument to manually specify the input dimensions for the unstructured 
@@ -54,6 +54,8 @@
 #' a custom distribution function.
 #' @param learning_rate learning rate for optimizer
 #' @param optimizer optimzer used. Per default ADAM.
+#' @param fsbatch_optimizer a special optimizer conducting a mini-batch variant of the 
+#' Fellner-Schall algorithm.
 #' @param variational logical value specifying whether or not to use
 #' variational inference. If \code{TRUE}, details must be passed to
 #' the via the ellipsis to the initialization function
@@ -192,6 +194,7 @@ deepregression <- function(
   dist_fun = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
+  fsbatch_optimizer = FALSE,
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991-5-4,
@@ -304,6 +307,11 @@ deepregression <- function(
     nr_params <- nrparams_dist
     list_of_formulae <- list_of_formulae[1:nrparams_dist]
   }
+  # check for lists in list
+  if(is.list(data)){
+    if(any(sapply(data, class)=="list"))
+      stop("Cannot deal with lists in list. Please remove list items in your data input.")
+  }
   # check list of formulae is always one-sided
   if(any(sapply(list_of_formulae, function(x)
     attr( terms(x, data = data[!sapply(data, is.null)]) , "response" ) != 0 ))){
@@ -321,7 +329,7 @@ deepregression <- function(
   # add train together networks in case there are any
   if(length(train_together)>0){
 
-    warning("train_together not yet implemented in combination with the orthogonalization.")
+    warning("train_together not well tested in combination with orthogonalization.")
     nulls <- sapply(train_together,is.null)
     train_together[!nulls] <-
       lapply(train_together[!nulls], remove_intercept)
@@ -413,7 +421,9 @@ deepregression <- function(
                       trafo =
                         (family == "transformation_model" &
                            i == 2),
-                      k_summary = penalty_summary
+                      k_summary = penalty_summary,
+                      fsbatch_optimizer = fsbatch_optimizer,
+                      nobs = n_obs
                       # prior_fun = prior_fun
     ))
 
@@ -496,6 +506,9 @@ deepregression <- function(
   if(orthog_type == "tf")
     orthog_fun <- orthog_tf else orthog_fun <- orthog
 
+  orthogX <- NULL
+  if(orthogonalize) orthogX <- nestNCOL(ox)
+  
   # check if transformation models
 
   if(family=="transformation_model"){
@@ -510,7 +523,7 @@ deepregression <- function(
       ncol_deep = ncol_deep,
       list_structured = list_structured,
       list_deep = list_of_deep_models,
-      orthogX = nestNCOL(ox),
+      orthogX = orthogX,
       lambda_lasso = lambda_lasso,
       lambda_ridge = lambda_ridge,
       monitor_metric = monitor_metric,
@@ -526,41 +539,66 @@ deepregression <- function(
     )
 
   }else{
-
-    #############################################################
-    # initialize the model
-    model <- deepregression_init(
-      n_obs = n_obs,
-      ncol_structured = ncol_structured,
-      ncol_deep = ncol_deep,
-      list_structured = list_structured,
-      list_deep = list_of_deep_models,
-      nr_params = nr_params,
-      train_together = train_together_ind(train_together),
-      family = family,
-      variational = variational,
-      dist_fun = dist_fun,
-      kl_weight = 1 / n_obs,
-      orthogX = nestNCOL(ox),
-      lambda_lasso = lambda_lasso,
-      lambda_ridge = lambda_ridge,
-      monitor_metric = monitor_metric,
-      optimizer = optimizer,
-      output_dim = output_dim,
-      mixture_dist = mixture_dist,
-      split_fun = split_fun,
-      posterior = posterior_fun,
-      prior = prior_fun,
-      ind_fun = ind_fun,
-      extend_output_dim = extend_output_dim,
-      offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
-      orthog_fun = orthog_fun,
-      additional_penalty = additional_penalty,
-      compile_model = compile_model,
-      ...
-    )
-    #############################################################
-
+    
+    if(fsbatch_optimizer){
+      
+      model <- dr_init(
+        n_obs = n_obs,
+        ncol_structured = ncol_structured,
+        list_structured = list_structured,
+        nr_params = nr_params,
+        family = family,
+        dist_fun = dist_fun,
+        monitor_metric = monitor_metric,
+        output_dim = output_dim,
+        mixture_dist = mixture_dist,
+        ind_fun = ind_fun,
+        extend_output_dim = extend_output_dim,
+        offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
+        additional_penalty = additional_penalty,
+      )
+      
+      
+    }else{
+     
+      
+      #############################################################
+      # initialize the model
+      model <- deepregression_init(
+        n_obs = n_obs,
+        ncol_structured = ncol_structured,
+        ncol_deep = ncol_deep,
+        list_structured = list_structured,
+        list_deep = list_of_deep_models,
+        nr_params = nr_params,
+        train_together = train_together_ind(train_together),
+        family = family,
+        variational = variational,
+        dist_fun = dist_fun,
+        kl_weight = 1 / n_obs,
+        orthogX = orthogX,
+        lambda_lasso = lambda_lasso,
+        lambda_ridge = lambda_ridge,
+        monitor_metric = monitor_metric,
+        optimizer = optimizer,
+        fsbatch_optimizer = fsbatch_optimizer,
+        output_dim = output_dim,
+        mixture_dist = mixture_dist,
+        split_fun = split_fun,
+        posterior = posterior_fun,
+        prior = prior_fun,
+        ind_fun = ind_fun,
+        extend_output_dim = extend_output_dim,
+        offset = if(is.null(offset)) NULL else lapply(offset, NCOL0),
+        orthog_fun = orthog_fun,
+        additional_penalty = additional_penalty,
+        compile_model = compile_model,
+        ...
+      )
+      #############################################################
+      
+      
+    }
   }
 
 
@@ -643,6 +681,7 @@ deepregression <- function(
 #' @param weights observation weights used in the likelihood
 #' @param learning_rate learning rate for optimizer
 #' @param optimizer optimizer used (defaults to adam)
+#' @param fsbatch_optimizer logical; see \code{?deepregression}
 #' @param monitor_metric see \code{?deepregression}
 #' @param posterior function defining the posterior
 #' @param prior function defining the prior
@@ -681,6 +720,7 @@ deepregression_init <- function(
   weights = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
+  fsbatch_optimizer = FALSE,
   monitor_metric = list(),
   posterior = posterior_mean_field,
   prior = prior_trainable,
@@ -750,6 +790,8 @@ deepregression_init <- function(
             return(layer_input(shape = list(as.integer(xx))))})
       }
     })
+  }else{
+    ox <- NULL
   }
 
   if(!is.null(offset)){
@@ -1089,6 +1131,279 @@ deepregression_init <- function(
 
 }
 
+
+
+#' @title Initializing a Distributional Regression Model
+#'
+#'
+#' @param n_obs number of observations
+#' @param ncol_structured a vector of length #parameters
+#' defining the number of variables used for each of the parameters.
+#' If any of the parameters is not modelled using a structured part
+#' the corresponding entry must be zero.
+#' @param list_structured list of (non-linear) structured layers
+#' (list length between 0 and number of parameters)
+#' @param nr_params number of distribution parameters
+#' @param family family specifying the distribution that is modelled
+#' @param dist_fun a custom distribution applied to the last layer,
+#' see \code{\link{make_tfd_dist}} for more details on how to construct
+#' a custom distribution function.
+#' @param weights observation weights used in the likelihood
+#' @param monitor_metric see \code{?deepregression}
+#' @param output_dim dimension of the output (> 1 for multivariate outcomes)
+#' @param mixture_dist see \code{?deepregression}
+#' @param ind_fun see \code{?deepregression}
+#' @param extend_output_dim see \code{?deepregression}
+#' @param offset list of logicals corresponding to the paramters;
+#' defines per parameter if an offset should be added to the predictor
+#' @param additional_penalty to specify any additional penalty, provide a function
+#' that takes the \code{model$trainable_weights} as input and applies the
+#' additional penalty. In order to get the correct index for the trainable
+#' weights, you can run the model once and check its structure.
+#'
+#' @export
+dr_init <- function(
+  n_obs,
+  ncol_structured,
+  list_structured,
+  nr_params = 2,
+  family,
+  dist_fun = NULL,
+  weights = NULL,
+  monitor_metric = list(),
+  output_dim = 1,
+  mixture_dist = FALSE,
+  ind_fun = function(x) x,
+  extend_output_dim = 0,
+  offset = NULL,
+  additional_penalty = NULL
+)
+{
+  
+  inputs_struct <- lapply(1:length(ncol_structured), function(i){
+    nc = ncol_structured[i]
+    if(nc==0) return(NULL) else
+      # if(!is.null(list_structured[[i]]) & nc > 1)
+      # nc>1 will cause problems when implementing ridge/lasso
+      layer_input(shape = list(as.integer(nc)))
+  })
+  
+  if(!is.null(offset)){
+    
+    offset_inputs <- lapply(offset, function(odim){
+      if(is.null(odim) | odim==0) return(NULL) else{
+        return(
+          layer_input(shape = list(odim))
+        )
+      }
+    })
+    
+    ones_initializer = tf$keras.initializers$Ones()
+    
+    offset_layers <- lapply(offset_inputs, function(x){
+      if(is.null(x)) return(NULL) else
+        return(
+          x %>%
+            layer_dense(units = 1,
+                        activation = "linear",
+                        use_bias = FALSE ,
+                        trainable = FALSE,
+                        kernel_initializer = ones_initializer))
+    })
+    
+    
+  }
+  
+  # extend one or more layers' output dimension
+  if(length(extend_output_dim) > 1 || extend_output_dim!=0){
+    output_dim <- output_dim + extend_output_dim
+  }else{
+    output_dim <- rep(output_dim, length(inputs_struct))
+  }
+  
+  
+  # define structured predictor
+  structured_parts <- lapply(1:length(inputs_struct),
+                             function(i){
+                               if(is.null(inputs_struct[[i]]))
+                               {
+                                 return(NULL)
+                               }else{
+                                 if(is.null(list_structured[[i]]))
+                                 {
+                                   return(inputs_struct[[i]] %>%
+                                            layer_dense(
+                                              units = as.integer(output_dim[i]),
+                                              activation = "linear",
+                                              use_bias = FALSE,
+                                              name = paste0("structured_linear_",
+                                                            i))
+                                   )
+                                 }else{
+                                   this_layer <- list_structured[[i]]
+                                   return(inputs_struct[[i]] %>% this_layer)
+                                 }
+                               }
+                             })
+  
+  
+  
+  if(!is.null(offset)){
+    
+    for(i in 1:length(structured_parts)){
+      
+      if(!is.null(offset[[i]]) & offset[[i]]!=0)
+        structured_parts[[i]] <- layer_add(list(structured_parts[[i]],
+                                               offset_layers[[i]]))
+      
+    }
+    
+  }
+  
+  # concatenate predictors
+  # -> just to split them later again?
+  if(length(structured_parts) > 1)
+    preds <- layer_concatenate(structured_parts) else
+      preds <- structured_parts[[1]]
+  
+  if(mixture_dist){
+    list_pred <- layer_lambda(preds,
+                              f = function(x)
+                              {
+                                tf$split(x, num_or_size_splits =
+                                           c(1L, as.integer(nr_params-1)),
+                                         axis = 1L)
+                              })
+    list_pred[[1]] <- list_pred[[1]] %>%
+      layer_dense(units = as.integer(mixture_dist),
+                  activation = "softmax",
+                  use_bias = FALSE)
+    preds <- layer_concatenate(list_pred)
+  }
+  
+  ############################################################
+  ### Define Distribution Layer and Variational Inference ####
+  
+  
+  
+  # define the distribution function applied in the last layer
+  
+  # special families needing transformations
+  
+  if(family %in% c("betar", "gammar", "pareto_ls", "inverse_gamma_ls")){
+    
+    # trafo_list <- family_trafo_funs(family)
+    # predsTrafo <- layer_lambda(object = preds, f = trafo_fun)
+    # preds <- layer_concatenate(predsTrafo)
+    
+    dist_fun <- family_trafo_funs_special(family)
+    
+  }
+  
+  # apply the transformation for each parameter
+  # and put in the right place of the distribution
+  if(is.null(dist_fun))
+    dist_fun <- make_tfd_dist(family)
+  
+  # make model variational and output distribution
+  # if(variational){
+  #
+  #   out <- preds %>%
+  #     layer_dense_variational(
+  #       units = length(nr_params),
+  #       make_posterior_fn = posterior,
+  #       make_prior_fn = prior,
+  #       kl_weight = kl_weight
+  #     ) %>%
+  #     layer_distribution_lambda(dist_fun)
+  #
+  # }else{
+  
+  out <- preds %>%
+    tfprobability::layer_distribution_lambda(dist_fun)
+  
+  # }
+  
+  ############################################################
+  ################# Define and Compile Model #################
+  
+  # define all inputs
+  inputList <- unname(inputs_struct[!sapply(inputs_struct, is.null)])
+  
+  if(!is.null(offset)){
+    
+    inputList <- c(inputList,
+                   unlist(offset_inputs[!sapply(offset_inputs, is.null)]))
+    
+  }
+  
+  # the final model is defined by its inputs
+  # and outputs
+  model <- kerasGAM(inputs = inputList,
+                    outputs = out)
+
+  l <- 1  
+  for(i in 1:length(list_structured)){
+
+    if(!is.null(list_structured[[i]])){
+      reg <- list_structured[[i]]$get_penalty
+      
+      # lambdas <- list_structured[[i]]$mask * tf$exp(
+      #     list_structured[[i]]$lambdas)/
+      #   tf$cast(list_structured[[i]]$n, "float32")
+      # P <- list_structured[[i]]$P
+      # bigP = as.matrix(
+      #   bdiag(lapply(1:length(lambdas),
+      #                function(j) as.matrix(lambdas[j]*tf$cast(
+      #                  P[j-1]$to_dense(), dtype = "float32")))))
+      # layer_nr <- grep("pen_linear", 
+      #                   sapply(1:length(model$trainable_weights), function(k) 
+      #                     model$trainable_weights[[k]]$name))[l]
+      # reg <- function(x){ 
+      #   return(
+      #     tf$reduce_sum(tf_incross(
+      #       model$trainable_weights[[layer_nr]],
+      #       tf$cast(bigP, "float32")))
+      #   )
+      # }
+      model$add_loss(reg)
+      l <- l + 1
+    }
+  }
+  
+  # define weights to be equal to 1 if not given
+  if(is.null(weights)) weights <- 1
+  
+  # the negative log-likelihood is given by the negative weighted
+  # log probability of the model
+  if(family!="pareto_ls"){  
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y)) 
+  }else{
+    negloglik <- function(y, model)
+      - weights * (model %>% ind_fun() %>% tfd_log_prob(y + model$scale))
+  }
+  
+  
+  if(!is.null(additional_penalty)){
+    
+    add_loss <- function(x) additional_penalty(
+      model$trainable_weights
+    )
+    model$add_loss(add_loss)
+    
+  }
+  
+  # compile the model using the defined optimizer,
+  # the negative log-likelihood as loss funciton
+  # and the defined monitoring metrics as metrics
+  model %>% compile(optimizer = optimizer_sgd(),
+                    loss = negloglik,
+                    metrics = monitor_metric)
+  
+  return(model)
+
+}
 
 
 #' @title Initializing Deep Transformation Models

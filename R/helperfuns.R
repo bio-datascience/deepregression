@@ -358,6 +358,10 @@ get_contents <- function(lf, data, df,
         }
         if(length(st)==1 & is.null(st[[1]]$margin)){ 
           X <- st[[1]]$X 
+          if(is.list(S) && length(S)>1){
+            if(null_space_penalty) S <- S[[1]]+S[[2]] else
+                stop("Something went wrong with the Dimensions of smoothing penalty matrices.")
+          }
         }else{ 
           if(anisotropic){
             if(length(this_df)==1) this_df <- rep(this_df, length(st[[1]]$margin))
@@ -1100,5 +1104,65 @@ get_X_lin_newdata <- function(linname, newdata)
   #}
   
   return(ret)
+  
+}
+
+shape_trainable_weights <- function(mod) sapply(mod$model$trainable_weights, 
+                                                function(x) c(as.matrix(tf$shape(x))))
+
+uniqueness_trainable_weights <- function(mod) all(!duplicated(
+  sapply(shape_trainable_weights(mod),
+         function(x) paste(x, collapse = "_"))))
+
+get_set_weights <- function(mod_tc, mod_sw){
+  for(i in 1:length(mod_tc$model$layers)){
+    if(length(mod_tc$model$layers[[i]]$get_weights())>0 && 
+       mod_tc$model$layers[[i]]$trainable){
+      for(j in 1:length(mod_sw$model$layers)){
+        try(
+          mod_tc$model$layers[[i]]$set_weights(
+            mod_sw$model$trainable_weights[[j]]
+          )
+          , silent = TRUE)
+      }
+    }
+  }
+}
+
+transfer_weights <- function(mod_to_change, mod_supplying_weights){
+  
+  trainable_tc = shape_trainable_weights(mod_to_change)
+  trainable_sw = shape_trainable_weights(mod_supplying_weights)
+  
+  stc <- sapply(trainable_tc, paste, collapse = "_")
+  ssw <- sapply(trainable_sw, paste, collapse = "_")
+  
+  if(!all(!duplicated(stc)=="TRUE") | !all(!duplicated(ssw)=="TRUE"))
+     stop("Ambiguity in the weights, can't transfer.")
+  
+  if(length(trainable_sw)>length(trainable_tc))
+    stop("Can't transfer weigths if trainable weights of supplying model are more.")
+  if(length(trainable_sw)==length(trainable_tc)){
+    if(length(setdiff(ssw, stc))==0)
+    {
+      get_set_weights(mod_to_change, mod_supplying_weights)
+    }else{
+      stop("Same number of trainable layers, but shapes differ.")
+    }
+  }else{ # length tc larger sw
+    if(length(setdiff(ssw, stc))==0){
+      get_set_weights(mod_to_change, mod_supplying_weights)
+    }else{
+      stop("No match between shapes.")
+    }
+  }
+  cat("Done.")
+  return(invisible(NULL))
+}
+
+reduce_one_list <- function(x)
+{
+  
+  if(is.list(x)) return(x[[1]]) else return(x)
   
 }

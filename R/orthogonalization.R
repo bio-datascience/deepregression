@@ -118,7 +118,9 @@ make_orthog <- function(
     # number of columns removed due to collinearity
     rem_cols <- 0
     # if there is any smooth
-    X <- matrix(rep(1,n_obs), ncol=1)
+    if(length(intersect(nn, struct_nms))>0) 
+      X <- matrix(rep(1,n_obs), ncol=1) else
+        X <- matrix(ncol=0, nrow=n_obs)
     # Ps <- list()
     # lambdas <- c()
     if(length(intersect(nn, struct_nms)) > 0 | !is.null(manoz[[i]])){
@@ -319,7 +321,7 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
       )
 
 
-  }else if(is.null(struct) || (is.list(struct) && length(struct)==0)){
+  }else if((is.null(struct) || (is.list(struct) && length(struct)==0)) & (is.null(ox) | is.null(ox[[1]]))){
 
     if(length(deep)==1){
 
@@ -365,10 +367,33 @@ combine_model_parts <- function(deep, deep_top, struct, ox, orthog_fun, shared)
         warning("Applying orthogonalization for more than ",
                 "one deep model in each predictor.")
 
+      if(is.null(struct) || (is.list(struct) && length(struct)==0)){
+        
+        if(length(deep)==1){
+          return(
+              deep_top[[1]](orthog_fun(deep[[1]], ox[[1]]))
+              )
+        }else{
+          
+          return(
+            layer_add( lapply(1:length(deep),
+                              function(j){
+                                
+                                if(is.null(ox[[j]]))
+                                  return(deep_top[[j]](deep[[j]])) else
+                                    deep_top[[j]](orthog_fun(deep[[j]],
+                                                             ox[[j]]))
+                              })) 
+          )
+          
+        }
+        
+      }
+      
       return(
         layer_add( append(lapply(1:length(deep),
                                  function(j){
-
+                                   
                                    if(is.null(ox[[j]]))
                                      return(deep_top[[j]](deep[[j]])) else
                                        deep_top[[j]](orthog_fun(deep[[j]],

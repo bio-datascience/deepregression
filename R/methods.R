@@ -38,8 +38,16 @@ plot.deepregression <- function(
   plotData <- vector("list", length(which))
   org_feature_names <-
     names(x$init_params$l_names_effects[[which_param]][["smoothterms"]])
-  phi <- x$model$get_layer(paste0("structured_nonlinear_",
-                                  which_param))$get_weights()
+  phi <- tryCatch(x$model$get_layer(paste0("structured_nonlinear_",
+                                  which_param))$get_weights(), 
+                  error = function(e){
+                    layer_nr <- grep("pen_linear", 
+                                     sapply(1:length(x$model$trainable_weights), 
+                                            function(k) x$model$trainable_weights[[k]]$name))
+                    # FixMe: multiple penalized layers
+                    list(as.matrix(x$model$trainable_weights[[layer_nr[which_param]]]))
+                    })
+  
   if(length(phi)>1){
     if(use_posterior){
       phi <- matrix(phi[[1]], ncol=2, byrow=F)
@@ -430,7 +438,8 @@ predict.deepregression <- function(
   }else{
     
     if(is.null(newdata)){
-      yhat <- object$model(lapply(unname(object$init_params$input_cov), function(x) tf$cast(x,dtype)))
+      yhat <- object$model(lapply(unname(object$init_params$input_cov), function(x) 
+        tf$cast(x,dtype)))
     }else{
       # preprocess data
       if(is.data.frame(newdata)) newdata <- as.list(newdata)
@@ -692,7 +701,7 @@ fit.deepregression <- function(
     weighthistory <- WeightHistory$new()
     callbacks <- append(callbacks, weighthistory)
   }
-  if(early_stopping)
+  if(early_stopping & length(callbacks)==0)
     callbacks <- append(callbacks,
                         callback_early_stopping(patience = patience))
   
@@ -761,7 +770,8 @@ fit.deepregression <- function(
       generator <- make_generator(data_image, data_tab, batch_size, 
                                   # FIXME: multiple images
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
-                                  color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                  color_mode = unname(ifelse(
+                                    unlist(x$init_params$image_var)[3]==3, 
                                                       "rgb", "grayscale")),
                                   x_col = names(x$init_params$image_var),
                                   is_trafo = is_trafo)
@@ -822,7 +832,8 @@ fit.deepregression <- function(
                                   batch_size = batch_size, 
                                   # FIXME: multiple images
                                   target_size = unname(unlist(x$init_params$image_var)[1:2]),
-                                  color_mode = unname(ifelse(unlist(x$init_params$image_var)[3]==3, 
+                                  color_mode = unname(ifelse(
+                                    unlist(x$init_params$image_var)[3]==3, 
                                                              "rgb", "grayscale")),
                                   x_col = names(x$init_params$image_var),
                                   is_trafo = is_trafo)
@@ -838,7 +849,8 @@ fit.deepregression <- function(
                                         data_tab = data_tab_val, 
                                         batch_size = batch_size, 
                                         # FIXME: multiple images
-                                        target_size = unname(unlist(x$init_params$image_var)[1:2]),
+                                        target_size = unname(
+                                          unlist(x$init_params$image_var)[1:2]),
                                         color_mode = unname(ifelse(unlist(
                                           x$init_params$image_var)[3]==3, 
                                           "rgb", "grayscale")),
@@ -1290,7 +1302,7 @@ quantile <- function (x, ...) {
 #'
 #' @param x a deepregression object
 #' @param data either \code{NULL} or a new data set
-#' @param value the quantile value(s)
+#' @param probs the quantile value(s)
 #' @param ... arguments passed to the \code{predict} function
 #'
 #' @export
@@ -1299,13 +1311,13 @@ quantile <- function (x, ...) {
 quantile.deepregression <- function(
   x,
   data = NULL,
-  value,
+  probs,
   ...
 )
 {
   predict.deepregression(x,
                          newdata = data,
-                         apply_fun = function(x) tfd_quantile(x, value=value),
+                         apply_fun = function(x) tfd_quantile(x, value=probs),
                          ...)
 }
 
@@ -1517,7 +1529,8 @@ set_weights <- function(x,
 #' 
 #' @export
 #' 
-get_partial_effect <- function(object, name, return_matrix = FALSE, which_param = 1, newdata = NULL)
+get_partial_effect <- function(object, name, return_matrix = FALSE, 
+                               which_param = 1, newdata = NULL)
 {
   
   if(is.null(newdata)) newdata <- object$init_params$data
@@ -1540,3 +1553,4 @@ get_partial_effect <- function(object, name, return_matrix = FALSE, which_param 
   return(pmat%*%coefs)
   
 }
+

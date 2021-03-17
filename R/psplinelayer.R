@@ -40,7 +40,7 @@ layer_spline <- function(object,
     bigP = bdiag(lapply(1:length(Ps), function(j){
       # return vague prior for scalar
       if(length(Ps[[j]])==1) return(diffuse_scale^2) else
-        return(chol2inv(chol(Ps[[j]])))}))
+        return(invertP(Ps[[j]]))}))
   }else{
       bigP = bdiag(Ps)
   }
@@ -90,11 +90,20 @@ layer_spline <- function(object,
     )
 }
 
+
+invertP <- function(mat){
+  
+  invmat <- tryCatch(chol2inv(chol(mat)),
+                     error = function(e) chol2inv(chol(mat + diag(rep(1, ncol(mat))) * 1e-09)))
+  return(invmat)
+  
+}
 #### get layer based on smoothCon object
 get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                               posterior_fun=NULL, trafo=FALSE, #, prior_fun=NULL
                               output_dim = 1, k_summary = k_sum,
-                              return_layer = TRUE
+                              return_layer = TRUE, fsbatch_optimizer = FALSE,
+                              nobs
                               )
 {
 
@@ -107,7 +116,8 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
   # create vectors of lambdas and list of penalties
   if(!is.null(this_param$linterms)){
     lambdas = c(lambdas, as.list(rep(0, ncol_lint(this_param$linterms))))
-    Ps = c(Ps, list(0)[rep(1, ncol_lint(this_param$linterms))])
+    
+    Ps = c(Ps, list(matrix(0, ncol=1, nrow=1))[rep(1, ncol_lint(this_param$linterms))])
     params = ncol(this_param$linterms)
   }
   if(!is.null(this_param$smoothterms)){
@@ -155,7 +165,14 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
       NULL
     )
   }
-
+  if(!is.null(this_param$linterms)){
+    zeros <- ncol_lint(this_param$linterms)
+    mask <- as.list(rep(0,zeros))
+    mask <- c(mask, as.list(rep(1,length(lambdas)-zeros)))
+  }else{
+    masl <- as.list(rep(1,length(lambdas)))
+  }
+  
   name <- "structured_nonlinear"
   if(!is.null(nr)) name <- paste(name, nr, sep="_")
 
@@ -169,6 +186,16 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
     regul <- 0 else regul <- NULL
   
   if(!return_layer) return(list(Ps=Ps, lambdas = lambdas)) 
+  
+  if(fsbatch_optimizer){
+    return(trainable_pspline(units = output_dim, 
+                             this_lambdas = unname(lapply(1:length(lambdas), function(j)
+                               lambdas[[j]]*mask[[j]])), 
+                             this_mask = mask,
+                             this_P = lapply(unname(Ps), function(x) 
+                               tf$linalg$LinearOperatorFullMatrix(reduce_one_list(x))), 
+                             this_n = nobs))
+  }
   
   # put together lambdas and Ps
   Ps <- lapply(1:length(Ps), function(j){ 
@@ -268,3 +295,25 @@ tf_block_diag <- function(listMats)
 #                              }
 #                            )
 # )
+
+trainable_pspline = function(units, this_lambdas, this_mask, this_P, this_n) {
+  python_path <- system.file("python", package = "deepregression")
+  splines <- reticulate::import_from_path("psplines", path = python_path)
+  
+  return(splines$PenLinear(units, lambdas = this_lambdas, mask = this_mask,
+                           P = this_P, n = this_n))
+}
+
+kerasGAM = function(inputs, outputs) {
+  python_path <- system.file("python", package = "deepregression")
+  splines <- reticulate::import_from_path("psplines", path = python_path)
+  
+  return(splines$kerasGAM(inputs, outputs))
+}
+
+tf_incross <- function(w, P) {
+  python_path <- system.file("python", package = "deepregression")
+  splines <- reticulate::import_from_path("psplines", path = python_path)
+  
+  return(splines$tf_incross(w, P))
+}
