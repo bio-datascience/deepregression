@@ -21,6 +21,7 @@ deepregression_init(
   weights = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
+  fsbatch_optimizer = FALSE,
   monitor_metric = list(),
   posterior = posterior_mean_field,
   prior = prior_trainable,
@@ -85,6 +86,8 @@ the via the ellipsis to the initialization function}
 \item{learning_rate}{learning rate for optimizer}
 
 \item{optimizer}{optimizer used (defaults to adam)}
+
+\item{fsbatch_optimizer}{logical; see \code{?deepregression}}
 
 \item{monitor_metric}{see \code{?deepregression}}
 

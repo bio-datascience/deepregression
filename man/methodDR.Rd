@@ -77,7 +77,7 @@ cv(
 
 \method{sd}{deepregression}(x, data = NULL, ...)
 
-\method{quantile}{deepregression}(x, data = NULL, value, ...)
+\method{quantile}{deepregression}(x, data = NULL, probs, ...)
 }
 \arguments{
 \item{x}{a deepregression object}
@@ -155,7 +155,7 @@ smooth terms}
 
 \item{mylapply}{lapply function to be used; defaults to \code{lapply}}
 
-\item{value}{the quantile value(s)}
+\item{probs}{the quantile value(s)}
 
 \item{train}{function taking the keras model, inputs and outputs as an
 updates the model}

@@ -16,6 +16,7 @@ Config/reticulate:
       list(package = "tensorflow_probability", version = "0.9", pip = TRUE),
       list(package = "keras", version = "2.4.3", pip = TRUE))
   )
+Depends: R (<= 3.6.3)
 Suggests:
     rsvd,
     testthat,

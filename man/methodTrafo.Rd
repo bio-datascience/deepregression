@@ -27,6 +27,8 @@
 \item{grid_length}{the length of an equidistant grid at which a two-dimensional function
 is evaluated for plotting.}
 
+\item{eval_grid}{logical; should plot be evaluated on a grid}
+
 \item{...}{further arguments, passed to fit, plot or predict function}
 }
 \description{

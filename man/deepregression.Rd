@@ -29,6 +29,7 @@ deepregression(
   dist_fun = NULL,
   learning_rate = 0.01,
   optimizer = optimizer_adam(lr = learning_rate),
+  fsbatch_optimizer = FALSE,
   variational = FALSE,
   monitor_metric = list(),
   seed = 1991 - 5 - 4,
@@ -94,7 +95,7 @@ Those network names should then be excluded from the \code{list_of_formulae}}
 
 \item{data}{data.frame or named list with input features}
 
-\item{image_var}{names list; names correspond to image variables, values for each list item
+\item{image_var}{named list; names correspond to image variables, values for each list item
 corresponds to the input size of the respective image, e.g., \code{list(image = list(c(200,200,3)))}.}
 
 \item{dim_deep}{list for each distribution parameter with NULL or integer vector entries; 
@@ -134,6 +135,9 @@ a custom distribution function.}
 \item{learning_rate}{learning rate for optimizer}
 
 \item{optimizer}{optimzer used. Per default ADAM.}
+
+\item{fsbatch_optimizer}{a special optimizer conducting a mini-batch variant of the 
+Fellner-Schall algorithm.}
 
 \item{variational}{logical value specifying whether or not to use
 variational inference. If \code{TRUE}, details must be passed to
@@ -223,9 +227,12 @@ default is \code{k_sum}. Another option could be \code{k_mean}.}
 
 \item{convertfun}{function to convert objects into a matrix or tensor format.}
 
-\item{...}{further arguments passed to the \code{deepregression\_init} function}
+\item{compile_model}{logical; whether to compile the model or not}
 
-\item{compile}{logical; whether to compile the model or not}
+\item{base_distribution}{tfd_distribution or string; the base distribution for 
+transformation models, see \code{?deeptransformation\_init}.}
+
+\item{...}{further arguments passed to the \code{deepregression\_init} function}
 }
 \description{
 Fitting Semi-Structured Deep Distributional Regression
