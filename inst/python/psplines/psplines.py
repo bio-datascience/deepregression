@@ -99,10 +99,10 @@ def get_specific_layer(string_to_match, layers, index=True, invert=False):
     
     
 class PenLinear(tf.keras.layers.Layer):
-    def __init__(self, units, lambdas, mask, P, n):
+    def __init__(self, units, lambdas, mask, P, n, nr):
         super(PenLinear, self).__init__()
         self.units = units
-        self.lambdas = tf.Variable(lambdas, name = "lambda")
+        self.lambdas = tf.Variable(lambdas, name = "lambda" + str(nr))
         self.mask = mask
         self.P = P
         self.n = n
@@ -167,8 +167,7 @@ class kerasGAM(tf.keras.Model):
         update = update_lambda(Plist, H, betas, lambdas, get_masks(self))
         phi = self.compiled_loss(y, y_pred) / (y.shape[0] - tf.linalg.trace(update[1](tf_crossprod(x,x))))
         fac = 0.01
-        lambdas.assign(phi*update[0]*fac + (1-fac)*lambdas)
-        tf.print(lambdas)        
+        lambdas.assign(phi*update[0]*fac + (1-fac)*lambdas)      
 
         betas.assign(betas-update[1](gradients_betas))
         # ====================================

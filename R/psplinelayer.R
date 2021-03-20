@@ -194,7 +194,8 @@ get_layers_from_s <- function(this_param, nr=NULL, variational=FALSE,
                              this_mask = mask,
                              this_P = lapply(unname(Ps), function(x) 
                                tf$linalg$LinearOperatorFullMatrix(reduce_one_list(x))), 
-                             this_n = nobs))
+                             this_n = nobs,
+                             this_nr = nr))
   }
   
   # put together lambdas and Ps
@@ -296,12 +297,12 @@ tf_block_diag <- function(listMats)
 #                            )
 # )
 
-trainable_pspline = function(units, this_lambdas, this_mask, this_P, this_n) {
+trainable_pspline = function(units, this_lambdas, this_mask, this_P, this_n, this_nr) {
   python_path <- system.file("python", package = "deepregression")
   splines <- reticulate::import_from_path("psplines", path = python_path)
   
   return(splines$PenLinear(units, lambdas = this_lambdas, mask = this_mask,
-                           P = this_P, n = this_n))
+                           P = this_P, n = this_n, nr = this_nr))
 }
 
 kerasGAM = function(inputs, outputs) {
