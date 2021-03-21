@@ -137,9 +137,10 @@
 #' @examples
 #' library(deepregression)
 #'
-#' data = data.frame(matrix(rnorm(10*100), c(100,10)))
-#' colnames(data) <- c("x1","x2","x3","xa","xb","xc","xd","xe","xf","unused")
-#' formula <- ~ 1 + deep_model(x1,x2,x3) + s(xa, sp = 1) + x1
+#' n <- 1000
+#' data = data.frame(matrix(rnorm(4*n), c(n,4)))
+#' colnames(data) <- c("x1","x2","x3","xa")
+#' formula <- ~ 1 + deep_model(x1,x2,x3) + s(xa) + x1
 #'
 #' deep_model <- function(x) x %>%
 #' layer_dense(units = 32, activation = "relu", use_bias = FALSE) %>%
@@ -147,15 +148,20 @@
 #' layer_dense(units = 8, activation = "relu") %>%
 #' layer_dense(units = 1, activation = "linear")
 #'
-#' y <- rnorm(100)
+#' y <- rnorm(n) + data$xa^2 + data$x1
 #'
-#' mod <- deepregression(list_of_formulae = list(loc = formula, scale = ~ 1),
-#' data = data, validation_data = list(data, y), y = y,
-#' list_of_deep_models = list(deep_model = deep_model), tf_seed = 1)
+#' mod <- deepregression(
+#'   list_of_formulae = list(loc = formula, scale = ~ 1),
+#'   data = data, validation_data = list(data, y), y = y,
+#'   list_of_deep_models = list(deep_model = deep_model), 
+#'   df = 6, 
+#'   tf_seed = 1
+#' )
 #'
-#' # train for 10 epochs to get a better model
-#' mod %>% fit(epochs = 10)
+#' # train for more than 10 epochs to get a better model
+#' mod %>% fit(epochs = 10, early_stopping = TRUE)
 #' mod %>% plot()
+#' mod %>% coef()
 #'
 deepregression <- function(
   y,
