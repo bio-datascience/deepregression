@@ -1014,6 +1014,12 @@ coef.deepregression <- function(
     }
 
     sel <- which(c("linear", "smooth") %in% type)
+    if(is.character(object$init_params$ind_structterms[[i]]$type)){
+      object$init_params$ind_structterms[[i]]$type <- factor(
+        object$init_params$ind_structterms[[i]]$type,
+        levels = c("lin", "smooth")
+      )
+    }
     struct_terms_fitting_type <- 
       sapply(as.numeric(object$init_params$ind_structterms[[i]]$type),
              function(x) x%in%sel)
