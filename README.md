@@ -50,7 +50,8 @@ A Python version of the package is available [here](https://github.com/davidrueg
 
 The following works are based on the ideas implemented in this package:
 
-* [https://arxiv.org/abs/2002.05777](Original Semi-Structured Deep Distributional Regression Proposal)
-* [https://arxiv.org/abs/2010.06889](Neural Mixture Distributional Regression)
-* [https://arxiv.org/abs/2010.07860](Deep Conditional Transformation Models)
-* [https://arxiv.org/abs/2101.00661](Combining Graph Neural Networks and Spatio-temporal Disease Models to Predict COVID-19 Cases in Germany)
+* [Original Semi-Structured Deep Distributional Regression Proposal](https://arxiv.org/abs/2002.05777)
+* [Neural Mixture Distributional Regression](https://arxiv.org/abs/2010.06889)
+* [Deep Conditional Transformation Models](https://arxiv.org/abs/2010.07860)
+* [Semi-Structured Deep Piecewise Exponential Models](https://arxiv.org/abs/2011.05824)
+* [Combining Graph Neural Networks and Spatio-temporal Disease Models to Predict COVID-19 Cases in Germany](https://arxiv.org/abs/2101.00661)
