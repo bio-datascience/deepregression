@@ -1,6 +1,7 @@
 # function that extracts variables from special symbols in formulae
 extract_from_special <- function(x)
 {
+  if(length(x)>1) return(sapply(x, extract_from_special))
   # remove c()
   if(grepl("c\\(",x))
   {
@@ -426,7 +427,7 @@ get_contents <- function(lf, data, df,
   ##################################### deep start #########################################
 
   # get deep terms
-  dterms <- sapply(paste0(network_names,"\\("), function(x) trmstrings[grepl(x,trmstrings)])
+  dterms <- sapply(paste0("^",network_names,"\\("), function(x) trmstrings[grepl(x,trmstrings)])
   if(all(sapply(dterms,length)==0)){
     deepterms <- NULL
   }else{
