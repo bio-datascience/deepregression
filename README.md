@@ -44,7 +44,7 @@ See [the tutorial](vignettes/tutorial.md) for a detailed introduction.
 
 # Python version
 
-A Python version of the package is available [here](https://github.com/davidruegamer/PySDDR). 
+A Python version of the package is available [here](https://github.com/HelmholtzAI-Consultants-Munich/PySDDR). 
 
 # Related literature
 
