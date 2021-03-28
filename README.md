@@ -32,7 +32,7 @@ If you set up a Python environment for the first time, install `reticulate` and 
 Until published, please cite the following preprint:
 
     @article{rugamer2020unifying,
-      title={A Unifying Network Architecture for Semi-Structured Deep Distributional Learning},
+      title={Semi-Structured Deep Distributional Regression: Combining Structured Additive Models and Deep Learning},
       author={R{\"u}gamer, David and Kolb, Chris and Klein, Nadja},
       journal={arXiv preprint arXiv:2002.05777},
       year={2020}
