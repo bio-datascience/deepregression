@@ -40,7 +40,7 @@ Until published, please cite the following preprint:
 
 # How to use this?
 
-See [the tutorial](vignettes/tutorial.md) for a detailed introduction.
+See [the tutorial](https://arxiv.org/pdf/2104.02705.pdf) for a detailed introduction.
 
 # Python version
 
